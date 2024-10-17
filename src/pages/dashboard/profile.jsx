@@ -199,20 +199,20 @@ const ComparisonTable = ({ entry1, entry2, data, firstColumn }) => {
           <Typography variant="h6" color="white">Profiles Comparison</Typography>
         </CardHeader>
         <CardBody className="overflow-x-auto">
-          <table className="w-full table-auto">
+          <table className="w-full table-auto text-xs"> {/* Added 'text-xs' class for smaller font */}
             <thead>
               <tr>
-                <th className="border-b border-blue-gray-50 py-3 px-5 text-left">Field</th>
-                <th className="border-b border-blue-gray-50 py-3 px-5 text-left">{entry1}</th>
-                <th className="border-b border-blue-gray-50 py-3 px-5 text-left">{entry2}</th>
+                <th className="border-b border-blue-gray-50 py-2 px-4 text-left">Field</th>
+                <th className="border-b border-blue-gray-50 py-2 px-4 text-left">{entry1}</th>
+                <th className="border-b border-blue-gray-50 py-2 px-4 text-left">{entry2}</th>
               </tr>
             </thead>
             <tbody>
               {fields.map((field, index) => (
                 <tr key={index}>
-                  <td className="border-b border-blue-gray-50 py-3 px-5">{field}</td>
-                  <td className="border-b border-blue-gray-50 py-3 px-5">{entry1Data ? entry1Data[field] || "-" : "-"}</td>
-                  <td className="border-b border-blue-gray-50 py-3 px-5">{entry2Data ? entry2Data[field] || "-" : "-"}</td>
+                  <td className="border-b border-blue-gray-50 py-2 px-4">{field}</td>
+                  <td className="border-b border-blue-gray-50 py-2 px-4">{entry1Data ? entry1Data[field] || "-" : "-"}</td>
+                  <td className="border-b border-blue-gray-50 py-2 px-4">{entry2Data ? entry2Data[field] || "-" : "-"}</td>
                 </tr>
               ))}
             </tbody>
