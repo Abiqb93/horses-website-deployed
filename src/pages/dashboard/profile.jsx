@@ -333,7 +333,7 @@ export function Profile() {
         <Typography variant="h5" className="mb-2">Table Selection</Typography>
         <div className="flex flex-wrap space-x-4">
           <label className="flex items-center space-x-2">
-            <img src="/public/img/Sire.jpg" alt="Sire" className="w-16 h-16" />
+            <img src="/horses-website-deployed/img/Sire.jpg" alt="Sire" className="w-16 h-16" />
             <input
               type="radio"
               value="Sire"
@@ -344,7 +344,7 @@ export function Profile() {
             <span>Sire</span>
           </label>
           <label className="flex items-center space-x-2">
-            <img src="/img/Dam.jpg" alt="Dam" className="w-16 h-16" />
+            <img src="/horses-website-deployed/img/Dam.jpg" alt="Dam" className="w-16 h-16" />
             <input
               type="radio"
               value="Dam"
@@ -355,7 +355,7 @@ export function Profile() {
             <span>Dam</span>
           </label>
           <label className="flex items-center space-x-2">
-            <img src="/img/Owner.jpg" alt="Owner" className="w-16 h-16" />
+            <img src="/horses-website-deployed/img/Owner.jpg" alt="Owner" className="w-16 h-16" />
             <input
               type="radio"
               value="Owner"
@@ -366,7 +366,7 @@ export function Profile() {
             <span>Owner</span>
           </label>
           <label className="flex items-center space-x-2">
-            <img src="/img/Jockey.jpg" alt="Jockey" className="w-16 h-16" />
+            <img src="/horses-website-deployed/img/Jockey.jpg" alt="Jockey" className="w-16 h-16" />
             <input
               type="radio"
               value="Jockey"
@@ -377,7 +377,7 @@ export function Profile() {
             <span>Jockey</span>
           </label>
           <label className="flex items-center space-x-2">
-            <img src="/img/Trainer.jpg" alt="Trainer" className="w-16 h-16" />
+            <img src="/horses-website-deployed/img/Trainer.jpg" alt="Trainer" className="w-16 h-16" />
             <input
               type="radio"
               value="Trainer"

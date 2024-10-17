@@ -110,7 +110,7 @@ export function Tables() {
         <Typography variant="h6" className="mb-4">Table Selector</Typography>
         <div className="flex items-center gap-8">
           <label className="flex items-center">
-            <img src="/img/RaceNet.jpg" alt="RaceNet Logo" className="w-20 h-20 mr-2" />
+            <img src="/horses-website-deployed/img/RaceNet.jpg" alt="RaceNet Logo" className="w-20 h-20 mr-2" />
             <input
               type="radio"
               value="RaceNet"
@@ -121,7 +121,7 @@ export function Tables() {
             RaceNet Table
           </label>
           <label className="flex items-center">
-            <img src="/img/TimeAPI.jpg" alt="TimeAPI Logo" className="w-20 h-20 mr-2" />
+            <img src="/horses-website-deployed/img/TimeAPI.jpg" alt="TimeAPI Logo" className="w-20 h-20 mr-2" />
             <input
               type="radio"
               value="TimeAPI"
