@@ -3,6 +3,12 @@ import { Card, CardHeader, CardBody, Typography } from "@material-tailwind/react
 import {
   Radar
 } from 'react-chartjs-2';
+
+import { Chart, registerables } from 'chart.js'; // Import Chart.js and registerables
+
+// Register all necessary components including the radialLinear scale
+Chart.register(...registerables);
+
 import {
   sireReportTable,
   sireReportTableThree,
