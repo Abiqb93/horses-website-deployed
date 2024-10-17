@@ -6,4 +6,5 @@ export default defineConfig({
   resolve: {
     alias: [{ find: "@", replacement: "/src" }],
   },
+  base: '/horses-website-deployed/', // Add this line to set the correct base path for GitHub Pages
 });
