@@ -333,7 +333,7 @@ export function Profile() {
         <Typography variant="h5" className="mb-2">Table Selection</Typography>
         <div className="flex flex-wrap space-x-4">
           <label className="flex items-center space-x-2">
-            <img src={`${process.env.PUBLIC_URL}/img/Sire.jpg`} alt="Sire" className="w-16 h-16" />
+            <img src="/public/img/Sire.jpg" alt="Sire" className="w-16 h-16" />
             <input
               type="radio"
               value="Sire"
