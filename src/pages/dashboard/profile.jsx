@@ -377,7 +377,10 @@ export function Profile() {
             <span>Jockey</span>
           </label>
           <label className="flex items-center space-x-2">
-            <img src="/horses-website-deployed/img/Trainer.jpg" alt="Trainer" className="w-16 h-16" />
+            <img 
+              src="/horses-website-deployed/img/Trainer.jpg" 
+              className="w-16 h-16" 
+            />
             <input
               type="radio"
               value="Trainer"
