@@ -165,9 +165,10 @@ export function SignIn() {
       </div>
       <div className="w-2/5 h-full hidden lg:block">
         <img
-          src={`${process.env.PUBLIC_URL}/img/pattern.png`}
+          src={`${import.meta.env.BASE_URL}img/pattern.png`}
           className="h-full w-full object-cover rounded-3xl"
         />
+        
       </div>
     </section>
   );
