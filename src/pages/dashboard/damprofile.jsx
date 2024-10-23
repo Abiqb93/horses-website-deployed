@@ -7,10 +7,10 @@ import { Chart, registerables } from 'chart.js'; // Import Chart.js and register
 Chart.register(...registerables);
 
 import {
-  sireReportTable,
-  sireReportTableThree,
-  sireReportTableOne,
-} from "@/data"; // Import only Sire tables
+  damReportTable,
+  damReportTableThree,
+  damReportTableOne
+} from "@/data"; // Import only Dam tables
 
 const ROWS_PER_PAGE = 10;
 
@@ -102,7 +102,7 @@ const RadarChart = ({ entry1Data, entry2Data }) => {
   };
 
   const maxValues = {
-    WTR: 100, 
+    WTR: 100,
     SWTR: 100,
     GWTR: 100,
     G1WTR: 1,
@@ -116,7 +116,7 @@ const RadarChart = ({ entry1Data, entry2Data }) => {
     labels: ["WTR", "SWTR", "GWTR", "G1WTR", "WIV", "WOE", "WAX", "RB2"],
     datasets: [
       {
-        label: entry1Data ? entry1Data.sire : "Entry 1",
+        label: entry1Data ? entry1Data.dam : "Entry 1",
         data: [
           normalize(entry1Data?.WTR || 0, minValues.WTR, maxValues.WTR),
           normalize(entry1Data?.SWTR || 0, minValues.SWTR, maxValues.SWTR),
@@ -133,7 +133,7 @@ const RadarChart = ({ entry1Data, entry2Data }) => {
         pointBackgroundColor: "rgba(54, 162, 235, 1)"
       },
       {
-        label: entry2Data ? entry2Data.sire : "Entry 2",
+        label: entry2Data ? entry2Data.dam : "Entry 2",
         data: [
           normalize(entry2Data?.WTR || 0, minValues.WTR, maxValues.WTR),
           normalize(entry2Data?.SWTR || 0, minValues.SWTR, maxValues.SWTR),
@@ -207,7 +207,7 @@ const ComparisonTable = ({ entry1, entry2, data, firstColumn }) => {
   );
 };
 
-export function Profile() {
+export function DamProfiles() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPeriod, setSelectedPeriod] = useState("original");
   const [winPercentRange, setWinPercentRange] = useState([0, 100]);
@@ -239,13 +239,13 @@ export function Profile() {
   };
 
   const data = {
-    original: sireReportTable,
-    lastThree: sireReportTableThree,
-    lastOne: sireReportTableOne
+    original: damReportTable,
+    lastThree: damReportTableThree,
+    lastOne: damReportTableOne
   };
 
-  const title = "Sire Report Table";
-  const firstColumn = "sire";
+  const title = "Dam Report Table";
+  const firstColumn = "dam";
 
   const options = [...new Set(data[selectedPeriod].map(item => item[firstColumn]))];
 
@@ -399,4 +399,4 @@ export function Profile() {
   );
 }
 
-export default Profile;
+export default DamProfiles;

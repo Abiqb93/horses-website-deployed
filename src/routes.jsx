@@ -6,7 +6,7 @@ import {
   ServerStackIcon,
   RectangleStackIcon,
 } from "@heroicons/react/24/solid";
-import { Home, Profile, Tables, Notifications } from "@/pages/dashboard";
+import { Home, Profile, Tables, Notifications, DamProfiles, JockeyProfiles, OwnerProfiles, TrainerProfiles} from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
 
 const icon = {
@@ -28,6 +28,30 @@ export const routes = [
         name: "profile",
         path: "/profile",
         element: <Profile />,
+      },
+      {
+        icon: <UserCircleIcon {...icon} />,
+        name: "Dam Profile",
+        path: "/damprofile",
+        element: <DamProfiles />,
+      },
+      {
+        icon: <UserCircleIcon {...icon} />,
+        name: "Owner Profile",
+        path: "/ownerprofile",
+        element: <OwnerProfiles />,
+      },
+      {
+        icon: <UserCircleIcon {...icon} />,
+        name: "Jockey Profile",
+        path: "/jockeyprofile",
+        element: <JockeyProfiles />,
+      },
+      {
+        icon: <UserCircleIcon {...icon} />,
+        name: "Trainer Profile",
+        path: "/trainerprofile",
+        element: <TrainerProfiles />,
       },
       {
         icon: <TableCellsIcon {...icon} />,
