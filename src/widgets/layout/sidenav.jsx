@@ -1,8 +1,8 @@
 import PropTypes from "prop-types";
 import { Link, NavLink } from "react-router-dom";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useState } from "react";
+import { ChevronDownIcon, ChevronRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import {
-  Avatar,
   Button,
   IconButton,
   Typography,
@@ -18,15 +18,20 @@ export function Sidenav({ brandImg, brandName, routes }) {
     transparent: "bg-transparent",
   };
 
+  // State to track which submenus are open
+  const [openSubMenu, setOpenSubMenu] = useState({});
+
+  const toggleSubMenu = (name) => {
+    setOpenSubMenu((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
   return (
     <aside
       className={`${sidenavTypes[sidenavType]} ${
         openSidenav ? "translate-x-0" : "-translate-x-80"
       } fixed inset-0 z-50 my-4 ml-4 h-[calc(100vh-32px)] w-72 rounded-xl transition-transform duration-300 xl:translate-x-0 border border-blue-gray-100`}
     >
-      <div
-        className={`relative`}
-      >
+      <div className="relative">
         <Link to="/" className="py-6 px-8 text-center">
           <Typography
             variant="h6"
@@ -60,32 +65,66 @@ export function Sidenav({ brandImg, brandName, routes }) {
                 </Typography>
               </li>
             )}
-            {pages.map(({ icon, name, path }) => (
+            {pages.map(({ icon, name, path, children }) => (
               <li key={name}>
-                <NavLink to={`/${layout}${path}`}>
-                  {({ isActive }) => (
+                {children ? (
+                  <>
+                    {/* Main Category with Arrow */}
                     <Button
-                      variant={isActive ? "gradient" : "text"}
-                      color={
-                        isActive
-                          ? sidenavColor
-                          : sidenavType === "dark"
-                          ? "white"
-                          : "blue-gray"
-                      }
-                      className="flex items-center gap-4 px-4 capitalize"
+                      variant="text"
+                      color="blue-gray"
+                      onClick={() => toggleSubMenu(name)}
+                      className="flex items-center gap-4 px-4 capitalize text-sm" // Reduced font size for main category
                       fullWidth
                     >
                       {icon}
-                      <Typography
-                        color="inherit"
-                        className="font-medium capitalize"
-                      >
+                      <Typography color="inherit" className="font-medium text-sm">
+                        {name}
+                      </Typography>
+                      {/* Toggle Arrow */}
+                      {openSubMenu[name] ? (
+                        <ChevronDownIcon className="w-4 h-4 ml-auto" />
+                      ) : (
+                        <ChevronRightIcon className="w-4 h-4 ml-auto" />
+                      )}
+                    </Button>
+                    {openSubMenu[name] && (
+                      <ul className="ml-6">
+                        {children.map((child) => (
+                          <li key={child.name}>
+                            <NavLink to={`/${layout}${child.path}`}>
+                              <Button
+                                variant="text"
+                                color="blue-gray"
+                                className="flex items-center gap-4 px-4 capitalize text-xs" // Reduced font size for sub-category
+                                fullWidth
+                              >
+                                {/* Reduced Text Size */}
+                                <Typography color="inherit" className="font-medium text-xs">
+                                  {child.name}
+                                </Typography>
+                              </Button>
+                            </NavLink>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  <NavLink to={`/${layout}${path}`}>
+                    <Button
+                      variant="text"
+                      color="blue-gray"
+                      className="flex items-center gap-4 px-4 capitalize text-sm" // Reduced font size for main category
+                      fullWidth
+                    >
+                      {icon}
+                      <Typography color="inherit" className="font-medium text-sm">
                         {name}
                       </Typography>
                     </Button>
-                  )}
-                </NavLink>
+                  </NavLink>
+                )}
               </li>
             ))}
           </ul>
@@ -106,6 +145,6 @@ Sidenav.propTypes = {
   routes: PropTypes.arrayOf(PropTypes.object).isRequired,
 };
 
-Sidenav.displayName = "/src/widgets/layout/sidnave.jsx";
+Sidenav.displayName = "/src/widgets/layout/sidenav.jsx";
 
 export default Sidenav;

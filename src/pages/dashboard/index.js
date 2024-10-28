@@ -6,3 +6,4 @@ export * from "@/pages/dashboard/damprofile";
 export * from "@/pages/dashboard/ownerprofile";
 export * from "@/pages/dashboard/trainerprofile";
 export * from "@/pages/dashboard/jockeyprofile";
+export * from "@/pages/dashboard/sireradar";

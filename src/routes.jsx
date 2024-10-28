@@ -6,7 +6,17 @@ import {
   ServerStackIcon,
   RectangleStackIcon,
 } from "@heroicons/react/24/solid";
-import { Home, Profile, Tables, Notifications, DamProfiles, JockeyProfiles, OwnerProfiles, TrainerProfiles} from "@/pages/dashboard";
+import {
+  Home,
+  Profile,
+  Tables,
+  Notifications,
+  DamProfiles,
+  JockeyProfiles,
+  OwnerProfiles,
+  TrainerProfiles,
+  SireRadar,
+} from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
 
 const icon = {
@@ -19,43 +29,73 @@ export const routes = [
     pages: [
       {
         icon: <HomeIcon {...icon} />,
-        name: "dashboard",
+        name: "Dashboard",
         path: "/home",
         element: <Home />,
       },
       {
         icon: <UserCircleIcon {...icon} />,
-        name: "Sire Profile",
-        path: "/profile",
-        element: <Profile />,
+        name: "Sire",
+        children: [
+          {
+            name: "Sire Profile",
+            path: "/profile",
+            element: <Profile />,
+          },
+          {
+            name: "Sire Radar",
+            path: "/sireradar",
+            element: <SireRadar />,
+          },
+        ],
       },
       {
         icon: <UserCircleIcon {...icon} />,
-        name: "Dam Profile",
-        path: "/damprofile",
-        element: <DamProfiles />,
+        name: "Dam",
+        children: [
+          {
+            name: "Dam Profile",
+            path: "/damprofile",
+            element: <DamProfiles />,
+          },
+        ],
       },
       {
         icon: <UserCircleIcon {...icon} />,
-        name: "Owner Profile",
-        path: "/ownerprofile",
-        element: <OwnerProfiles />,
+        name: "Owner",
+        children: [
+          {
+            name: "Owner Profile",
+            path: "/ownerprofile",
+            element: <OwnerProfiles />,
+          },
+        ],
       },
       {
         icon: <UserCircleIcon {...icon} />,
-        name: "Jockey Profile",
-        path: "/jockeyprofile",
-        element: <JockeyProfiles />,
+        name: "Trainer",
+        children: [
+          {
+            name: "Trainer Profile",
+            path: "/trainerprofile",
+            element: <TrainerProfiles />,
+          },
+        ],
       },
       {
         icon: <UserCircleIcon {...icon} />,
-        name: "Trainer Profile",
-        path: "/trainerprofile",
-        element: <TrainerProfiles />,
+        name: "Jockey",
+        children: [
+          {
+            name: "Jockey Profile",
+            path: "/jockeyprofile",
+            element: <JockeyProfiles />,
+          },
+        ],
       },
       {
         icon: <TableCellsIcon {...icon} />,
-        name: "tables",
+        name: "Tables",
         path: "/tables",
         element: <Tables />,
       },
@@ -73,13 +113,13 @@ export const routes = [
     pages: [
       {
         icon: <ServerStackIcon {...icon} />,
-        name: "sign in",
+        name: "Sign In",
         path: "/sign-in",
         element: <SignIn />,
       },
       {
         icon: <RectangleStackIcon {...icon} />,
-        name: "sign up",
+        name: "Sign Up",
         path: "/sign-up",
         element: <SignUp />,
       },
