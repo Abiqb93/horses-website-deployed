@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, Typography } from "@material-tailwind/react";
-import RadarChart from "react-d3-radar";
+import { ResponsiveRadar } from "@nivo/radar";
 
 const ROWS_PER_PAGE = 3;
 
