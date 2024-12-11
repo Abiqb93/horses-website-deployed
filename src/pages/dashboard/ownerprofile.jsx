@@ -1,20 +1,14 @@
-import React, { useState } from 'react';
+const countryFlagURL = (countryCode) => {
+  const correctedCode = countryCode === "UK" ? "GB" : countryCode;
+  return `https://flagcdn.com/w40/${correctedCode.toLowerCase()}.png`;
+};
+
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, Typography } from "@material-tailwind/react";
-import { Radar } from 'react-chartjs-2';
-import { Chart, registerables } from 'chart.js'; // Import Chart.js and registerables
-
-// Register all necessary components including the radialLinear scale
-Chart.register(...registerables);
-
-import {
-  ownerReportTable,
-  ownerReportTableThree,
-  ownerReportTableOne
-} from "@/data"; // Import only Owner tables
 
 const ROWS_PER_PAGE = 10;
 
-const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages, firstColumn }) => {
+const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages }) => {
   const startPage = Math.max(1, currentPage - 5);
   const endPage = Math.min(startPage + 9, totalPages);
 
@@ -46,18 +40,20 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
     </div>
   );
 
-  const dataForCurrentPage = tableData.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
-
   return (
-    <Card>
-      <CardHeader variant="gradient" color="gray" className="mb-8 p-6">
-        <Typography variant="h6" color="white">{title}</Typography>
+    <Card className="bg-white text-black">
+      <CardHeader className="mb-8 p-6">
+        <Typography variant="h6" className="text-black">{title}</Typography>
       </CardHeader>
       <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
         <table className="w-full min-w-[640px] table-auto">
           <thead>
             <tr>
-              {[firstColumn, "Runners", "Runs", "Winners", "Wins", "Win_Percent", "Stake_Winner", "Stake_Win", "Group_Winner", "Group_Win", "WTR", "SWTR", "GWTR", "Group1_Winners", "Group1_Win", "G1WTR", "WIV", "WOE", "WAX", "RB2"].map((el) => (
+              {[
+                "Owner", "Country", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins",
+                "Group_Winners", "Group_Wins", "Group_1_Winners", "Group_1_Wins", "WTR", "SWTR",
+                "GWTR", "G1WTR", "WIV", "WOE", "WAX", "Percent_RB2",
+              ].map((el) => (
                 <th key={el} className="border-b border-blue-gray-50 py-3 px-5 text-left">
                   <Typography variant="small" className="text-[11px] font-bold uppercase text-blue-gray-400">{el}</Typography>
                 </th>
@@ -65,12 +61,28 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
             </tr>
           </thead>
           <tbody>
-            {dataForCurrentPage.map((item, index) => (
+            {tableData.map((item, index) => (
               <tr key={index}>
-                {[firstColumn, "Runners", "Runs", "Winners", "Wins", "Win_Percent", "Stake_Winner", "Stake_Win", "Group_Winner", "Group_Win", "WTR", "SWTR", "GWTR", "Group1_Winners", "Group1_Win", "G1WTR", "WIV", "WOE", "WAX", "RB2"].map((column) => (
-                  <td key={column} className={`py-3 px-5 ${index === dataForCurrentPage.length - 1 ? "" : "border-b border-blue-gray-50"}`}>
+                {[
+                  item["Sire"],
+                  item["Country"] && (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={countryFlagURL(item["Country"])}
+                        alt={item["Country"]}
+                        className="w-5 h-5"
+                      />
+                      <span>{item["Country"]}</span>
+                    </div>
+                  ),
+                  item["Runners"], item["Runs"], item["Winners"], item["Wins"],
+                  item["WinPercent_"], item["Stakes_Winners"], item["Stakes_Wins"], item["Group_Winners"],
+                  item["Group_Wins"], item["Group_1_Winners"], item["Group_1_Wins"], item["WTR"], item["SWTR"],
+                  item["GWTR"], item["G1WTR"], item["WIV"], item["WOE"], item["WAX"], item["Percent_RB2"],
+                ].map((value, i) => (
+                  <td key={i} className={`py-3 px-5 ${index === tableData.length - 1 ? "" : "border-b border-blue-gray-50"}`}>
                     <Typography className="text-xs font-semibold text-blue-gray-600">
-                      {item[column] || "-"}
+                      {value !== null && value !== undefined ? value : "-"}
                     </Typography>
                   </td>
                 ))}
@@ -84,317 +96,169 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
   );
 };
 
-const normalize = (value, min, max) => {
-  if (max - min === 0) return 0; // Prevent division by zero
-  return (value - min) / (max - min);
-};
+export function OwnerProfiles() {
+  const [tableData, setTableData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedTable, setSelectedTable] = useState("owner_profile");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
-const RadarChart = ({ entry1Data, entry2Data }) => {
-  const minValues = {
-    WTR: 0,
-    SWTR: 0,
-    GWTR: 0,
-    G1WTR: 0,
-    WIV: 0,
-    WOE: 0,
-    WAX: 0,
-    RB2: 0,
-  };
-
-  const maxValues = {
-    WTR: 100,
-    SWTR: 100,
-    GWTR: 100,
-    G1WTR: 1,
-    WIV: 100,
-    WOE: 1,
-    WAX: 1,
-    RB2: 100,
-  };
-
-  const data = {
-    labels: ["WTR", "SWTR", "GWTR", "G1WTR", "WIV", "WOE", "WAX", "RB2"],
-    datasets: [
-      {
-        label: entry1Data ? entry1Data.owner : "Entry 1",
-        data: [
-          normalize(entry1Data?.WTR || 0, minValues.WTR, maxValues.WTR),
-          normalize(entry1Data?.SWTR || 0, minValues.SWTR, maxValues.SWTR),
-          normalize(entry1Data?.GWTR || 0, minValues.GWTR, maxValues.GWTR),
-          normalize(entry1Data?.G1WTR || 0, minValues.G1WTR, maxValues.G1WTR),
-          normalize((entry1Data?.WIV || 0), minValues.WIV, maxValues.WIV),
-          normalize((entry1Data?.WOE || 0), minValues.WOE, maxValues.WOE),
-          normalize((entry1Data?.WAX || 0), minValues.WAX, maxValues.WAX),
-          normalize(entry1Data?.RB2 || 0, minValues.RB2, maxValues.RB2)
-        ],
-        fill: true,
-        backgroundColor: "rgba(54, 162, 235, 0.2)",
-        borderColor: "rgba(54, 162, 235, 1)",
-        pointBackgroundColor: "rgba(54, 162, 235, 1)"
-      },
-      {
-        label: entry2Data ? entry2Data.owner : "Entry 2",
-        data: [
-          normalize(entry2Data?.WTR || 0, minValues.WTR, maxValues.WTR),
-          normalize(entry2Data?.SWTR || 0, minValues.SWTR, maxValues.SWTR),
-          normalize(entry2Data?.GWTR || 0, minValues.GWTR, maxValues.GWTR),
-          normalize(entry2Data?.G1WTR || 0, minValues.G1WTR, maxValues.G1WTR),
-          normalize((entry2Data?.WIV || 0), minValues.WIV, maxValues.WIV),
-          normalize((entry2Data?.WOE || 0), minValues.WOE, maxValues.WOE),
-          normalize((entry2Data?.WAX || 0), minValues.WAX, maxValues.WAX),
-          normalize(entry2Data?.RB2 || 0, minValues.RB2, maxValues.RB2)
-        ],
-        fill: true,
-        backgroundColor: "rgba(255, 99, 132, 0.2)",
-        borderColor: "rgba(255, 99, 132, 1)",
-        pointBackgroundColor: "rgba(255, 99, 132, 1)"
-      }
-    ]
-  };
-
-  const options = {
-    scale: {
-      ticks: { beginAtZero: true },
-    },
-  };
-
-  return (
-    <div className="w-1/2">
-      <Radar data={data} options={options} />
-    </div>
-  );
-};
-
-const ComparisonTable = ({ entry1, entry2, data, firstColumn }) => {
-  const fields = [
-    "Runners", "Runs", "Winners", "Wins", "Win_Percent", "Stake_Winner",
-    "Stake_Win", "Group_Winner", "Group_Win", "WTR", "SWTR", "GWTR",
-    "Group1_Winners", "Group1_Win", "G1WTR", "WIV", "WOE", "WAX", "RB2"
+  const countryCodes = [
+    "MU", "US", "SA", "MX", "UY", "AU", "ZA", "CL", "NZ", "JP", "FI", "AR", "AE", "TR", "UK", "DK", "AT", "CZ",
+    "IN", "ES", "IRE", "BR", "IT", "FR", "SE", "CA", "KR", "DE", "PA", "HK", "PL", "PE", "SK", "BH", "BE",
+    "MA", "CH", "PR", "MO", "NO", "ZW", "HU", "SG", "UAE",
   ];
 
-  const entry1Data = data.find(item => item[firstColumn] === entry1);
-  const entry2Data = data.find(item => item[firstColumn] === entry2);
+  const filters = [
+    { label: "Runners", id: "runners", min: 1, max: 1949, value: [1, 1949] },
+    { label: "Runs", id: "runs", min: 1, max: 29976, value: [1, 29976] },
+    { label: "Winners", id: "winners", min: 0, max: 1223, value: 1223},
+    { label: "Wins", id: "wins", min: 0, max: 3513, value: 3513 },
+    { label: "Stakes Winners", id: "stakesWinners", min: 0, max: 239, value: 239 },
+    { label: "Group Winners", id: "groupWinners", min: 0, max: 166, value: 166 },
+    { label: "Group 1 Winners", id: "group1Winners", min: 0, max: 61, value: 61 },
+    { label: "WTR", id: "wtr", min: 0, max: 94.74, value: 95 },
+    { label: "SWTR", id: "swtr", min: 0, max: 9.84, value: 10 },
+    { label: "GWTR", id: "gwtr", min: 0, max: 9.80, value: 10 },
+    { label: "G1WTR", id: "g1wtr", min: 0, max: 9.38, value: 10 },
+    { label: "WIV", id: "wiv", min: 0, max: 110, value: 110 },
+    { label: "WOE", id: "woe", min: -186.57, max: 1203.3, value: 1205 },
+    { label: "WAX", id: "wax", min: -173.19, max: 784.34, value: 785 },
+  ];
 
-  return (
-    <div className="flex">
-      <RadarChart entry1Data={entry1Data} entry2Data={entry2Data} />
-      <Card className="w-1/2">
-        <CardHeader variant="gradient" color="gray" className="mb-4 p-4">
-          <Typography variant="h6" color="white">Profiles Comparison</Typography>
-        </CardHeader>
-        <CardBody className="overflow-x-auto">
-          <table className="w-full table-auto text-xs">
-            <thead>
-              <tr>
-                <th className="border-b border-blue-gray-50 py-2 px-4 text-left">Field</th>
-                <th className="border-b border-blue-gray-50 py-2 px-4 text-left">{entry1}</th>
-                <th className="border-b border-blue-gray-50 py-2 px-4 text-left">{entry2}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fields.map((field, index) => (
-                <tr key={index}>
-                  <td className="border-b border-blue-gray-50 py-2 px-4">{field}</td>
-                  <td className="border-b border-blue-gray-50 py-2 px-4">{entry1Data ? entry1Data[field] || "-" : "-"}</td>
-                  <td className="border-b border-blue-gray-50 py-2 px-4">{entry2Data ? entry2Data[field] || "-" : "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardBody>
-      </Card>
-    </div>
-  );
-};
+  const [filterValues, setFilterValues] = useState(filters.map((filter) => filter.value));
 
-export function OwnerProfiles() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedPeriod, setSelectedPeriod] = useState("original");
-  const [winPercentRange, setWinPercentRange] = useState([0, 100]);
-  const [rb2Range, setRb2Range] = useState([0, 100]);
-  const [selectedCountry, setSelectedCountry] = useState("");
-  const [selectedEntry1, setSelectedEntry1] = useState("");
-  const [selectedEntry2, setSelectedEntry2] = useState("");
-
-  const handlePeriodChange = (e) => {
-    setSelectedPeriod(e.target.value);
-    setCurrentPage(1);
-    setSelectedEntry1("");
-    setSelectedEntry2("");
+  const resetFilters = () => {
+    setFilterValues(filters.map((filter) => filter.value));
+    setSearchQuery("");
+    setSelectedCountry("");
+    setShowSuggestions(false);
+    fetchFilteredData();
   };
 
-  const handleEntry1Change = (e) => setSelectedEntry1(e.target.value);
-  const handleEntry2Change = (e) => setSelectedEntry2(e.target.value);
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+    params.append("page", currentPage);
+    params.append("limit", ROWS_PER_PAGE);
 
-  const handleWinPercentChange = (e) => {
-    setWinPercentRange([0, Number(e.target.value)]);
+    filters.forEach((filter, index) => {
+      if (Array.isArray(filterValues[index])) {
+        params.append(`${filter.id}Min`, filterValues[index][0]);
+        params.append(`${filter.id}Max`, filterValues[index][1]);
+      } else {
+        params.append(filter.id, filterValues[index]);
+      }
+    });
+
+    if (searchQuery) params.append("sire", searchQuery);
+    if (selectedCountry) params.append("country", selectedCountry);
+
+    return params.toString();
   };
 
-  const handleRb2Change = (e) => {
-    setRb2Range([0, Number(e.target.value)]);
+
+  const fetchFilteredData = async () => {
+    try {
+      const queryParams = buildQueryParams();
+      const response = await fetch(`http://localhost:5000/api/${selectedTable}?${queryParams}`);
+      const data = await response.json();
+      setTableData(data.data);
+      setTotalPages(data.totalPages);
+    } catch (error) {
+      console.error("Error fetching filtered data:", error);
+    }
   };
 
-  const handleCountryChange = (e) => {
-    setSelectedCountry(e.target.value);
-  };
-
-  const data = {
-    original: ownerReportTable,
-    lastThree: ownerReportTableThree,
-    lastOne: ownerReportTableOne
-  };
-
-  const title = "Owner Report Table";
-  const firstColumn = "owner";
-
-  const options = [...new Set(data[selectedPeriod].map(item => item[firstColumn]))];
-
-  const tableData = data[selectedPeriod].filter((row) => {
-    const winPercent = parseFloat(row.Win_Percent) || 0;
-    const rb2 = parseFloat(row.RB2) || 0;
-    return (
-      winPercent >= winPercentRange[0] &&
-      winPercent <= winPercentRange[1] &&
-      rb2 >= rb2Range[0] &&
-      rb2 <= rb2Range[1]
-    );
-  });
-
-  const totalPages = Math.ceil(tableData.length / ROWS_PER_PAGE);
+  useEffect(() => {
+    fetchFilteredData();
+  }, [currentPage, filterValues, selectedTable, searchQuery, selectedCountry]);
 
   return (
     <div className="mt-12 mb-8 flex flex-col gap-12">
-      <div className="p-4 border rounded-lg bg-black text-white mb-4">
-        <Typography variant="h5" className="mb-2 font-bold">Data Selection</Typography>
-        <div className="flex flex-wrap space-x-4">
-          <label className="text-white">
-            <input
-              type="radio"
-              value="original"
-              checked={selectedPeriod === "original"}
-              onChange={handlePeriodChange}
-            />
-            <span className="ml-2">Original</span>
-          </label>
-          <label className="text-white">
-            <input
-              type="radio"
-              value="lastThree"
-              checked={selectedPeriod === "lastThree"}
-              onChange={handlePeriodChange}
-            />
-            <span className="ml-2">Last 03 Years</span>
-          </label>
-          <label className="text-white">
-            <input
-              type="radio"
-              value="lastOne"
-              checked={selectedPeriod === "lastOne"}
-              onChange={handlePeriodChange}
-            />
-            <span className="ml-2">Last 01 Year</span>
-          </label>
-        </div>
-
-        <div className="flex flex-wrap space-x-4 mt-4">
-          <div className="flex items-center">
-            <label htmlFor="country-filter" className="mr-2">Country:</label>
-            <select
-              id="country-filter"
-              value={selectedCountry}
-              onChange={handleCountryChange}
-              className="p-2 rounded-md text-black"
-            >
-              <option value="">Select Country</option>
-              <option value="UK">UK</option>
-              <option value="USA">USA</option>
-              <option value="IRE">IRE</option>
-              <option value="FR">FR</option>
-            </select>
-          </div>
-
-          <div className="flex items-center">
-            <label htmlFor="win-percent" className="mr-2">Win Percent:</label>
-            <input
-              id="win-percent"
-              type="range"
-              min="0"
-              max="100"
-              value={winPercentRange[1]}
-              onChange={handleWinPercentChange}
-              className="slider"
-            />
-            <span className="ml-2">{winPercentRange[1]}</span>
-          </div>
-
-          <div className="flex items-center">
-            <label htmlFor="rb2" className="mr-2">RB2:</label>
-            <input
-              id="rb2"
-              type="range"
-              min="0"
-              max="100"
-              value={rb2Range[1]}
-              onChange={handleRb2Change}
-              className="slider"
-            />
-            <span className="ml-2">{rb2Range[1]}</span>
-          </div>
-        </div>
+      <div className="flex items-center mb-2">
+        <label htmlFor="table-select" className="mr-2">Table:</label>
+        <select
+          id="table-select"
+          value={selectedTable}
+          onChange={(e) => setSelectedTable(e.target.value)}
+          className="p-2 rounded-md border border-gray-300"
+        >
+          <option value="owner_profile">Overall</option>
+          <option value="owner_profile_three">Last 03 Years</option>
+          <option value="owner_profile_one">Last 01 Year</option>
+        </select>
       </div>
 
+      {/* Filters */}
+      <div className="cursor-pointer text-center border-t border-gray-300 py-2" onClick={() => setShowFilters(!showFilters)}>
+        <span>{showFilters ? "▲ Hide Filters" : "▼ Show Filters"}</span>
+      </div>
+      {showFilters && (
+        <div className="p-4 border rounded-lg bg-white text-black border-black">
+          <Typography variant="h5" className="mb-4 font-bold">Filters</Typography>
+          <div className="grid grid-cols-2 gap-x-20 gap-y-3">
+            {filters.map((filter, index) => (
+              <div key={filter.id} className="flex items-center gap-4">
+                <label htmlFor={filter.id} className="text-sm w-25">{filter.label}:</label>
+                <input
+                  type="range"
+                  id={filter.id}
+                  min={filter.min}
+                  max={filter.max}
+                  value={Array.isArray(filterValues[index]) ? filterValues[index][1] : filterValues[index]}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setFilterValues((prev) => {
+                      const updated = [...prev];
+                      updated[index] = Array.isArray(updated[index]) ? [filter.min, value] : value;
+                      return updated;
+                    });
+                  }}
+                  className="slider h-1"
+                  style={{ flexGrow: 1 }}
+                />
+                <span className="text-sm">{Array.isArray(filterValues[index]) ? filterValues[index][1] : filterValues[index]}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-4">
+              <label htmlFor="country-select" className="text-sm w-25">Country:</label>
+              <select
+                id="country-select"
+                value={selectedCountry}
+                onChange={(e) => setSelectedCountry(e.target.value)}
+                className="p-2 rounded-md border border-gray-300"
+              >
+                <option value="">All</option>
+                {countryCodes.map((code) => (
+                  <option key={code} value={code}>{code}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Box */}
+      <div className="relative mt-4">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search Owner..."
+          className="p-2 border rounded-md w-full max-w-xs"
+        />
+      </div>
+
+      {/* Table Section */}
       <ReportTable
         tableData={tableData}
-        title={title}
+        title="Owner Report Table"
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         totalPages={totalPages}
-        firstColumn={firstColumn}
       />
-
-      <div className="p-4 border rounded-lg bg-gray-100">
-        <Typography variant="h5" className="mb-2">Profiles Comparison Tool</Typography>
-        <div className="flex space-x-4">
-          <div>
-            <label htmlFor="entry1" className="block mb-1">Select Entry 1</label>
-            <select
-              id="entry1"
-              value={selectedEntry1}
-              onChange={handleEntry1Change}
-              className="p-2 border rounded w-full"
-            >
-              <option value="">Select an option</option>
-              {options.map((option, index) => (
-                <option key={index} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="entry2" className="block mb-1">Select Entry 2</label>
-            <select
-              id="entry2"
-              value={selectedEntry2}
-              onChange={handleEntry2Change}
-              className="p-2 border rounded w-full"
-            >
-              <option value="">Select an option</option>
-              {options.map((option, index) => (
-                <option key={index} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Render the Comparison Table if both entries are selected */}
-      {selectedEntry1 && selectedEntry2 && (
-        <ComparisonTable
-          entry1={selectedEntry1}
-          entry2={selectedEntry2}
-          data={data[selectedPeriod]}
-          firstColumn={firstColumn}
-        />
-      )}
     </div>
   );
 }

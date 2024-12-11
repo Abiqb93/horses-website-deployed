@@ -7,3 +7,7 @@ export * from "@/pages/dashboard/ownerprofile";
 export * from "@/pages/dashboard/trainerprofile";
 export * from "@/pages/dashboard/jockeyprofile";
 export * from "@/pages/dashboard/sireradar";
+export * from "@/pages/dashboard/damradar";
+export * from "@/pages/dashboard/ownerradar";
+export * from "@/pages/dashboard/trainerradar";
+export * from "@/pages/dashboard/jockeyradar";

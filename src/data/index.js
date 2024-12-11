@@ -21,3 +21,5 @@ export * from "@/data/report-trainer-data-table-one";
 export * from "@/data/report-jockey-data-table";
 export * from "@/data/report-jockey-data-table-three";
 export * from "@/data/report-jockey-data-table-one";
+export * from "@/data/unique-sires";
+export * from "@/data/unique-dams";

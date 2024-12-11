@@ -1,183 +1,294 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, Typography } from "@material-tailwind/react";
-import { Radar } from 'react-chartjs-2';
-import { Chart, registerables } from 'chart.js';
+import RadarChart from "react-d3-radar";
 
-Chart.register(...registerables);
+const ROWS_PER_PAGE = 3;
 
-import { sireReportTable, sireReportTableThree, sireReportTableOne } from "@/data";
-
-const normalize = (value, min, max) => {
-  if (max - min === 0) return 0;
-  return (value - min) / (max - min);
+const fieldLimits = {
+  WTR: { min: 0, max: 100 },
+  SWTR: { min: 0, max: 100 },
+  GWTR: { min: 0, max: 100 },
+  G1WTR: { min: 0, max: 100 },
+  WIV: { min: 0, max: 110.77 },
+  WOE: { min: -186.57, max: 1203.3 },
+  WAX: { min: -173.19, max: 784.34 },
+  RB2: { min: 0, max: 240000 },
 };
 
-const RadarChart = ({ entry1Data, entry2Data }) => {
-  const minValues = { WTR: 0, SWTR: 0, GWTR: 0, G1WTR: 0, WIV: 0, WOE: 0, WAX: 0, RB2: 0 };
-  const maxValues = { WTR: 100, SWTR: 100, GWTR: 100, G1WTR: 1, WIV: 100, WOE: 1, WAX: 1, RB2: 100 };
+const sanitizeData = (key, value) => {
+  if (typeof value === "string" && value.includes("%")) {
+    return parseFloat(value.replace("%", ""));
+  }
+  return value !== null && value !== undefined ? parseFloat(value) : 0;
+};
 
-  const data = {
-    labels: ["WTR", "SWTR", "GWTR", "G1WTR", "WIV", "WOE", "WAX", "RB2"],
-    datasets: [
+const normalize = (value, field) => {
+  const fieldLimit = fieldLimits[field];
+  const epsilon = 1e-5;
+
+  if (!fieldLimit) {
+    console.warn(`Field "${field}" does not have defined limits.`);
+    return 0.5;
+  }
+
+  let { min, max } = fieldLimit;
+
+  if ((field === "WOE" || field === "WAX") && value < 0) {
+    const adjustment = Math.abs(min) + 1;
+    value += adjustment;
+    min += adjustment;
+    max += adjustment;
+  }
+
+  if (value === 0) {
+    value = epsilon;
+  }
+
+  const transformedValue = Math.log1p(Math.abs(value)) * Math.sign(value);
+  const transformedMin = Math.log1p(Math.abs(min)) * Math.sign(min);
+  const transformedMax = Math.log1p(Math.abs(max)) * Math.sign(max);
+
+  if (transformedMax === transformedMin) {
+    console.error(`Invalid range for field "${field}".`);
+    return 0.5;
+  }
+
+  return 0.5 + 0.5 * ((transformedValue - transformedMin) / (transformedMax - transformedMin));
+};
+
+const D3RadarChart = ({ entry1Data, entry2Data }) => {
+  const fields = Object.keys(fieldLimits);
+
+  const entry1Values = fields.reduce((acc, field) => {
+    const sanitizedValue = sanitizeData(field, entry1Data?.[field]);
+    acc[field] = normalize(sanitizedValue, field);
+    return acc;
+  }, {});
+
+  const entry2Values = fields.reduce((acc, field) => {
+    const sanitizedValue = sanitizeData(field, entry2Data?.[field]);
+    acc[field] = normalize(sanitizedValue, field);
+    return acc;
+  }, {});
+
+  const chartData = {
+    variables: fields.map((field) => ({ key: field, label: field })),
+    sets: [
       {
-        label: entry1Data ? entry1Data.sire : "Entry 1",
-        data: [
-          normalize(entry1Data?.WTR || 0, minValues.WTR, maxValues.WTR),
-          normalize(entry1Data?.SWTR || 0, minValues.SWTR, maxValues.SWTR),
-          normalize(entry1Data?.GWTR || 0, minValues.GWTR, maxValues.GWTR),
-          normalize(entry1Data?.G1WTR || 0, minValues.G1WTR, maxValues.G1WTR),
-          normalize(entry1Data?.WIV || 0, minValues.WIV, maxValues.WIV),
-          normalize(entry1Data?.WOE || 0, minValues.WOE, maxValues.WOE),
-          normalize(entry1Data?.WAX || 0, minValues.WAX, maxValues.WAX),
-          normalize(entry1Data?.RB2 || 0, minValues.RB2, maxValues.RB2)
-        ],
-        fill: true,
-        backgroundColor: "rgba(54, 162, 235, 0.2)",
-        borderColor: "rgba(54, 162, 235, 1)",
-        pointBackgroundColor: "rgba(54, 162, 235, 1)"
+        key: "entry1",
+        label: entry1Data?.Sire || "Entry 1",
+        values: entry1Values,
       },
       {
-        label: entry2Data ? entry2Data.sire : "Entry 2",
-        data: [
-          normalize(entry2Data?.WTR || 0, minValues.WTR, maxValues.WTR),
-          normalize(entry2Data?.SWTR || 0, minValues.SWTR, maxValues.SWTR),
-          normalize(entry2Data?.GWTR || 0, minValues.GWTR, maxValues.GWTR),
-          normalize(entry2Data?.G1WTR || 0, minValues.G1WTR, maxValues.G1WTR),
-          normalize(entry2Data?.WIV || 0, minValues.WIV, maxValues.WIV),
-          normalize(entry2Data?.WOE || 0, minValues.WOE, maxValues.WOE),
-          normalize(entry2Data?.WAX || 0, minValues.WAX, maxValues.WAX),
-          normalize(entry2Data?.RB2 || 0, minValues.RB2, maxValues.RB2)
-        ],
-        fill: true,
-        backgroundColor: "rgba(255, 99, 132, 0.2)",
-        borderColor: "rgba(255, 99, 132, 1)",
-        pointBackgroundColor: "rgba(255, 99, 132, 1)"
-      }
-    ]
-  };
-
-  const options = {
-    scale: {
-      ticks: { beginAtZero: true },
-    },
+        key: "entry2",
+        label: entry2Data?.Sire || "Entry 2",
+        values: entry2Values,
+      },
+    ],
   };
 
   return (
-    <div className="w-1/2">
-      <Radar data={data} options={options} />
-    </div>
-  );
-};
-
-const ComparisonTable = ({ entry1, entry2, data, firstColumn }) => {
-  const fields = [
-    "Runners", "Runs", "Winners", "Wins", "Win_Percent", "Stake_Winner",
-    "Stake_Win", "Group_Winner", "Group_Win", "WTR", "SWTR", "GWTR",
-    "Group1_Winners", "Group1_Win", "G1WTR", "WIV", "WOE", "WAX", "RB2"
-  ];
-
-  const entry1Data = data.find(item => item[firstColumn] === entry1);
-  const entry2Data = data.find(item => item[firstColumn] === entry2);
-
-  return (
-    <div className="flex">
-      <RadarChart entry1Data={entry1Data} entry2Data={entry2Data} />
-      <Card className="w-1/2">
-        <CardHeader variant="gradient" color="gray" className="mb-4 p-4">
-          <Typography variant="h6" color="white">Profiles Comparison</Typography>
-        </CardHeader>
-        <CardBody className="overflow-x-auto">
-          <table className="w-full table-auto text-xs">
-            <thead>
-              <tr>
-                <th className="border-b border-blue-gray-50 py-2 px-4 text-left">Field</th>
-                <th className="border-b border-blue-gray-50 py-2 px-4 text-left">{entry1}</th>
-                <th className="border-b border-blue-gray-50 py-2 px-4 text-left">{entry2}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fields.map((field, index) => (
-                <tr key={index}>
-                  <td className="border-b border-blue-gray-50 py-2 px-4">{field}</td>
-                  <td className="border-b border-blue-gray-50 py-2 px-4">{entry1Data ? entry1Data[field] || "-" : "-"}</td>
-                  <td className="border-b border-blue-gray-50 py-2 px-4">{entry2Data ? entry2Data[field] || "-" : "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardBody>
-      </Card>
-    </div>
-  );
-};
-
-export function DamRadar() {
-  const [selectedPeriod, setSelectedPeriod] = useState("original");
-  const [selectedEntry1, setSelectedEntry1] = useState("");
-  const [selectedEntry2, setSelectedEntry2] = useState("");
-
-  const handlePeriodChange = (e) => {
-    setSelectedPeriod(e.target.value);
-    setSelectedEntry1("");
-    setSelectedEntry2("");
-  };
-
-  const handleEntry1Change = (e) => setSelectedEntry1(e.target.value);
-  const handleEntry2Change = (e) => setSelectedEntry2(e.target.value);
-
-  const data = {
-    original: sireReportTable,
-    lastThree: sireReportTableThree,
-    lastOne: sireReportTableOne
-  };
-
-  const firstColumn = "sire";
-  const options = [...new Set(data[selectedPeriod].map(item => item[firstColumn]))];
-
-  return (
-    <div className="mt-12 mb-8 flex flex-col gap-12">
-      <div className="p-4 border rounded-lg bg-gray-100">
-        <Typography variant="h5" className="mb-2">Profiles Comparison Tool</Typography>
-        <div className="flex space-x-4">
-          <div>
-            <label htmlFor="entry1" className="block mb-1">Select Entry 1</label>
-            <select
-              id="entry1"
-              value={selectedEntry1}
-              onChange={handleEntry1Change}
-              className="p-2 border rounded w-full"
-            >
-              <option value="">Select an option</option>
-              {options.map((option, index) => (
-                <option key={index} value={option}>{option}</option>
-              ))}
-            </select>
+    <div className="radar-chart-container">
+      <RadarChart
+        width={400}
+        height={400}
+        padding={70}
+        domainMax={1}
+        data={chartData}
+      />
+      {/* Compact Legend */}
+      <div className="flex justify-center mt-2">
+        <div className="legend text-sm">
+          <div className="flex items-center">
+            <div className="w-3 h-3 mr-2 bg-blue-500"></div>
+            <span>{entry1Data?.Sire || "Entry 1"}</span>
           </div>
-          <div>
-            <label htmlFor="entry2" className="block mb-1">Select Entry 2</label>
-            <select
-              id="entry2"
-              value={selectedEntry2}
-              onChange={handleEntry2Change}
-              className="p-2 border rounded w-full"
-            >
-              <option value="">Select an option</option>
-              {options.map((option, index) => (
-                <option key={index} value={option}>{option}</option>
-              ))}
-            </select>
+          <div className="flex items-center mt-1">
+            <div className="w-3 h-3 mr-2 bg-red-500"></div>
+            <span>{entry2Data?.Sire || "Entry 2"}</span>
           </div>
         </div>
       </div>
+    </div>
+  );
+};
 
-      {/* Render the Comparison Table if both entries are selected */}
-      {selectedEntry1 && selectedEntry2 && (
-        <ComparisonTable
-          entry1={selectedEntry1}
-          entry2={selectedEntry2}
-          data={data[selectedPeriod]}
-          firstColumn={firstColumn}
+
+const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages, onSelectRow }) => {
+  const startPage = Math.max(1, currentPage - 5);
+  const endPage = Math.min(startPage + 9, totalPages);
+
+  return (
+    <Card className="bg-white text-black">
+      <CardHeader className="mb-8 p-6">
+        <Typography variant="h6" className="text-black">{title}</Typography>
+      </CardHeader>
+      <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
+        <table className="w-full min-w-[640px] table-auto">
+          <thead>
+            <tr>
+              {["Dam", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins"].map((el) => (
+                <th key={el} className="border-b border-gray-300 py-3 px-5 text-left">
+                  <Typography variant="small" className="text-[11px] font-bold uppercase text-blue-gray-600">
+                    {el}
+                  </Typography>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tableData.map((item, index) => (
+              <tr key={index} onClick={() => onSelectRow(item)} className="cursor-pointer hover:bg-gray-100">
+                {["Sire", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins"].map((key, i) => (
+                  <td key={i} className={`py-3 px-5 border-b border-gray-300`}>
+                    <Typography className="text-xs font-semibold text-blue-gray-600">
+                      {item[key] !== null && item[key] !== undefined ? item[key] : "-"}
+                    </Typography>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="flex justify-center items-center mt-4">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="px-2 py-1 mx-1 text-sm border bg-gray-200 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          {Array.from({ length: endPage - startPage + 1 }, (_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentPage(startPage + index)}
+              className={`px-2 py-1 mx-1 text-sm border ${
+                currentPage === startPage + index ? "bg-blue-500 text-white" : "bg-gray-200"
+              }`}
+            >
+              {startPage + index}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="px-2 py-1 mx-1 text-sm border bg-gray-200 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </CardBody>
+    </Card>
+  );
+};
+
+const ComparisonTable = ({ entry1, entry2 }) => (
+  <Card className="bg-white text-black w-1/2">
+    <CardBody>
+      <Typography variant="h6" className="mb-4">Comparison Table</Typography>
+      <table className="w-full table-auto text-xs border-collapse border border-gray-200">
+        <thead>
+          <tr>
+            <th className="border border-gray-300 py-2 px-3 text-left">Field</th>
+            <th className="border border-gray-300 py-2 px-3 text-left">{entry1?.Sire || "Entry 1"}</th>
+            <th className="border border-gray-300 py-2 px-3 text-left">{entry2?.Sire || "Entry 2"}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.keys(fieldLimits).map((field, index) => (
+            <tr key={field} className={index % 2 === 0 ? "bg-gray-100" : ""}>
+              <td className="border border-gray-300 py-2 px-3">{field}</td>
+              <td className="border border-gray-300 py-2 px-3">{sanitizeData(field, entry1?.[field])}</td>
+              <td className="border border-gray-300 py-2 px-3">{sanitizeData(field, entry2?.[field])}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </CardBody>
+  </Card>
+);
+
+export function DamRadar() {
+  const [tableData, setTableData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedEntry1, setSelectedEntry1] = useState(null);
+  const [selectedEntry2, setSelectedEntry2] = useState(null);
+  const [currentSelection, setCurrentSelection] = useState("entry1");
+
+  const fetchFilteredData = async () => {
+    try {
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: ROWS_PER_PAGE,
+        sire: searchQuery || "",
+      });
+      const response = await fetch(`http://localhost:5000/api/dam_profile?${params.toString()}`);
+      const data = await response.json();
+      setTableData(data.data);
+      setTotalPages(data.totalPages);
+    } catch (error) {
+      console.error("Error fetching filtered data:", error);
+    }
+  };
+
+  const handleSelectRow = (row) => {
+    if (currentSelection === "entry1") {
+      setSelectedEntry1(row);
+    } else {
+      setSelectedEntry2(row);
+    }
+  };
+
+  useEffect(() => {
+    fetchFilteredData();
+  }, [currentPage, searchQuery]);
+
+  return (
+    <div className="mt-12 mb-8 flex flex-col gap-12">
+      <div className="relative mt-4">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search Dam..."
+          className="p-2 border rounded-md w-full max-w-xs"
         />
+      </div>
+      <div className="flex items-center gap-4">
+        <label>
+          <input
+            type="radio"
+            value="entry1"
+            checked={currentSelection === "entry1"}
+            onChange={() => setCurrentSelection("entry1")}
+          />
+          Select Dam 1
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="entry2"
+            checked={currentSelection === "entry2"}
+            onChange={() => setCurrentSelection("entry2")}
+          />
+          Select Dam 2
+        </label>
+      </div>
+      <ReportTable
+        tableData={tableData}
+        title="Search and Click"
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        totalPages={totalPages}
+        onSelectRow={handleSelectRow}
+      />
+      {selectedEntry1 && selectedEntry2 && (
+        <div className="flex justify-between">
+          <D3RadarChart entry1Data={selectedEntry1} entry2Data={selectedEntry2} />
+          <ComparisonTable entry1={selectedEntry1} entry2={selectedEntry2} />
+        </div>
       )}
     </div>
   );

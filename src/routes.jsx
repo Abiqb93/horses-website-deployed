@@ -10,12 +10,16 @@ import {
   Home,
   Profile,
   Tables,
-  Notifications,
   DamProfiles,
   JockeyProfiles,
   OwnerProfiles,
   TrainerProfiles,
   SireRadar,
+  DamRadar,
+  OwnerRadar,
+  JockeyRadar,
+  TrainerRadar,
+
 } from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
 
@@ -58,6 +62,11 @@ export const routes = [
             path: "/damprofile",
             element: <DamProfiles />,
           },
+          {
+            name: "Dam Radar",
+            path: "/damradar",
+            element: <DamRadar />,
+          },
         ],
       },
       {
@@ -69,6 +78,12 @@ export const routes = [
             path: "/ownerprofile",
             element: <OwnerProfiles />,
           },
+          {
+            name: "Owner Radar",
+            path: "/ownerradar",
+            element: <OwnerRadar />,
+          },
+
         ],
       },
       {
@@ -79,6 +94,11 @@ export const routes = [
             name: "Trainer Profile",
             path: "/trainerprofile",
             element: <TrainerProfiles />,
+          },
+          {
+            name: "Trainer Radar",
+            path: "/trainerradar",
+            element: <TrainerRadar />,
           },
         ],
       },
@@ -91,6 +111,12 @@ export const routes = [
             path: "/jockeyprofile",
             element: <JockeyProfiles />,
           },
+          {
+            name: "Jockey Radar",
+            path: "/jockeyradar",
+            element: <JockeyRadar />,
+          },
+
         ],
       },
       {
@@ -99,12 +125,7 @@ export const routes = [
         path: "/tables",
         element: <Tables />,
       },
-      {
-        icon: <InformationCircleIcon {...icon} />,
-        name: "Filtering and Download",
-        path: "/notifications",
-        element: <Notifications />,
-      },
+
     ],
   },
   {
