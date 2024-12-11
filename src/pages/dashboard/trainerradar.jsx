@@ -59,56 +59,54 @@ const normalize = (value, field) => {
 const D3RadarChart = ({ entry1Data, entry2Data }) => {
   const fields = Object.keys(fieldLimits);
 
-  const entry1Values = fields.reduce((acc, field) => {
-    const sanitizedValue = sanitizeData(field, entry1Data?.[field]);
-    acc[field] = normalize(sanitizedValue, field);
-    return acc;
-  }, {});
+  // Prepare data for the radar chart
+  const chartData = fields.map((field) => {
+    const entry1Value = sanitizeData(field, entry1Data?.[field] || 0);
+    const entry2Value = sanitizeData(field, entry2Data?.[field] || 0);
 
-  const entry2Values = fields.reduce((acc, field) => {
-    const sanitizedValue = sanitizeData(field, entry2Data?.[field]);
-    acc[field] = normalize(sanitizedValue, field);
-    return acc;
-  }, {});
+    return {
+      field,
+      [entry1Data?.Sire || "Entry 1"]: normalize(entry1Value, field),
+      [entry2Data?.Sire || "Entry 2"]: normalize(entry2Value, field),
+    };
+  });
 
-  const chartData = {
-    variables: fields.map((field) => ({ key: field, label: field })),
-    sets: [
-      {
-        key: "entry1",
-        label: entry1Data?.Sire || "Entry 1",
-        values: entry1Values,
-      },
-      {
-        key: "entry2",
-        label: entry2Data?.Sire || "Entry 2",
-        values: entry2Values,
-      },
-    ],
-  };
+  // Log the prepared data
+  console.log("Radar Chart Data:", chartData);
+
+  // Check if chartData is empty or improperly formatted
+  if (chartData.length === 0 || !chartData[0].field) {
+    return <p>No data available for radar chart.</p>;
+  }
 
   return (
-    <div className="radar-chart-container">
-      <RadarChart
-        width={400}
-        height={400}
-        padding={70}
-        domainMax={1}
+    <div className="radar-chart-container" style={{ height: "400px", width: "100%" }}>
+      <ResponsiveRadar
         data={chartData}
+        keys={[entry1Data?.Sire || "Entry 1", entry2Data?.Sire || "Entry 2"]}
+        indexBy="field"
+        maxValue={1}
+        margin={{ top: 70, right: 80, bottom: 40, left: 80 }}
+        gridShape="circular"
+        gridLevels={5}
+        colors={{ scheme: "category10" }}
+        borderWidth={2}
+        dotSize={10}
+        dotBorderWidth={2}
+        dotBorderColor={{ from: "color" }}
+        legends={[
+          {
+            anchor: "top-left",
+            direction: "column",
+            translateX: -50,
+            itemWidth: 80,
+            itemHeight: 20,
+            itemTextColor: "#999",
+            symbolSize: 12,
+            symbolShape: "circle",
+          },
+        ]}
       />
-      {/* Compact Legend */}
-      <div className="flex justify-center mt-2">
-        <div className="legend text-sm">
-          <div className="flex items-center">
-            <div className="w-3 h-3 mr-2 bg-blue-500"></div>
-            <span>{entry1Data?.Sire || "Entry 1"}</span>
-          </div>
-          <div className="flex items-center mt-1">
-            <div className="w-3 h-3 mr-2 bg-red-500"></div>
-            <span>{entry2Data?.Sire || "Entry 2"}</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

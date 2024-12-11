@@ -61,8 +61,8 @@ const D3RadarChart = ({ entry1Data, entry2Data }) => {
 
   // Prepare data for the radar chart
   const chartData = fields.map((field) => {
-    const entry1Value = sanitizeData(field, entry1Data?.[field]);
-    const entry2Value = sanitizeData(field, entry2Data?.[field]);
+    const entry1Value = sanitizeData(field, entry1Data?.[field] || 0);
+    const entry2Value = sanitizeData(field, entry2Data?.[field] || 0);
 
     return {
       field,
@@ -71,8 +71,16 @@ const D3RadarChart = ({ entry1Data, entry2Data }) => {
     };
   });
 
+  // Log the prepared data
+  console.log("Radar Chart Data:", chartData);
+
+  // Check if chartData is empty or improperly formatted
+  if (chartData.length === 0 || !chartData[0].field) {
+    return <p>No data available for radar chart.</p>;
+  }
+
   return (
-    <div className="radar-chart-container" style={{ height: "400px" }}>
+    <div className="radar-chart-container" style={{ height: "400px", width: "100%" }}>
       <ResponsiveRadar
         data={chartData}
         keys={[entry1Data?.Sire || "Entry 1", entry2Data?.Sire || "Entry 2"]}
