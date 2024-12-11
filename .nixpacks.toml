@@ -1,2 +1,8 @@
 [phases.install]
-command = "npm install --force"
+command = "npm install --legacy-peer-deps"
+
+[phases.build]
+command = "npm run build"
+
+[phases.start]
+command = "npx serve -s build"
