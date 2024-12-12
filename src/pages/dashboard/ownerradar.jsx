@@ -222,7 +222,7 @@ export function OwnerRadar() {
         limit: ROWS_PER_PAGE,
         sire: searchQuery || "",
       });
-      const response = await fetch(`http://localhost:5000/api/owner_profile?${params.toString()}`);
+      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/owner_profile?${params.toString()}`);
       const data = await response.json();
       setTableData(data.data);
       setTotalPages(data.totalPages);

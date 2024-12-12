@@ -98,7 +98,7 @@ export function Tables() {
 
   const fetchRacenetsData = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/racenets?page=${currentPage}&limit=${ROWS_PER_PAGE}`);
+      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/racenets?page=${currentPage}&limit=${ROWS_PER_PAGE}`);
       const data = await response.json();
       setTableData(data.data);
       setTotalPages(data.totalPages);

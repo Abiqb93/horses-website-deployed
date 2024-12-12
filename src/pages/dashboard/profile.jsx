@@ -162,7 +162,7 @@ export function Profile() {
   const fetchFilteredData = async () => {
     try {
       const queryParams = buildQueryParams();
-      const response = await fetch(`http://localhost:5000/api/${selectedTable}?${queryParams}`);
+      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
       const data = await response.json();
       setTableData(data.data);
       setTotalPages(data.totalPages);
@@ -170,6 +170,7 @@ export function Profile() {
       console.error("Error fetching filtered data:", error);
     }
   };
+
 
   useEffect(() => {
     fetchFilteredData();
