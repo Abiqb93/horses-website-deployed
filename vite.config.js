@@ -1,5 +1,5 @@
-// import { defineConfig } from "vite";
-// import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 // export default defineConfig({
 //   plugins: [react()],
@@ -10,14 +10,20 @@
 // });
 
 
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: [{ find: "@", replacement: "/src" }],
   },
-  // Remove or update the base path for Railway deployment
-  base: '/', // Use '/' or remove entirely for Railway
+  base: "/", // Ensure the root path is set
+  server: {
+    port: 8080, // Local development port
+    proxy: {
+      '/api': {
+        target: 'https://horseracesbackend-production.up.railway.app/',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 });
