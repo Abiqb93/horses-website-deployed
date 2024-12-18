@@ -19,6 +19,7 @@ import {
   OwnerRadar,
   JockeyRadar,
   TrainerRadar,
+  Races,
 
 } from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
@@ -119,12 +120,20 @@ export const routes = [
 
         ],
       },
+
       {
         icon: <TableCellsIcon {...icon} />,
         name: "Tables",
         path: "/tables",
         element: <Tables />,
       },
+      {
+        icon: <TableCellsIcon {...icon} />,
+        name: "Races",
+        path: "/races",
+        element: <Races />,
+      },
+
 
     ],
   },

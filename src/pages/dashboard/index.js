@@ -11,3 +11,5 @@ export * from "@/pages/dashboard/damradar";
 export * from "@/pages/dashboard/ownerradar";
 export * from "@/pages/dashboard/trainerradar";
 export * from "@/pages/dashboard/jockeyradar";
+export * from "@/pages/dashboard/races";
+export * from "@/pages/dashboard/horseprofile";
