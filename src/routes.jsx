@@ -20,6 +20,8 @@ import {
   JockeyRadar,
   TrainerRadar,
   Races,
+  HorseProfiles,
+  HorseRadar,
 
 } from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
@@ -120,6 +122,24 @@ export const routes = [
 
         ],
       },
+
+      {
+        icon: <UserCircleIcon {...icon} />,
+        name: "Horse",
+        children: [
+          {
+            name: "Horse Profile",
+            path: "/horseprofile",
+            element: <HorseProfiles />,
+          },
+          {
+            name: "Horse Radar",
+            path: "/horseradar",
+            element: <HorseRadar />,
+          },
+        ],
+      },
+
 
       {
         icon: <TableCellsIcon {...icon} />,
