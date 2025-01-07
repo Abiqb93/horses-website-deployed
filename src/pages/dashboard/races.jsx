@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Card, Typography, Input } from "@material-tailwind/react";
+import { Card, Typography, Input, Select, Option } from "@material-tailwind/react";
 
 // RaceTile Component
 const RaceTile = ({ race, onClick }) => {
   return (
     <Card
       className="p-4 m-2 shadow-md cursor-pointer hover:shadow-lg"
-      onClick={() => onClick(race.raceTitle)}
+      onClick={() => onClick(race)}
     >
       <Typography variant="h6" className="text-blue-gray-700 font-bold">
         {race.raceTitle}
@@ -102,11 +102,16 @@ const Logs = ({ logs }) => {
 
 // Races Component
 export function Races() {
-  const [meetingDate, setMeetingDate] = useState(""); // Selected date
-  const [racesData, setRacesData] = useState([]); // All races data
+  const [meetingDate, setMeetingDate] = useState("");
+  const [racesData, setRacesData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedRaceRecords, setSelectedRaceRecords] = useState([]); // Records for the selected raceTitle
-  const [logs, setLogs] = useState([]); // Logs of clicked tiles
+  const [filteredData, setFilteredData] = useState([]);
+  const [countryOptions, setCountryOptions] = useState([]);
+  const [courseOptions, setCourseOptions] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState("");
+  const [selectedRaceRecords, setSelectedRaceRecords] = useState([]);
+  const [logs, setLogs] = useState([]);
 
   // Fetch races data for the selected date
   const fetchRacesData = async () => {
@@ -120,36 +125,35 @@ export function Races() {
         `https://horseracesbackend-production.up.railway.app/api/api_races?${queryParams}`
       );
       const data = await response.json();
+      const races = Object.values(
+        data.data.reduce((acc, record) => {
+          if (!acc[record.raceTitle]) {
+            acc[record.raceTitle] = {
+              raceTitle: record.raceTitle,
+              countryCode: record.countryCode,
+              courseName: record.courseName,
+              raceSurfaceName: record.raceSurfaceName,
+              numberOfRunners: record.numberOfRunners,
+              prizeFund: record.prizeFund,
+              topHorses: [],
+              records: [],
+            };
+          }
 
-      // Group races by raceTitle
-      const races = data.data.reduce((acc, record) => {
-        if (!acc[record.raceTitle]) {
-          acc[record.raceTitle] = {
-            raceTitle: record.raceTitle,
-            countryCode: record.countryCode,
-            raceSurfaceName: record.raceSurfaceName,
-            numberOfRunners: record.numberOfRunners,
-            prizeFund: record.prizeFund,
-            topHorses: [],
-            records: [], // Store all records for this raceTitle
-          };
-        }
+          // Add top 3 horses by positionOfficial
+          if (record.positionOfficial && record.positionOfficial <= 3) {
+            acc[record.raceTitle].topHorses.push({
+              horseName: record.horseName,
+              positionOfficial: record.positionOfficial,
+            });
+          }
+          acc[record.raceTitle].records.push(record);
+          return acc;
+        }, {})
+      );
 
-        // Add top 3 horses by positionOfficial
-        if (record.positionOfficial && record.positionOfficial <= 3) {
-          acc[record.raceTitle].topHorses.push({
-            horseName: record.horseName,
-            positionOfficial: record.positionOfficial,
-          });
-        }
-
-        // Add the record to the full records list
-        acc[record.raceTitle].records.push(record);
-
-        return acc;
-      }, {});
-
-      setRacesData(Object.values(races));
+      setRacesData(races);
+      setCountryOptions([...new Set(races.map((race) => race.countryCode))]);
     } catch (error) {
       console.error("Error fetching races data:", error);
     } finally {
@@ -163,31 +167,38 @@ export function Races() {
     }
   }, [meetingDate]);
 
-  // Handle tile click
-  const handleTileClick = (raceTitle) => {
-    const race = racesData.find((race) => race.raceTitle === raceTitle);
-    setSelectedRaceRecords(race.records);
+  useEffect(() => {
+    if (selectedCountry) {
+      const courses = racesData
+        .filter((race) => race.countryCode === selectedCountry)
+        .map((race) => race.courseName);
+      setCourseOptions([...new Set(courses)]);
+      setSelectedCourse("");
+    }
+  }, [selectedCountry]);
 
-    // Add to logs
+  useEffect(() => {
+    if (selectedCountry && selectedCourse) {
+      setFilteredData(
+        racesData.filter(
+          (race) =>
+            race.countryCode === selectedCountry &&
+            race.courseName === selectedCourse
+        )
+      );
+    }
+  }, [selectedCountry, selectedCourse]);
+
+  const handleTileClick = (race) => {
+    setSelectedRaceRecords(race.records);
     setLogs((prevLogs) => [
       ...prevLogs,
-      { date: meetingDate, raceTitle },
+      { date: meetingDate, raceTitle: race.raceTitle },
     ]);
   };
 
   return (
     <div className="mt-12 mb-8 flex flex-col gap-4">
-      {/* Welcome Message */}
-      {!meetingDate && (
-        <Typography
-          variant="h5"
-          className="text-center text-blue-gray-700 font-bold mb-4"
-        >
-          Welcome! Please select a date to start exploring races.
-        </Typography>
-      )}
-
-      {/* Date Picker */}
       <div className="flex justify-between items-center mb-4">
         <Typography variant="h6" className="text-black">
           Select Date
@@ -200,28 +211,55 @@ export function Races() {
         />
       </div>
 
-      {/* Loading or Tiles */}
-      {loading ? (
+      {loading && (
         <Typography
           variant="small"
           className="text-center text-blue-gray-600 mt-6"
         >
           Loading data...
         </Typography>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {racesData.map((race, index) => (
-            <RaceTile key={index} race={race} onClick={handleTileClick} />
-          ))}
-        </div>
       )}
 
-      {/* Detailed View Below Tiles */}
+      {countryOptions.length > 0 && (
+        <Select
+          label="Select Country"
+          value={selectedCountry}
+          onChange={(value) => setSelectedCountry(value)}
+          className="max-w-sm"
+        >
+          {countryOptions.map((country, index) => (
+            <Option key={index} value={country}>
+              {country}
+            </Option>
+          ))}
+        </Select>
+      )}
+
+      {selectedCountry && courseOptions.length > 0 && (
+        <Select
+          label="Select Course"
+          value={selectedCourse}
+          onChange={(value) => setSelectedCourse(value)}
+          className="max-w-sm"
+        >
+          {courseOptions.map((course, index) => (
+            <Option key={index} value={course}>
+              {course}
+            </Option>
+          ))}
+        </Select>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredData.map((race, index) => (
+          <RaceTile key={index} race={race} onClick={handleTileClick} />
+        ))}
+      </div>
+
       {selectedRaceRecords.length > 0 && (
         <ReportTable tableData={selectedRaceRecords} />
       )}
 
-      {/* Logs */}
       {logs.length > 0 && <Logs logs={logs} />}
     </div>
   );
