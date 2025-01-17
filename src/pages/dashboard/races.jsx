@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, Typography, Input, Select, Option } from "@material-tailwind/react";
+import { Card, Typography, Input, Select, Option, Button } from "@material-tailwind/react";
 
 // RaceTile Component
 const RaceTile = ({ race, onClick }) => {
@@ -39,6 +39,15 @@ const RaceTile = ({ race, onClick }) => {
 
 // ReportTable Component
 const ReportTable = ({ tableData }) => {
+  const sortedData = tableData.sort((a, b) => a.positionOfficial - b.positionOfficial);
+
+  const getCupIcon = (position) => {
+    if (position === 1) return <span style={{ fontSize: "1.5rem" }}>🏆</span>; // Gold Trophy
+    if (position === 2) return <span style={{ fontSize: "1.5rem" }}>🥈</span>; // Silver Trophy
+    if (position === 3) return <span style={{ fontSize: "1.5rem" }}>🥉</span>; // Bronze Trophy
+    return null;
+  };
+
   return (
     <Card className="bg-white text-black mt-6">
       <Typography variant="h6" className="p-4 text-blue-gray-700 font-bold">
@@ -48,7 +57,16 @@ const ReportTable = ({ tableData }) => {
         <table className="w-full min-w-[640px] table-auto">
           <thead>
             <tr>
-              {Object.keys(tableData[0] || {}).map((columnName) => (
+              {[
+                "positionOfficial",
+                "horseName",
+                "countryCode",
+                "sireName",
+                "damName",
+                ...Object.keys(tableData[0] || {}).filter(
+                  (key) => !["positionOfficial", "horseName", "countryCode", "sireName", "damName"].includes(key)
+                ),
+              ].map((columnName) => (
                 <th
                   key={columnName}
                   className="border-b border-gray-300 py-2 px-4 text-left"
@@ -64,12 +82,24 @@ const ReportTable = ({ tableData }) => {
             </tr>
           </thead>
           <tbody>
-            {tableData.map((item, index) => (
+            {sortedData.map((item, index) => (
               <tr key={index}>
-                {Object.entries(item).map(([key, value], i) => (
+                {[
+                  "positionOfficial",
+                  "horseName",
+                  "countryCode",
+                  "sireName",
+                  "damName",
+                  ...Object.keys(item).filter(
+                    (key) => !["positionOfficial", "horseName", "countryCode", "sireName", "damName"].includes(key)
+                  ),
+                ].map((key, i) => (
                   <td key={i} className="py-2 px-4 border-b border-gray-300">
                     <Typography className="text-[10px] font-medium text-blue-gray-600">
-                      {value !== null && value !== undefined ? value : "-"}
+                      {key === "positionOfficial" && index < 3 ? (
+                        <span className="mr-2">{getCupIcon(item[key])}</span>
+                      ) : null}
+                      {item[key] !== null && item[key] !== undefined ? item[key] : "-"}
                     </Typography>
                   </td>
                 ))}
@@ -112,8 +142,8 @@ export function Races() {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedRaceRecords, setSelectedRaceRecords] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [showTable, setShowTable] = useState(false);
 
-  // Fetch races data for the selected date
   const fetchRacesData = async () => {
     try {
       setLoading(true);
@@ -135,22 +165,38 @@ export function Races() {
               raceSurfaceName: record.raceSurfaceName,
               numberOfRunners: record.numberOfRunners,
               prizeFund: record.prizeFund,
-              topHorses: [],
+              topHorses: { 1: null, 2: null, 3: null },
               records: [],
             };
           }
 
-          // Add top 3 horses by positionOfficial
-          if (record.positionOfficial && record.positionOfficial <= 3) {
-            acc[record.raceTitle].topHorses.push({
+          if (record.positionOfficial === 1 && !acc[record.raceTitle].topHorses[1]) {
+            acc[record.raceTitle].topHorses[1] = {
               horseName: record.horseName,
               positionOfficial: record.positionOfficial,
-            });
+            };
           }
+          if (record.positionOfficial === 2 && !acc[record.raceTitle].topHorses[2]) {
+            acc[record.raceTitle].topHorses[2] = {
+              horseName: record.horseName,
+              positionOfficial: record.positionOfficial,
+            };
+          }
+          if (record.positionOfficial === 3 && !acc[record.raceTitle].topHorses[3]) {
+            acc[record.raceTitle].topHorses[3] = {
+              horseName: record.horseName,
+              positionOfficial: record.positionOfficial,
+            };
+          }
+
           acc[record.raceTitle].records.push(record);
           return acc;
         }, {})
       );
+
+      races.forEach((race) => {
+        race.topHorses = Object.values(race.topHorses).filter((horse) => horse !== null);
+      });
 
       setRacesData(races);
       setCountryOptions([...new Set(races.map((race) => race.countryCode))]);
@@ -195,6 +241,7 @@ export function Races() {
       ...prevLogs,
       { date: meetingDate, raceTitle: race.raceTitle },
     ]);
+    setShowTable(true);
   };
 
   return (
@@ -211,56 +258,66 @@ export function Races() {
         />
       </div>
 
-      {loading && (
-        <Typography
-          variant="small"
-          className="text-center text-blue-gray-600 mt-6"
-        >
-          Loading data...
-        </Typography>
+      {showTable ? (
+        <>
+          <Button
+            onClick={() => setShowTable(false)}
+            className="mb-4 bg-blue-500 hover:bg-blue-700 text-white"
+          >
+            See Races
+          </Button>
+          <ReportTable tableData={selectedRaceRecords} />
+        </>
+      ) : (
+        <>
+          {loading && (
+            <Typography
+              variant="small"
+              className="text-center text-blue-gray-600 mt-6"
+            >
+              Loading data...
+            </Typography>
+          )}
+
+          {countryOptions.length > 0 && (
+            <Select
+              label="Select Country"
+              value={selectedCountry}
+              onChange={(value) => setSelectedCountry(value)}
+              className="max-w-sm"
+            >
+              {countryOptions.map((country, index) => (
+                <Option key={index} value={country}>
+                  {country}
+                </Option>
+              ))}
+            </Select>
+          )}
+
+          {selectedCountry && courseOptions.length > 0 && (
+            <Select
+              label="Select Course"
+              value={selectedCourse}
+              onChange={(value) => setSelectedCourse(value)}
+              className="max-w-sm"
+            >
+              {courseOptions.map((course, index) => (
+                <Option key={index} value={course}>
+                  {course}
+                </Option>
+              ))}
+            </Select>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredData.map((race, index) => (
+              <RaceTile key={index} race={race} onClick={handleTileClick} />
+            ))}
+          </div>
+
+          {logs.length > 0 && <Logs logs={logs} />}
+        </>
       )}
-
-      {countryOptions.length > 0 && (
-        <Select
-          label="Select Country"
-          value={selectedCountry}
-          onChange={(value) => setSelectedCountry(value)}
-          className="max-w-sm"
-        >
-          {countryOptions.map((country, index) => (
-            <Option key={index} value={country}>
-              {country}
-            </Option>
-          ))}
-        </Select>
-      )}
-
-      {selectedCountry && courseOptions.length > 0 && (
-        <Select
-          label="Select Course"
-          value={selectedCourse}
-          onChange={(value) => setSelectedCourse(value)}
-          className="max-w-sm"
-        >
-          {courseOptions.map((course, index) => (
-            <Option key={index} value={course}>
-              {course}
-            </Option>
-          ))}
-        </Select>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredData.map((race, index) => (
-          <RaceTile key={index} race={race} onClick={handleTileClick} />
-        ))}
-      </div>
-
-      {selectedRaceRecords.length > 0 && (
-        <ReportTable tableData={selectedRaceRecords} />
-      )}
-
-      {logs.length > 0 && <Logs logs={logs} />}
     </div>
   );
 }

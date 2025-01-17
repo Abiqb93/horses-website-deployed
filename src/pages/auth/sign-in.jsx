@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Input, Checkbox, Button, Typography } from "@material-tailwind/react";
+import { Card, Input, Button, Typography, Checkbox } from "@material-tailwind/react";
 import { useNavigate, Link } from "react-router-dom";
 
 export function SignIn() {
@@ -18,13 +18,10 @@ export function SignIn() {
 
   return (
     <section className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      {/* Blandford Analysis Header */}
+      {/* Blandford Analytics Header */}
       <div className="text-center mb-8">
         <Typography variant="h1" className="font-bold text-gray-800 text-4xl">
-          Blandford Analysis
-        </Typography>
-        <Typography variant="paragraph" color="blue-gray" className="text-lg font-medium mt-2">
-          Empowering Insights for Horse Racing Analytics
+          Blandford Analytics
         </Typography>
       </div>
 
@@ -38,22 +35,31 @@ export function SignIn() {
         </Typography>
         <form onSubmit={handleSignIn}>
           <div className="mb-6">
-            <Input
-              size="lg"
-              placeholder="name@mail.com"
+            <label htmlFor="email" className="block text-gray-700 font-medium mb-1">
+              Email <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="email"
+              type="email"
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              label="Your Email"
+              required
             />
           </div>
           <div className="mb-6">
-            <Input
+            <label htmlFor="password" className="block text-gray-700 font-medium mb-1">
+              Password <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="password"
               type="password"
-              size="lg"
-              placeholder="********"
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              label="Password"
+              required
             />
           </div>
           <Checkbox
@@ -65,19 +71,13 @@ export function SignIn() {
                 </a>
               </Typography>
             }
+            required
           />
           <Button type="submit" fullWidth className="mt-6">
             Sign In
           </Button>
         </form>
         <div className="flex items-center justify-between mt-4">
-          <Checkbox
-            label={
-              <Typography variant="small" color="gray" className="font-medium">
-                Subscribe me to newsletter
-              </Typography>
-            }
-          />
           <Typography variant="small">
             <a href="#" className="text-blue-500 underline">
               Forgot Password?
