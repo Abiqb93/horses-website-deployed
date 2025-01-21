@@ -130,11 +130,68 @@ export function HorseProfiles() {
     "MA", "CH", "PR", "MO", "NO", "ZW", "HU", "SG", "UAE",
   ];
 
-  const addHorseToList = (horse) => {
+  const addHorseToList = async (horse) => {
+    const userId = "Tom"; // Hardcoded user_id for now
+  
     if (!selectedHorses.some((selected) => selected.Sire === horse.Sire)) {
-      setSelectedHorses([...selectedHorses, { ...horse, note: "" }]);
+      try {
+        // Convert all fields in the horse object to strings
+        const formattedHorse = {
+          ...horse,
+          user_id: String(userId),
+          Sire: String(horse.Sire),
+          Country: String(horse.Country),
+          Runners: horse.Runners !== null && horse.Runners !== undefined ? String(horse.Runners) : null,
+          Runs: horse.Runs !== null && horse.Runs !== undefined ? String(horse.Runs) : null,
+          Winners: horse.Winners !== null && horse.Winners !== undefined ? String(horse.Winners) : null,
+          Wins: horse.Wins !== null && horse.Wins !== undefined ? String(horse.Wins) : null,
+          WinPercent_: horse.WinPercent_ !== null && horse.WinPercent_ !== undefined ? String(horse.WinPercent_) : null,
+          Stakes_Winners: horse.Stakes_Winners !== null && horse.Stakes_Winners !== undefined ? String(horse.Stakes_Winners) : null,
+          Stakes_Wins: horse.Stakes_Wins !== null && horse.Stakes_Wins !== undefined ? String(horse.Stakes_Wins) : null,
+          Group_Winners: horse.Group_Winners !== null && horse.Group_Winners !== undefined ? String(horse.Group_Winners) : null,
+          Group_Wins: horse.Group_Wins !== null && horse.Group_Wins !== undefined ? String(horse.Group_Wins) : null,
+          Group_1_Winners: horse.Group_1_Winners !== null && horse.Group_1_Winners !== undefined ? String(horse.Group_1_Winners) : null,
+          Group_1_Wins: horse.Group_1_Wins !== null && horse.Group_1_Wins !== undefined ? String(horse.Group_1_Wins) : null,
+          WTR: horse.WTR !== null && horse.WTR !== undefined ? String(horse.WTR) : null,
+          SWTR: horse.SWTR !== null && horse.SWTR !== undefined ? String(horse.SWTR) : null,
+          GWTR: horse.GWTR !== null && horse.GWTR !== undefined ? String(horse.GWTR) : null,
+          G1WTR: horse.G1WTR !== null && horse.G1WTR !== undefined ? String(horse.G1WTR) : null,
+          WIV: horse.WIV !== null && horse.WIV !== undefined ? String(horse.WIV) : null,
+          WOE: horse.WOE !== null && horse.WOE !== undefined ? String(horse.WOE) : null,
+          WAX: horse.WAX !== null && horse.WAX !== undefined ? String(horse.WAX) : null,
+          Percent_RB2: horse.Percent_RB2 !== null && horse.Percent_RB2 !== undefined ? String(horse.Percent_RB2) : null,
+        };
+  
+        // Log the formatted data being sent to the server
+        console.log("Formatted data being sent to the server:", formattedHorse);
+  
+        const response = await fetch("https://horseracesbackend-production.up.railway.app/api/selected_horses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formattedHorse), // Send the formatted horse object
+        });
+  
+        if (!response.ok) {
+          const errorMessage = await response.text(); // Capture the server error response
+          throw new Error(`Failed to save horse to the database: ${errorMessage}`);
+        }
+  
+        const savedHorse = await response.json(); // Parse the response, if needed
+        setSelectedHorses([...selectedHorses, { ...horse, note: "" }]); // Add the horse to the state
+  
+        console.log("Horse added successfully:", savedHorse);
+      } catch (error) {
+        console.error("Error adding horse:", error);
+      }
+    } else {
+      console.log(`Horse with Sire '${horse.Sire}' is already in the list.`);
     }
   };
+    
+  
+
 
   const updateHorseNote = (index, note) => {
     const updatedHorses = [...selectedHorses];
@@ -155,6 +212,7 @@ export function HorseProfiles() {
     try {
       const queryParams = buildQueryParams();
       const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
+      // const response = await fetch(`http://localhost:8080/api/${selectedTable}?${queryParams}`);
       const data = await response.json();
       setTableData(data.data);
       setTotalPages(data.totalPages);
@@ -231,12 +289,12 @@ export function HorseProfiles() {
                     {horse.Country}
                   </Typography>
                 </div>
-                <textarea
+                {/* <textarea
                   value={horse.note}
                   onChange={(e) => updateHorseNote(index, e.target.value)}
                   placeholder="Add a note..."
                   className="border rounded-md p-2 w-full h-16"
-                />
+                /> */}
               </div>
             </li>
           ))}

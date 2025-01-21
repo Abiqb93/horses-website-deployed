@@ -14,3 +14,4 @@ export * from "@/pages/dashboard/jockeyradar";
 export * from "@/pages/dashboard/races";
 export * from "@/pages/dashboard/horseprofile";
 export * from "@/pages/dashboard/horseradar";
+export * from "@/pages/dashboard/myhorses";
