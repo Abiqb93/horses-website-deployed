@@ -96,9 +96,9 @@ const ReportTable = ({ tableData }) => {
                 ].map((key, i) => (
                   <td key={i} className="py-2 px-4 border-b border-gray-300">
                     <Typography className="text-[10px] font-medium text-blue-gray-600">
-                      {key === "positionOfficial" && index < 3 ? (
+                      {/* {key === "positionOfficial" && index < 3 ? (
                         <span className="mr-2">{getCupIcon(item[key])}</span>
-                      ) : null}
+                      ) : null} */}
                       {item[key] !== null && item[key] !== undefined ? item[key] : "-"}
                     </Typography>
                   </td>
@@ -152,7 +152,8 @@ export function Races() {
       }).toString();
 
       const response = await fetch(
-        `https://horseracesbackend-production.up.railway.app/api/api_races?${queryParams}`
+        `https://horseracesbackend-production.up.railway.app/api/TimesApi_Table?${queryParams}`
+        // `http://localhost:8080/api/TimesApi_Table?${queryParams}`
       );
       const data = await response.json();
       const races = Object.values(

@@ -1,64 +1,104 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardBody, Typography, Button, Textarea } from "@material-tailwind/react";
+import { Typography, Button, Textarea } from "@material-tailwind/react";
 
-const TileView = ({ tableData, onSaveHorse, onDeleteHorse }) => {
+const TableView = ({ tableData, onSaveHorse, onDeleteHorse }) => {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      hour12: true,
+    });
+  };
+
+  const getCountryCode = (country) => {
+    const countryMap = {
+      UK: "gb", // Map 'UK' to 'gb' for United Kingdom
+      US: "us", // Map 'US' to 'us'
+      // Add additional mappings if needed
+    };
+    return countryMap[country.toUpperCase()] || country.toLowerCase();
+  };
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {tableData.map((horse) => (
-        <Card key={horse.id} className="bg-white shadow-md">
-          <CardHeader className="p-4 bg-blue-gray-100">
-            <Typography variant="h6" className="text-black text-sm">
-              {horse.Sire || "Unknown Sire"}
-            </Typography>
-            <Typography variant="subtitle2" className="text-blue-gray-400 text-xs">
-              {horse.Country || "Unknown Country"}
-            </Typography>
-          </CardHeader>
-          <CardBody>
-            <div className="mb-2">
-              {Object.entries(horse).map(([key, value]) => (
-                key !== "Sire" &&
-                key !== "Country" &&
-                key !== "notes" && (
-                  <Typography
-                    key={key}
-                    variant="small"
-                    className="text-blue-gray-600 text-xs"
-                  >
-                    {key}: {value !== null && value !== undefined ? value : "-"}
-                  </Typography>
-                )
-              ))}
-            </div>
-            <div className="mt-4">
-              <Textarea
-                label="Notes"
-                value={horse.notes || ""}
-                onChange={(e) => onSaveHorse(horse.id, e.target.value, false)} // Update locally
-                className="w-full text-xs"
-              />
-            </div>
-          </CardBody>
-          <div className="p-2 flex justify-between">
-            <Button
-              color="red"
-              size="sm"
-              className="text-xs"
-              onClick={() => onDeleteHorse(horse.id)} // Call delete function
-            >
-              Delete
-            </Button>
-            <Button
-              color="blue"
-              size="sm"
-              className="text-xs"
-              onClick={() => onSaveHorse(horse.id, horse.notes, true)} // Save to server
-            >
-              Save Notes
-            </Button>
-          </div>
-        </Card>
-      ))}
+    <div className="overflow-x-auto">
+      <table className="min-w-full bg-white border border-gray-300 text-sm">
+        <thead>
+          <tr>
+            <th className="px-2 py-1 border text-left w-1/20">Horse</th>
+            <th className="px-2 py-1 border text-center">Country</th>
+            <th className="px-2 py-1 border text-center">Runs</th>
+            <th className="px-2 py-1 border text-center">Wins</th>
+            <th className="px-2 py-1 border text-center">Stakes Wins</th>
+            <th className="px-2 py-1 border text-center">Group Wins</th>
+            <th className="px-2 py-1 border text-center">Group 1 Wins</th>
+            <th className="px-2 py-1 border text-center">Date</th>
+            <th className="px-2 py-1 border text-center">Notes</th>
+            <th className="px-2 py-1 border text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tableData.map((horse) => (
+            <tr key={horse.id}>
+              <td className="px-2 py-1 border text-left whitespace-normal">
+                {horse.Sire || "N/A"}
+              </td>
+              <td className="px-2 py-1 border text-center">
+                {horse.Country ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <img
+                      src={`https://flagcdn.com/w40/${getCountryCode(horse.Country)}.png`}
+                      alt={horse.Country}
+                      className="h-4 w-6"
+                    />
+                    <span>{horse.Country}</span>
+                  </div>
+                ) : (
+                  "N/A"
+                )}
+              </td>
+              <td className="px-2 py-1 border text-center">{horse.Runs || 0}</td>
+              <td className="px-2 py-1 border text-center">{horse.Wins || 0}</td>
+              <td className="px-2 py-1 border text-center">{horse.Stakes_Wins || 0}</td>
+              <td className="px-2 py-1 border text-center">{horse.Group_Wins || 0}</td>
+              <td className="px-2 py-1 border text-center">{horse.Group_1_Wins || 0}</td>
+              <td className="px-2 py-1 border text-center">
+                {horse.created_at ? formatDate(horse.created_at) : "N/A"}
+              </td>
+              <td className="px-2 py-1 border text-center">
+                <Textarea
+                  value={horse.notes || ""}
+                  onChange={(e) => onSaveHorse(horse.id, e.target.value, false)}
+                  className="text-xs"
+                  placeholder="Add notes here"
+                />
+              </td>
+              <td className="px-2 py-1 border text-center">
+                <Button
+                  color="red"
+                  size="sm"
+                  className="text-xs mr-2"
+                  onClick={() => onDeleteHorse(horse.id)}
+                >
+                  Delete
+                </Button>
+                <Button
+                  color="blue"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => onSaveHorse(horse.id, horse.notes, true)}
+                >
+                  Save Notes
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
@@ -67,13 +107,14 @@ export function MyHorses() {
   const [tableData, setTableData] = useState([]);
   const [error, setError] = useState(null);
 
-  // Fetch all data from the server
   const fetchAllData = async () => {
     try {
-      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/selected_horses`);
+      const response = await fetch(
+        `https://horseracesbackend-production.up.railway.app/api/selected_horses`
+      );
       const result = await response.json();
       if (Array.isArray(result)) {
-        setTableData(result); // Update state with fetched data
+        setTableData(result);
       } else {
         console.error("Unexpected response format:", result);
       }
@@ -83,9 +124,7 @@ export function MyHorses() {
     }
   };
 
-  // Update notes for a specific horse
   const saveHorse = async (id, notes, saveToServer = false) => {
-    // Update notes locally
     setTableData((prevData) =>
       prevData.map((horse) =>
         horse.id === id ? { ...horse, notes } : horse
@@ -94,22 +133,22 @@ export function MyHorses() {
 
     if (saveToServer) {
       try {
-        console.log(`Updating notes for horse ID: ${id}`);
-        const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/selected_horses/${id}`, {
-          method: "PUT", // Use PUT for updates
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ notes }), // Send only the notes field
-        });
+        const response = await fetch(
+          `https://horseracesbackend-production.up.railway.app/api/selected_horses/${id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ notes }),
+          }
+        );
 
         if (!response.ok) {
           const errorMessage = await response.text();
           throw new Error(`Failed to update notes: ${errorMessage}`);
         }
 
-        const result = await response.json();
-        console.log("Notes updated successfully:", result);
         alert("Notes updated successfully!");
       } catch (error) {
         console.error("Error updating notes:", error);
@@ -118,20 +157,21 @@ export function MyHorses() {
     }
   };
 
-  // Remove a horse from the database and state
   const deleteHorse = async (id) => {
     try {
-      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/selected_horses/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `https://horseracesbackend-production.up.railway.app/api/selected_horses/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!response.ok) {
         const errorMessage = await response.text();
         throw new Error(`Failed to delete horse: ${errorMessage}`);
       }
 
-      console.log(`Horse with ID ${id} deleted successfully`);
-      setTableData((prevData) => prevData.filter((horse) => horse.id !== id)); // Remove from state
+      setTableData((prevData) => prevData.filter((horse) => horse.id !== id));
     } catch (error) {
       console.error("Error deleting horse:", error);
       alert("Failed to delete horse. Please try again.");
@@ -148,7 +188,11 @@ export function MyHorses() {
 
   return (
     <div className="mt-12 mb-8">
-      <TileView tableData={tableData} onSaveHorse={saveHorse} onDeleteHorse={deleteHorse} />
+      <TableView
+        tableData={tableData}
+        onSaveHorse={saveHorse}
+        onDeleteHorse={deleteHorse}
+      />
     </div>
   );
 }
