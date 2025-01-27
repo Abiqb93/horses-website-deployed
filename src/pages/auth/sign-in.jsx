@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Input, Button, Typography, Checkbox } from "@material-tailwind/react";
+import { Card, Input, Button, Typography } from "@material-tailwind/react";
 import { useNavigate, Link } from "react-router-dom";
 
 export function SignIn() {
@@ -20,17 +20,17 @@ export function SignIn() {
     <section className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       {/* Blandford Analytics Header */}
       <div className="text-center mb-8">
-        <Typography variant="h1" className="font-bold text-gray-800 text-4xl">
+        <Typography variant="h3" className="font-bold text-gray-800 text-2xl">
           Blandford Analytics
         </Typography>
       </div>
 
       {/* Sign In Form */}
       <Card className="p-6 shadow-lg rounded-lg w-full max-w-md bg-white">
-        <Typography variant="h2" className="font-bold text-center mb-4">
+        <Typography variant="h4" className="font-bold text-center mb-4 text-lg">
           Sign In
         </Typography>
-        <Typography variant="paragraph" color="blue-gray" className="text-lg text-center mb-6">
+        <Typography variant="paragraph" color="blue-gray" className="text-base text-center mb-6">
           Enter your email and password to access your account.
         </Typography>
         <form onSubmit={handleSignIn}>
@@ -62,17 +62,6 @@ export function SignIn() {
               required
             />
           </div>
-          <Checkbox
-            label={
-              <Typography variant="small" color="gray" className="font-medium">
-                I agree to the&nbsp;
-                <a href="#" className="text-blue-500 underline">
-                  Terms and Conditions
-                </a>
-              </Typography>
-            }
-            required
-          />
           <Button type="submit" fullWidth className="mt-6">
             Sign In
           </Button>

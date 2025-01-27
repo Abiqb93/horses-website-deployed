@@ -50,9 +50,9 @@ const ReportTable = ({ tableData }) => {
 
   return (
     <Card className="bg-white text-black mt-6">
-      <Typography variant="h6" className="p-4 text-blue-gray-700 font-bold">
+      {/* <Typography variant="h6" className="p-4 text-blue-gray-700 font-bold">
         Detailed Records
-      </Typography>
+      </Typography> */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] table-auto">
           <thead>
@@ -152,10 +152,10 @@ export function Races() {
       }).toString();
 
       const response = await fetch(
-        `https://horseracesbackend-production.up.railway.app/api/TimesApi_Table?${queryParams}`
-        // `http://localhost:8080/api/TimesApi_Table?${queryParams}`
+        `http://localhost:8080/api/APIData_Table2?${queryParams}`
       );
       const data = await response.json();
+      
       const races = Object.values(
         data.data.reduce((acc, record) => {
           if (!acc[record.raceTitle]) {
@@ -163,14 +163,27 @@ export function Races() {
               raceTitle: record.raceTitle,
               countryCode: record.countryCode,
               courseName: record.courseName,
+              courseId: record.courseId, // Add courseId here
+              raceNumber: record.raceNumber, // Add raceNumber here
               raceSurfaceName: record.raceSurfaceName,
               numberOfRunners: record.numberOfRunners,
               prizeFund: record.prizeFund,
               topHorses: { 1: null, 2: null, 3: null },
+              allHorses: [], // New column for all horses
               records: [],
             };
           }
-
+      
+          // Add the horse to the `allHorses` array
+          acc[record.raceTitle].allHorses.push({
+            horseName: record.horseName,
+            positionOfficial: record.positionOfficial,
+            sireName: record.sireName,
+            damName: record.damName,
+            // Add any other necessary fields here
+          });
+      
+          // Assign the horse to `topHorses` if it is in the top 3
           if (record.positionOfficial === 1 && !acc[record.raceTitle].topHorses[1]) {
             acc[record.raceTitle].topHorses[1] = {
               horseName: record.horseName,
@@ -189,11 +202,17 @@ export function Races() {
               positionOfficial: record.positionOfficial,
             };
           }
-
+      
           acc[record.raceTitle].records.push(record);
           return acc;
         }, {})
       );
+      
+      // Sort allHorses by positionOfficial
+      races.forEach((race) => {
+        race.allHorses.sort((a, b) => a.positionOfficial - b.positionOfficial);
+      });
+      
 
       races.forEach((race) => {
         race.topHorses = Object.values(race.topHorses).filter((horse) => horse !== null);
@@ -236,13 +255,49 @@ export function Races() {
     }
   }, [selectedCountry, selectedCourse]);
 
-  const handleTileClick = (race) => {
+  const handleTileClick = async (race) => {
     setSelectedRaceRecords(race.records);
     setLogs((prevLogs) => [
       ...prevLogs,
       { date: meetingDate, raceTitle: race.raceTitle },
     ]);
     setShowTable(true);
+  
+    // Data to be saved in the database
+    const raceData = {
+      meetingDate,
+      raceTitle: race.raceTitle,
+      countryCode: race.countryCode,
+      courseName: race.courseName,
+      courseId: race.courseId, // Add courseId here
+      raceNumber: race.raceNumber, // Add raceNumber here
+      raceSurfaceName: race.raceSurfaceName,
+      numberOfRunners: race.numberOfRunners,
+      prizeFund: race.prizeFund,
+      allHorses: race.allHorses, // Include all horses
+      user: "Tom", // Replace with dynamic user if applicable
+    };
+  
+    console.log("Payload being sent to backend:", raceData);
+  
+    try {
+      const response = await fetch("http://localhost:8080/api/save-race", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(raceData),
+      });
+  
+      if (response.ok) {
+        console.log("Race selection saved successfully!");
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to save race selection:", errorText);
+      }
+    } catch (error) {
+      console.error("Error saving race selection:", error);
+    }
   };
 
   return (

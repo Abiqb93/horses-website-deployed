@@ -2,6 +2,43 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, Typography } from "@material-tailwind/react";
 import { ResponsiveRadar } from "@nivo/radar";
 
+import _ from "lodash";
+
+const HorseProfile = ({ setSearchQuery }) => {
+  // Debounced function for search input
+  const debouncedSearch = _.debounce((query) => {
+    setSearchQuery(query); // Update search query
+  }, 300); // Adjust delay as needed
+
+  return (
+    <div className="relative mb-4 max-w-lg">
+      <div className="flex items-center rounded-full shadow-md border border-gray-300 bg-white overflow-hidden focus-within:ring focus-within:ring-blue-300">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-6 h-6 text-gray-500 ml-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M21 21l-5.197-5.197M16.804 10.804a6 6 0 11-12 0 6 6 0 0112 0z"
+          />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search Dam..."
+          className="flex-grow p-3 text-sm text-gray-700 focus:outline-none focus:ring-0 bg-transparent"
+          onChange={(e) => debouncedSearch(e.target.value)}
+        />
+      </div>
+    </div>
+
+  );
+};
+
 const ROWS_PER_PAGE = 3;
 
 const fieldLimits = {
@@ -118,9 +155,9 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
 
   return (
     <Card className="bg-white text-black">
-      <CardHeader className="mb-8 p-6">
+      {/* <CardHeader className="mb-8 p-6">
         <Typography variant="h6" className="text-black">{title}</Typography>
-      </CardHeader>
+      </CardHeader> */}
       <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
         <table className="w-full min-w-[640px] table-auto">
           <thead>
@@ -183,7 +220,7 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
 const ComparisonTable = ({ entry1, entry2 }) => (
   <Card className="bg-white text-black w-1/2">
     <CardBody>
-      <Typography variant="h6" className="mb-4">Comparison Table</Typography>
+      <Typography variant="h6" className="mb-4"> </Typography>
       <table className="w-full table-auto text-xs border-collapse border border-gray-200">
         <thead>
           <tr>
@@ -245,35 +282,25 @@ export function DamRadar() {
 
   return (
     <div className="mt-12 mb-8 flex flex-col gap-12">
-      <div className="relative mt-4">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search Dam..."
-          className="p-2 border rounded-md w-full max-w-xs"
-        />
-      </div>
+
       <div className="flex items-center gap-4">
-        <label>
-          <input
-            type="radio"
-            value="entry1"
-            checked={currentSelection === "entry1"}
-            onChange={() => setCurrentSelection("entry1")}
-          />
-          Select Dam 1
+        <label htmlFor="dam-selector" className="text-sm font-medium">
+          Select Entry:
         </label>
-        <label>
-          <input
-            type="radio"
-            value="entry2"
-            checked={currentSelection === "entry2"}
-            onChange={() => setCurrentSelection("entry2")}
-          />
-          Select Dam 2
-        </label>
+        <select
+          id="dam-selector"
+          value={currentSelection}
+          onChange={(e) => setCurrentSelection(e.target.value)}
+          className="p-2 border rounded-md"
+        >
+          <option value="entry1">Dam 1</option>
+          <option value="entry2">Dam 2</option>
+        </select>
       </div>
+
+      {/* Search Box */}
+      <HorseProfile setSearchQuery={setSearchQuery} />
+
       <ReportTable
         tableData={tableData}
         title="Search and Click"

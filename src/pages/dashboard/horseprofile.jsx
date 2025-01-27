@@ -5,8 +5,44 @@ const countryFlagURL = (countryCode) => {
 
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, Typography } from "@material-tailwind/react";
+import _ from "lodash";
 
 const ROWS_PER_PAGE = 10;
+
+const HorseProfile = ({ setSearchQuery }) => {
+  // Debounced function for search input
+  const debouncedSearch = _.debounce((query) => {
+    setSearchQuery(query); // Update search query
+  }, 300); // Adjust delay as needed
+
+  return (
+    <div className="relative mb-4 max-w-lg">
+      <div className="flex items-center rounded-full shadow-md border border-gray-300 bg-white overflow-hidden focus-within:ring focus-within:ring-blue-300">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-6 h-6 text-gray-500 ml-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M21 21l-5.197-5.197M16.804 10.804a6 6 0 11-12 0 6 6 0 0112 0z"
+          />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search Horse..."
+          className="flex-grow p-3 text-sm text-gray-700 focus:outline-none focus:ring-0 bg-transparent"
+          onChange={(e) => debouncedSearch(e.target.value)}
+        />
+      </div>
+    </div>
+
+  );
+};
 
 const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages, addHorseToList }) => {
   const startPage = Math.max(1, currentPage - 5);
@@ -42,9 +78,9 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
 
   return (
     <Card className="bg-white text-black">
-      <CardHeader className="mb-8 p-6">
+      {/* <CardHeader className="mb-8 p-6">
         <Typography variant="h6" className="text-black">{title}</Typography>
-      </CardHeader>
+      </CardHeader> */}
       <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
         <table className="w-full min-w-[640px] table-auto">
           <thead>
@@ -228,7 +264,7 @@ export function HorseProfiles() {
   return (
     <div className="mt-12 mb-8 flex flex-col gap-12">
       <div className="flex items-center mb-2">
-        <label htmlFor="table-select" className="mr-2">Table:</label>
+        <label htmlFor="table-select" className="mr-2">Time Period:</label>
         <select
           id="table-select"
           value={selectedTable}
@@ -240,15 +276,7 @@ export function HorseProfiles() {
       </div>
 
       {/* Search Box */}
-      <div className="relative mb-4">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search Horse..."
-          className="p-2 border rounded-md w-full max-w-xs"
-        />
-      </div>
+      <HorseProfile setSearchQuery={setSearchQuery} />
 
       {/* Country Filter */}
       <div className="relative mb-4">

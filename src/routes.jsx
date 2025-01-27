@@ -23,6 +23,7 @@ import {
   HorseProfiles,
   HorseRadar,
   MyHorses,
+  MyRace,
 
 } from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
@@ -153,11 +154,24 @@ export const routes = [
         path: "/tables",
         element: <Tables />,
       },
+
+
       {
         icon: <TableCellsIcon {...icon} />,
         name: "Races",
-        path: "/races",
-        element: <Races />,
+        children: [
+          {
+            name: "Races",
+            path: "/races",
+            element: <Races />,
+          },
+          {
+            name: "My Race",
+            path: "/myraces",
+            element: <MyRace />,
+          },
+
+        ],
       },
 
 
