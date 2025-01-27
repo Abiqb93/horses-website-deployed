@@ -152,7 +152,7 @@ export function Races() {
       }).toString();
 
       const response = await fetch(
-        `http://localhost:8080/api/APIData_Table2?${queryParams}`
+        `https://horseracesbackend-production.up.railway.app/api/APIData_Table2?${queryParams}`
       );
       const data = await response.json();
       
@@ -281,7 +281,7 @@ export function Races() {
     console.log("Payload being sent to backend:", raceData);
   
     try {
-      const response = await fetch("http://localhost:8080/api/save-race", {
+      const response = await fetch("https://horseracesbackend-production.up.railway.app/api/save-race", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

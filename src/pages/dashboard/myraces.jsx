@@ -8,7 +8,7 @@ export function MyRace() {
   useEffect(() => {
     const fetchRaceData = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/race_selection_log");
+        const response = await fetch("https://horseracesbackend-production.up.railway.app/api/race_selection_log");
         if (!response.ok) {
           throw new Error(`Error: ${response.status} - ${response.statusText}`);
         }
@@ -29,7 +29,7 @@ export function MyRace() {
     if (!confirmDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:8080/api/race_selection_log/${id}`, {
+      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_selection_log/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) {
