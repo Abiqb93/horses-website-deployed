@@ -1,3 +1,15 @@
+import HorseIcon from "@/assets/icons/Horse.png";
+import SireIcon from "@/assets/icons/Sire.png";
+import DamIcon from "@/assets/icons/Dam.png";
+import OwnerIcon from "@/assets/icons/Owner.png";
+import TrainerIcon from "@/assets/icons/Trainer.png";
+import JockeyIcon from "@/assets/icons/Jockey.png";
+import DashboardIcon from "@/assets/icons/Home.png";
+import SigninIcon from "@/assets/icons/Signin.png";
+import SignupIcon from "@/assets/icons/Signup.png";
+import TablesIcon from "@/assets/icons/Tables.png";
+
+
 import {
   HomeIcon,
   UserCircleIcon,
@@ -6,6 +18,7 @@ import {
   ServerStackIcon,
   RectangleStackIcon,
 } from "@heroicons/react/24/solid";
+
 import {
   Home,
   Profile,
@@ -24,6 +37,8 @@ import {
   HorseRadar,
   MyHorses,
   MyRace,
+  MareUpLift,
+  Broodmare,
 
 } from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
@@ -32,18 +47,23 @@ const icon = {
   className: "w-5 h-5 text-inherit",
 };
 
+const iconStyle = {
+  width: "20px",
+  height: "16px",
+};
+
 export const routes = [
   {
     layout: "dashboard",
     pages: [
       {
-        icon: <HomeIcon {...icon} />,
+        icon: <img src={DashboardIcon} alt="Horse" style={iconStyle} />,
         name: "Dashboard",
         path: "/home",
         element: <Home />,
       },
       {
-        icon: <UserCircleIcon {...icon} />,
+        icon: <img src={SireIcon} alt="Horse" style={iconStyle} />,
         name: "Sire",
         children: [
           {
@@ -56,10 +76,15 @@ export const routes = [
             path: "/sireradar",
             element: <SireRadar />,
           },
+          {
+            name: "Mare Upgrade Analysis",
+            path: "/mareanalysis",
+            element: <MareUpLift />,
+          },
         ],
       },
       {
-        icon: <UserCircleIcon {...icon} />,
+        icon: <img src={DamIcon} alt="Horse" style={iconStyle} />,
         name: "Dam",
         children: [
           {
@@ -72,10 +97,15 @@ export const routes = [
             path: "/damradar",
             element: <DamRadar />,
           },
+          {
+            name: "Broodmare",
+            path: "/broodmare",
+            element: <Broodmare />,
+          },
         ],
       },
       {
-        icon: <UserCircleIcon {...icon} />,
+        icon: <img src={OwnerIcon} alt="Horse" style={iconStyle} />,
         name: "Owner",
         children: [
           {
@@ -92,7 +122,7 @@ export const routes = [
         ],
       },
       {
-        icon: <UserCircleIcon {...icon} />,
+        icon: <img src={TrainerIcon} alt="Horse" style={iconStyle} />,
         name: "Trainer",
         children: [
           {
@@ -108,7 +138,7 @@ export const routes = [
         ],
       },
       {
-        icon: <UserCircleIcon {...icon} />,
+        icon: <img src={JockeyIcon} alt="Horse" style={iconStyle} />,
         name: "Jockey",
         children: [
           {
@@ -126,7 +156,7 @@ export const routes = [
       },
 
       {
-        icon: <UserCircleIcon {...icon} />,
+        icon: <img src={HorseIcon} alt="Horse" style={iconStyle} />,
         name: "Horse",
         children: [
           {
@@ -148,16 +178,16 @@ export const routes = [
       },
 
 
-      {
-        icon: <TableCellsIcon {...icon} />,
-        name: "Tables",
-        path: "/tables",
-        element: <Tables />,
-      },
+      // {
+      //   icon: <img src={TablesIcon} alt="Horse" style={iconStyle} />,
+      //   name: "Tables",
+      //   path: "/tables",
+      //   element: <Tables />,
+      // },
 
 
       {
-        icon: <TableCellsIcon {...icon} />,
+        icon: <img src={TablesIcon} alt="Horse" style={iconStyle} />,
         name: "Races",
         children: [
           {
@@ -182,13 +212,13 @@ export const routes = [
     layout: "auth",
     pages: [
       {
-        icon: <ServerStackIcon {...icon} />,
+        icon: <img src={SigninIcon} alt="Horse" style={iconStyle} />,
         name: "Sign In",
         path: "/sign-in",
         element: <SignIn />,
       },
       {
-        icon: <RectangleStackIcon {...icon} />,
+        icon: <img src={SignupIcon} alt="Horse" style={iconStyle} />,
         name: "Sign Up",
         path: "/sign-up",
         element: <SignUp />,

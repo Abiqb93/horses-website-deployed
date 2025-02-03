@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, Typography } from "@material-tailwind/react";
 import { ResponsiveRadar } from "@nivo/radar";
+
 import _ from "lodash";
 
 const HorseProfile = ({ setSearchQuery }) => {
@@ -10,7 +11,7 @@ const HorseProfile = ({ setSearchQuery }) => {
   }, 300); // Adjust delay as needed
 
   return (
-    <div className="relative mb-4 max-w-lg">
+    <div className="relative mb-0 max-w-lg">
       <div className="flex items-center rounded-full shadow-md border border-gray-300 bg-white overflow-hidden focus-within:ring focus-within:ring-blue-300">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -38,7 +39,6 @@ const HorseProfile = ({ setSearchQuery }) => {
   );
 };
 
-
 const ROWS_PER_PAGE = 3;
 
 const fieldLimits = {
@@ -54,14 +54,14 @@ const fieldLimits = {
 
 const sanitizeData = (key, value) => {
   if (typeof value === "string" && value.includes("%")) {
-    return parseFloat(value.replace("%", ""));
+    return parseFloat(value.replace("%", "")); // Remove '%' and convert to float
   }
   return value !== null && value !== undefined ? parseFloat(value) : 0;
 };
 
 const normalize = (value, field) => {
   const fieldLimit = fieldLimits[field];
-  const epsilon = 1e-5;
+  const epsilon = 0;
 
   if (!fieldLimit) {
     console.warn(`Field "${field}" does not have defined limits.`);
@@ -70,8 +70,8 @@ const normalize = (value, field) => {
 
   let { min, max } = fieldLimit;
 
-  if ((field === "WOE" || field === "WAX") && value < 0) {
-    const adjustment = Math.abs(min) + 1;
+  if ((field === "WOE" || field === "WAX")) {
+    const adjustment = Math.abs(min);
     value += adjustment;
     min += adjustment;
     max += adjustment;
@@ -90,60 +90,57 @@ const normalize = (value, field) => {
     return 0.5;
   }
 
-  return 0.5 + 0.5 * ((transformedValue - transformedMin) / (transformedMax - transformedMin));
+  return ((transformedValue - transformedMin) / (transformedMax - transformedMin));
 };
 
 const D3RadarChart = ({ entry1Data, entry2Data }) => {
   const fields = Object.keys(fieldLimits);
-
-  // Prepare data for the radar chart
-  const chartData = fields.map((field) => {
-    const entry1Value = sanitizeData(field, entry1Data?.[field] || 0);
-    const entry2Value = sanitizeData(field, entry2Data?.[field] || 0);
-
-    return {
-      field,
-      [entry1Data?.Sire || "Entry 1"]: normalize(entry1Value, field),
-      [entry2Data?.Sire || "Entry 2"]: normalize(entry2Value, field),
-    };
-  });
-
-  // Log the prepared data
-  console.log("Radar Chart Data:", chartData);
-
-  // Check if chartData is empty or improperly formatted
-  if (chartData.length === 0 || !chartData[0].field) {
-    return <p>No data available for radar chart.</p>;
-  }
+  const chartData = fields.map((field) => ({
+    field,
+    [entry1Data?.Sire || "Entry 1"]: normalize(
+      sanitizeData(field, field === "RB2" ? entry1Data?.Percent_RB2 : entry1Data?.[field] || 0),
+      field
+    ),
+    ...(entry2Data
+      ? {
+          [entry2Data?.Sire || "Entry 2"]: normalize(
+            sanitizeData(field, field === "RB2" ? entry2Data?.Percent_RB2 : entry2Data?.[field] || 0),
+            field
+          ),
+        }
+      : {}),
+  }));
 
   return (
-    <div className="radar-chart-container" style={{ height: "400px", width: "100%" }}>
-      <ResponsiveRadar
-        data={chartData}
-        keys={[entry1Data?.Sire || "Entry 1", entry2Data?.Sire || "Entry 2"]}
-        indexBy="field"
-        maxValue={1}
-        margin={{ top: 70, right: 80, bottom: 40, left: 80 }}
-        gridShape="circular"
-        gridLevels={5}
-        colors={{ scheme: "category10" }}
-        borderWidth={2}
-        dotSize={10}
-        dotBorderWidth={2}
-        dotBorderColor={{ from: "color" }}
-        legends={[
-          {
-            anchor: "top-left",
-            direction: "column",
-            translateX: -50,
-            itemWidth: 80,
-            itemHeight: 20,
-            itemTextColor: "#999",
-            symbolSize: 12,
-            symbolShape: "circle",
-          },
-        ]}
-      />
+    <div className="radar-chart-container flex items-center gap-6" style={{ width: "100%" }}>
+      <div style={{ flex: 1, height: "400px" }}>
+        <ResponsiveRadar
+          data={chartData}
+          keys={[entry1Data?.Sire || "Entry 1", ...(entry2Data ? [entry2Data?.Sire || "Entry 2"] : [])]}
+          indexBy="field"
+          maxValue={1}
+          margin={{ top: 70, right: 80, bottom: 40, left: 80 }}
+          colors={{ scheme: "category10" }}
+          borderWidth={2}
+          dotSize={10}
+          legends={
+            entry2Data
+              ? [
+                  {
+                    anchor: "top-left",
+                    direction: "column",
+                    translateX: -50,
+                    itemWidth: 80,
+                    itemHeight: 20,
+                    itemTextColor: "#999",
+                    symbolSize: 12,
+                    symbolShape: "circle",
+                  },
+                ]
+              : []
+          }
+        />
+      </div>
     </div>
   );
 };
@@ -161,7 +158,7 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
         <table className="w-full min-w-[640px] table-auto">
           <thead>
             <tr>
-              {["Sire", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins"].map((el) => (
+              {["Sire", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins", "RB2"].map((el) => (
                 <th key={el} className="border-b border-gray-300 py-3 px-5 text-left">
                   <Typography variant="small" className="text-[11px] font-bold uppercase text-blue-gray-600">
                     {el}
@@ -173,7 +170,7 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
           <tbody>
             {tableData.map((item, index) => (
               <tr key={index} onClick={() => onSelectRow(item)} className="cursor-pointer hover:bg-gray-100">
-                {["Sire", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins"].map((key, i) => (
+                {["Sire", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins", "Percent_RB2"].map((key, i) => (
                   <td key={i} className={`py-3 px-5 border-b border-gray-300`}>
                     <Typography className="text-xs font-semibold text-blue-gray-600">
                       {item[key] !== null && item[key] !== undefined ? item[key] : "-"}
@@ -217,23 +214,26 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
 };
 
 const ComparisonTable = ({ entry1, entry2 }) => (
-  <Card className="bg-white text-black w-1/2">
-    <CardBody>
-      <Typography variant="h6" className="mb-4">Comparison Table</Typography>
-      <table className="w-full table-auto text-xs border-collapse border border-gray-200">
+  <Card className="bg-white text-black w-[600px] h-[400px] p-4 shadow-md flex justify-center"> {/* Wider & Taller */}
+    <CardBody className="w-full h-full flex flex-col justify-center p-2"> {/* Ensures table stretches fully */}
+      <table className="w-full h-full table-auto text-xs border-collapse border border-gray-200"> {/* Adjusted width & height */}
         <thead>
           <tr>
-            <th className="border border-gray-300 py-2 px-3 text-left">Field</th>
-            <th className="border border-gray-300 py-2 px-3 text-left">{entry1?.Sire || "Entry 1"}</th>
-            <th className="border border-gray-300 py-2 px-3 text-left">{entry2?.Sire || "Entry 2"}</th>
+            <th className="border border-gray-300 py-1 px-2 text-left">Field</th>
+            <th className="border border-gray-300 py-1 px-2 text-left">{entry1?.Sire || "Entry 1"}</th>
+            <th className="border border-gray-300 py-1 px-2 text-left">{entry2 ? entry2.Sire : "Entry 2 (Select a sire)"}</th>
           </tr>
         </thead>
         <tbody>
           {Object.keys(fieldLimits).map((field, index) => (
             <tr key={field} className={index % 2 === 0 ? "bg-gray-100" : ""}>
-              <td className="border border-gray-300 py-2 px-3">{field}</td>
-              <td className="border border-gray-300 py-2 px-3">{sanitizeData(field, entry1?.[field])}</td>
-              <td className="border border-gray-300 py-2 px-3">{sanitizeData(field, entry2?.[field])}</td>
+              <td className="border border-gray-300 py-1 px-2">{field}</td>
+              <td className="border border-gray-300 py-1 px-2">
+                {sanitizeData(field, field === "RB2" ? entry1?.Percent_RB2 : entry1?.[field])}
+              </td>
+              <td className="border border-gray-300 py-1 px-2">
+                {entry2 ? sanitizeData(field, field === "RB2" ? entry2?.Percent_RB2 : entry2?.[field]) : "-"}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -241,6 +241,9 @@ const ComparisonTable = ({ entry1, entry2 }) => (
     </CardBody>
   </Card>
 );
+
+
+
 
 export function SireRadar() {
   const [tableData, setTableData] = useState([]);
@@ -270,7 +273,7 @@ export function SireRadar() {
   const handleSelectRow = (row) => {
     if (currentSelection === "entry1") {
       setSelectedEntry1(row);
-    } else {
+    } else if (currentSelection === "entry2") {
       setSelectedEntry2(row);
     }
   };
@@ -280,7 +283,8 @@ export function SireRadar() {
   }, [currentPage, searchQuery]);
 
   return (
-    <div className="mt-12 mb-8 flex flex-col gap-12">
+    <div className="mt-4 mb-0 flex flex-col gap-5">
+
       <div className="flex items-center gap-4">
         <label htmlFor="sire-selector" className="text-sm font-medium">
           Select Entry:
@@ -306,7 +310,7 @@ export function SireRadar() {
         totalPages={totalPages}
         onSelectRow={handleSelectRow}
       />
-      {selectedEntry1 && selectedEntry2 && (
+      {selectedEntry1 && (
         <div className="flex justify-between">
           <D3RadarChart entry1Data={selectedEntry1} entry2Data={selectedEntry2} />
           <ComparisonTable entry1={selectedEntry1} entry2={selectedEntry2} />

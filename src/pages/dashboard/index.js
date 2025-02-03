@@ -16,4 +16,5 @@ export * from "@/pages/dashboard/horseprofile";
 export * from "@/pages/dashboard/horseradar";
 export * from "@/pages/dashboard/myhorses";
 export * from "@/pages/dashboard/myraces";
-
+export * from "@/pages/dashboard/mareupgrade";
+export * from "@/pages/dashboard/dampedigree";
