@@ -12,7 +12,7 @@ export function SignIn() {
   
     const validCredentials = [
       { email: "tom@creativetim.com", password: "Horses_are_running", userId: "Tom" },
-      { email: "stuart@blandford.com", password: "Racing_Expert_123", userId: "Stuart" },
+      { email: "stuart@blandford.com", password: "stuart", userId: "Stuart" },
     ];
   
     const user = validCredentials.find(
