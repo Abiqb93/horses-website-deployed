@@ -275,7 +275,7 @@ export function Races() {
       numberOfRunners: race.numberOfRunners,
       prizeFund: race.prizeFund,
       allHorses: race.allHorses, // Include all horses
-      user: "Tom", // Replace with dynamic user if applicable
+      user: localStorage.getItem("userId"), 
     };
   
     console.log("Payload being sent to backend:", raceData);

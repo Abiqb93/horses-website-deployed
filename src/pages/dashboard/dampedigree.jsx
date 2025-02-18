@@ -5,9 +5,18 @@ const countryFlagURL = (countryCode) => {
 
 import React, { useState, useEffect } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
+import { FaArrowUp, FaArrowDown } from "react-icons/fa";
 
 const ROWS_PER_PAGE = 10;
 const PAGINATION_RANGE = 10;
+const REQUIRED_COLUMNS = [
+  "horseName",
+  "sireName",
+  "damName",
+  "ownerFullName",
+  "max_performanceRating_Target_Variable",
+  "avg_performanceRating_Target_Variable",
+];
 
 const SearchBox = ({ setSearchQuery }) => {
   const handleSearchChange = (e) => {
@@ -17,7 +26,7 @@ const SearchBox = ({ setSearchQuery }) => {
   return (
     <div className="relative mb-4 max-w-lg">
       <Typography variant="small" className="text-sm font-bold text-blue-gray-600">
-        Search by Horse Name
+        
       </Typography>
       <div className="flex items-center rounded-full shadow-md border border-gray-300 bg-white overflow-hidden focus-within:ring focus-within:ring-blue-300">
         <input
@@ -92,45 +101,92 @@ const ReportTable = ({ tableData, headers, currentPage, setCurrentPage, totalPag
 
 export function Broodmare() {
   const [tableData, setTableData] = useState([]);
-  const [headers, setHeaders] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [horseSearchQuery, setHorseSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState(""); // Sorting column
+  const [order, setOrder] = useState("asc"); // Sorting order
 
   useEffect(() => {
     fetchFilteredData();
-  }, [currentPage, horseSearchQuery]);
+  }, [currentPage, horseSearchQuery, sortBy, order]);
+
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+    params.append("page", currentPage);
+    params.append("limit", ROWS_PER_PAGE);
+
+    if (horseSearchQuery.trim()) {
+      params.append("horseName", horseSearchQuery);
+    }
+
+    if (sortBy) params.append("sortBy", sortBy);
+    if (order) params.append("order", order);
+
+    return params.toString();
+  };
 
   const fetchFilteredData = async () => {
     try {
-      const queryParams = new URLSearchParams({
-        page: currentPage,
-        limit: ROWS_PER_PAGE,
-      });
-
-      if (horseSearchQuery.trim()) {
-        queryParams.append("horseName", horseSearchQuery);
-      }
-
-      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/dampedigree_ratings?${queryParams.toString()}`);
+      const queryParams = buildQueryParams();
+      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/dampedigree_ratings?${queryParams}`);
       const data = await response.json();
 
-      setTableData(data.data);
+      const filteredData = data.data.map((entry) =>
+        Object.fromEntries(REQUIRED_COLUMNS.map((col) => [col, entry[col] ?? "-"]))
+      );
+
+      setTableData(filteredData);
       setTotalPages(data.totalPages);
-      if (data.data.length > 0) {
-        setHeaders(Object.keys(data.data[0])); // Dynamically get all column names
-      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   };
 
   return (
-    <div className="mt-12 mb-8 flex flex-col gap-12">
+    <div className="mt-12 mb-8 flex flex-col gap-3">
       <SearchBox setSearchQuery={setHorseSearchQuery} />
+
+      {/* Sorting Section */}
+      <div className="flex justify-end items-center gap-2 mb-2">
+        <label htmlFor="sortBy" className="text-xs font-semibold">Sort By:</label>
+        <select
+          id="sortBy"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="p-1 text-xs border border-gray-300 rounded-md"
+        >
+          <option value="">Select Column</option>
+          {[
+            { value: "horseName", label: "Horse Name" },
+            { value: "sireName", label: "Sire Name" },
+            { value: "damName", label: "Dam Name" },
+            { value: "ownerFullName", label: "Owner" },
+            { value: "max_performanceRating_Target_Variable", label: "Max Performance Rating" },
+            { value: "avg_performanceRating_Target_Variable", label: "Avg Performance Rating" }
+          ].map(({ value, label }) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+
+        <button
+          className={`p-1 text-xs rounded ${order === "asc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          onClick={() => setOrder("asc")}
+        >
+          <FaArrowUp size={12} />
+        </button>
+
+        <button
+          className={`p-1 text-xs rounded ${order === "desc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          onClick={() => setOrder("desc")}
+        >
+          <FaArrowDown size={12} />
+        </button>
+      </div>
+
       <ReportTable 
         tableData={tableData} 
-        headers={headers} 
+        headers={REQUIRED_COLUMNS} 
         currentPage={currentPage} 
         setCurrentPage={setCurrentPage} 
         totalPages={totalPages} 

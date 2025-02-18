@@ -109,9 +109,13 @@ export function MyHorses() {
 
   const fetchAllData = async () => {
     try {
+      const userId = localStorage.getItem("userId") || "Guest"; // Get userId dynamically
+  
       const response = await fetch(
-        `https://horseracesbackend-production.up.railway.app/api/selected_horses`
+        `https://horseracesbackend-production.up.railway.app/api/selected_horses?user_id=${userId}`
+        // `http://localhost:8080/api/selected_horses?user_id=${userId}`
       );
+      
       const result = await response.json();
       if (Array.isArray(result)) {
         setTableData(result);
@@ -123,6 +127,7 @@ export function MyHorses() {
       setError(error.message);
     }
   };
+  
 
   const saveHorse = async (id, notes, saveToServer = false) => {
     setTableData((prevData) =>

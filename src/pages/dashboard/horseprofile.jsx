@@ -49,7 +49,7 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
   const endPage = Math.min(startPage + 9, totalPages);
 
   const Pagination = () => (
-    <div className="flex justify-center items-center mt-4">
+    <div className="flex justify-center items-center mt-0">
       <button
         onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
@@ -167,7 +167,8 @@ export function HorseProfiles() {
   ];
 
   const addHorseToList = async (horse) => {
-    const userId = "Tom"; // Hardcoded user_id for now
+    // const userId = "Tom"; // Hardcoded user_id for now
+    const userId = localStorage.getItem("userId") || "Guest"; 
   
     if (!selectedHorses.some((selected) => selected.Sire === horse.Sire)) {
       try {
@@ -202,6 +203,7 @@ export function HorseProfiles() {
         console.log("Formatted data being sent to the server:", formattedHorse);
   
         const response = await fetch("https://horseracesbackend-production.up.railway.app/api/selected_horses", {
+        // const response = await fetch("http://localhost:8080/api/selected_horses", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -235,12 +237,23 @@ export function HorseProfiles() {
     setSelectedHorses(updatedHorses);
   };
 
+  const [sortBy, setSortBy] = useState(""); // Column to sort
+  const [order, setOrder] = useState("asc"); // Sorting order (asc/desc)
+  
+  
+  
   const buildQueryParams = () => {
     const params = new URLSearchParams();
     params.append("page", currentPage);
     params.append("limit", ROWS_PER_PAGE);
+    
     if (searchQuery) params.append("sire", searchQuery);
     if (selectedCountry) params.append("country", selectedCountry);
+  
+    // ✅ Append sorting parameters
+    if (sortBy) params.append("sortBy", sortBy);
+    if (order) params.append("order", order);
+  
     return params.toString();
   };
 
@@ -259,17 +272,17 @@ export function HorseProfiles() {
 
   useEffect(() => {
     fetchFilteredData();
-  }, [currentPage, searchQuery, selectedCountry]);
+  }, [currentPage, searchQuery, selectedCountry, sortBy, order]);
 
   return (
-    <div className="mt-12 mb-8 flex flex-col gap-12">
+    <div className="mt-0 mb-0 flex flex-col gap-3">
       <div className="flex items-center mb-2">
-        <label htmlFor="table-select" className="mr-2">Time Period:</label>
+        <label htmlFor="table-select" className="mr-2 text-[12px]">Time Period:</label>
         <select
           id="table-select"
           value={selectedTable}
           onChange={(e) => setSelectedTable(e.target.value)}
-          className="p-2 rounded-md border border-gray-300"
+          className="p-2 text-xs rounded-md border border-gray-300"
         >
           <option value="horse_names">Overall</option>
         </select>
@@ -280,12 +293,12 @@ export function HorseProfiles() {
 
       {/* Country Filter */}
       <div className="relative mb-4">
-        <label htmlFor="country-filter" className="mr-2">Country:</label>
+        <label htmlFor="country-filter" className="mr-2 text-[12px]">Country:</label>
         <select
           id="country-filter"
           value={selectedCountry}
           onChange={(e) => setSelectedCountry(e.target.value)}
-          className="p-2 rounded-md border border-gray-300"
+          className="p-2 text-xs rounded-md border border-gray-300"
         >
           <option value="">All</option>
           {countryCodes.map((code) => (
@@ -293,6 +306,59 @@ export function HorseProfiles() {
           ))}
         </select>
       </div>
+
+      <div className="flex justify-end items-center gap-2 mb-2">
+        <label htmlFor="sortBy" className="text-xs font-semibold">Sort By:</label>
+        <select
+          id="sortBy"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="p-1 text-xs border border-gray-300 rounded-md"
+        >
+          <option value="">Select Column</option>
+          {[
+            { value: "Sire", label: "Horse" },
+            { value: "Country", label: "Country" },
+            { value: "Runners", label: "Runners" },
+            { value: "Runs", label: "Runs" },
+            { value: "Winners", label: "Winners" },
+            { value: "Wins", label: "Wins" },
+            { value: "WinPercent_", label: "Win %" },
+            { value: "Stakes_Winners", label: "Stakes Winners" },
+            { value: "Stakes_Wins", label: "Stakes Wins" },
+            { value: "Group_Winners", label: "Group Winners" },
+            { value: "Group_Wins", label: "Group Wins" },
+            { value: "Group_1_Winners", label: "Group 1 Winners" },
+            { value: "Group_1_Wins", label: "Group 1 Wins" },
+            { value: "WTR", label: "WTR" },
+            { value: "SWTR", label: "SWTR" },
+            { value: "GWTR", label: "GWTR" },
+            { value: "G1WTR", label: "G1WTR" },
+            { value: "WIV", label: "WIV" },
+            { value: "WOE", label: "WOE" },
+            { value: "WAX", label: "WAX" },
+            { value: "Percent_RB2", label: "%RB2" }
+          ].map(({ value, label }) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+
+        {/* Sorting Order Buttons */}
+        <button
+          className={`p-1 text-xs rounded ${order === "asc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          onClick={() => setOrder("asc")}
+        >
+          ↑
+        </button>
+
+        <button
+          className={`p-1 text-xs rounded ${order === "desc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          onClick={() => setOrder("desc")}
+        >
+          ↓
+        </button>
+      </div>
+
 
       <ReportTable
         tableData={tableData}
@@ -303,7 +369,7 @@ export function HorseProfiles() {
         addHorseToList={addHorseToList}
       />
 
-      <div className="mt-8 bg-white p-4 rounded shadow">
+      <div className="mt-2 bg-white p-4 rounded shadow">
         <Typography variant="h5" className="mb-4 font-bold text-sm">Selected Horses</Typography>
         <ul>
           {selectedHorses.map((horse, index) => (

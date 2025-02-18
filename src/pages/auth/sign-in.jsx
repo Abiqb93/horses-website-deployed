@@ -9,12 +9,24 @@ export function SignIn() {
 
   const handleSignIn = (e) => {
     e.preventDefault();
-    if (email === "tom@creativetim.com" && password === "Horses_are_running") {
+  
+    const validCredentials = [
+      { email: "tom@creativetim.com", password: "Horses_are_running", userId: "Tom" },
+      { email: "stuart@blandford.com", password: "Racing_Expert_123", userId: "Stuart" },
+    ];
+  
+    const user = validCredentials.find(
+      (u) => u.email === email && u.password === password
+    );
+  
+    if (user) {
+      localStorage.setItem("userId", user.userId); // Store userId in localStorage
       navigate("/dashboard/home");
     } else {
       alert("Invalid credentials. Please try again.");
     }
   };
+  
 
   return (
     <section className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">

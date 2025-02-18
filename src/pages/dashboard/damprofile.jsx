@@ -221,6 +221,7 @@ export function DamProfiles() {
     }
   };
 
+ 
   useEffect(() => {
     fetchFilteredData();
   }, [currentPage, filterValues, selectedTable, searchQuery, selectedCountry, sortBy, order]);
@@ -295,7 +296,7 @@ export function DamProfiles() {
       {/* Search Box */}
       <HorseProfile setSearchQuery={setSearchQuery} />
 
-            {/* Sorting Section - Aligned Right */}
+      {/* Sorting Section - Aligned Right */}
       {/* ✅ Sorting Section - Moved Below Search Box, Above Table */}
       <div className="flex justify-end items-center gap-2 mb-2">
         <label htmlFor="sortBy" className="text-xs font-semibold">Sort By:</label> {/* Reduced text size */}

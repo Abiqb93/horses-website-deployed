@@ -5,7 +5,10 @@ const countryFlagURL = (countryCode) => {
 
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, Typography } from "@material-tailwind/react";
+
 import _ from "lodash";
+
+
 
 const HorseProfile = ({ setSearchQuery }) => {
   // Debounced function for search input
@@ -14,7 +17,7 @@ const HorseProfile = ({ setSearchQuery }) => {
   }, 300); // Adjust delay as needed
 
   return (
-    <div className="relative mb-4 max-w-lg">
+    <div className="relative mb-0 max-w-lg">
       <div className="flex items-center rounded-full shadow-md border border-gray-300 bg-white overflow-hidden focus-within:ring focus-within:ring-blue-300">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -41,6 +44,7 @@ const HorseProfile = ({ setSearchQuery }) => {
 
   );
 };
+
 const ROWS_PER_PAGE = 10;
 
 const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages }) => {
@@ -131,6 +135,8 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
   );
 };
 
+import { FaArrowUp, FaArrowDown } from "react-icons/fa";
+
 export function OwnerProfiles() {
   const [tableData, setTableData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -139,6 +145,10 @@ export function OwnerProfiles() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+
+  // ✅ NEW: Sorting state
+  const [sortBy, setSortBy] = useState(""); // Column to sort
+  const [order, setOrder] = useState("asc"); // Sorting order (asc/desc)
 
   const countryCodes = [
     "MU", "US", "SA", "MX", "UY", "AU", "ZA", "CL", "NZ", "JP", "FI", "AR", "AE", "TR", "UK", "DK", "AT", "CZ",
@@ -162,6 +172,8 @@ export function OwnerProfiles() {
     { label: "WOE", id: "woe", min: -186.57, max: 1203.3, value: 1205 },
     { label: "WAX", id: "wax", min: -173.19, max: 784.34, value: 785 },
   ];
+
+
 
   const [filterValues, setFilterValues] = useState(filters.map((filter) => filter.value));
 
@@ -190,9 +202,12 @@ export function OwnerProfiles() {
     if (searchQuery) params.append("sire", searchQuery);
     if (selectedCountry) params.append("country", selectedCountry);
 
+    // ✅ NEW: Append Sorting Parameters
+    if (sortBy) params.append("sortBy", sortBy);
+    if (order) params.append("order", order);
+
     return params.toString();
   };
-
 
   const fetchFilteredData = async () => {
     try {
@@ -208,17 +223,17 @@ export function OwnerProfiles() {
 
   useEffect(() => {
     fetchFilteredData();
-  }, [currentPage, filterValues, selectedTable, searchQuery, selectedCountry]);
+  }, [currentPage, filterValues, selectedTable, searchQuery, selectedCountry, sortBy, order]);
 
   return (
-    <div className="mt-12 mb-8 flex flex-col gap-12">
-      <div className="flex items-center mb-2">
-        <label htmlFor="table-select" className="mr-2">Time Period:</label>
+    <div className="mt-12 mb-8 flex flex-col gap-3">
+      <div className="flex items-center mb-0">
+        <label htmlFor="table-select" className="mr-2 text-[12px]">Time Period:</label>
         <select
           id="table-select"
           value={selectedTable}
           onChange={(e) => setSelectedTable(e.target.value)}
-          className="p-2 rounded-md border border-gray-300"
+          className="p-2 text-xs rounded-md border border-gray-300"
         >
           <option value="owner_profile">Overall</option>
           <option value="owner_profile_three">Last 03 Years</option>
@@ -226,13 +241,15 @@ export function OwnerProfiles() {
         </select>
       </div>
 
-      {/* Filters */}
-      <div className="cursor-pointer text-center border-t border-gray-300 py-2" onClick={() => setShowFilters(!showFilters)}>
+
+
+      {/* Filters (UNCHANGED) */}
+      <div className="cursor-pointer text-center border-t border-gray-300 py-2 text-xs" onClick={() => setShowFilters(!showFilters)}>
         <span>{showFilters ? "▲ Hide Filters" : "▼ Show Filters"}</span>
       </div>
       {showFilters && (
         <div className="p-4 border rounded-lg bg-white text-black border-black">
-          <Typography variant="h5" className="mb-4 font-bold">Filters</Typography>
+          {/* <Typography variant="h5" className="mb-4 font-bold">Filters</Typography> */}
           <div className="grid grid-cols-2 gap-x-20 gap-y-3">
             {filters.map((filter, index) => (
               <div key={filter.id} className="flex items-center gap-4">
@@ -278,6 +295,63 @@ export function OwnerProfiles() {
       {/* Search Box */}
       <HorseProfile setSearchQuery={setSearchQuery} />
 
+            {/* Sorting Section - Aligned Right */}
+      {/* ✅ Sorting Section - Moved Below Search Box, Above Table */}
+      <div className="flex justify-end items-center gap-2 mb-2">
+        <label htmlFor="sortBy" className="text-xs font-semibold">Sort By:</label> {/* Reduced text size */}
+        <select
+          id="sortBy"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="p-1 text-xs border border-gray-300 rounded-md"
+        >
+          <option value="">Select Column</option>
+          {[
+            { value: "Sire", label: "Owner" }, // ✅ Display "Owner" but keep "Sire" in the query
+            { value: "Country", label: "Country" },
+            { value: "Runners", label: "Runners" },
+            { value: "Runs", label: "Runs" },
+            { value: "Winners", label: "Winners" },
+            { value: "Wins", label: "Wins" },
+            { value: "WinPercent_", label: "Win %" },
+            { value: "Stakes_Winners", label: "Stakes Winners" },
+            { value: "Stakes_Wins", label: "Stakes Wins" },
+            { value: "Group_Winners", label: "Group Winners" },
+            { value: "Group_Wins", label: "Group Wins" },
+            { value: "Group_1_Winners", label: "Group 1 Winners" },
+            { value: "Group_1_Wins", label: "Group 1 Wins" },
+            { value: "WTR", label: "WTR" },
+            { value: "SWTR", label: "SWTR" },
+            { value: "GWTR", label: "GWTR" },
+            { value: "G1WTR", label: "G1WTR" },
+            { value: "WIV", label: "WIV" },
+            { value: "WOE", label: "WOE" },
+            { value: "WAX", label: "WAX" },
+            { value: "Percent_RB2", label: "%RB2" }
+          ].map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+
+        {/* Sorting Order Buttons */}
+        <button
+          className={`p-1 text-xs rounded ${order === "asc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          onClick={() => setOrder("asc")}
+        >
+          <FaArrowUp size={12} />
+        </button>
+
+        <button
+          className={`p-1 text-xs rounded ${order === "desc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+          onClick={() => setOrder("desc")}
+        >
+          <FaArrowDown size={12} />
+        </button>
+      </div>
+
+
       {/* Table Section */}
       <ReportTable
         tableData={tableData}
@@ -287,6 +361,7 @@ export function OwnerProfiles() {
         totalPages={totalPages}
       />
     </div>
+
   );
 }
 
