@@ -41,15 +41,26 @@ const HorseProfile = ({ setSearchQuery }) => {
 
 const ROWS_PER_PAGE = 3;
 
+// const fieldLimits = {
+//   WTR: { min: 0, max: 100 },
+//   SWTR: { min: 0, max: 5.88 },
+//   GWTR: { min: 0, max: 2.30 },
+//   G1WTR: { min: 0, max: 0.41 },
+//   WIV: { min: 0, max: 2 },
+//   WOE: { min: -17.91, max: 25.85 },
+//   WAX: { min: -5.26, max: 37.26 },
+//   RB2: { min: 0, max: 66.92 },
+// };
+
 const fieldLimits = {
   WTR: { min: 0, max: 100 },
-  SWTR: { min: 0, max: 100 },
-  GWTR: { min: 0, max: 100 },
-  G1WTR: { min: 0, max: 100 },
-  WIV: { min: 0, max: 110.77 },
-  WOE: { min: -186.57, max: 1203.3 },
-  WAX: { min: -173.19, max: 784.34 },
-  RB2: { min: 0, max: 240000 },
+  SWTR: { min: 0, max: 16.67 },
+  GWTR: { min: 0, max: 7.89 },
+  G1WTR: { min: 0, max: 2.27 },
+  WIV: { min: 0, max: 9 },
+  WOE: { min: -17.91, max: 173.06 },
+  WAX: { min: -5.26, max: 163.72 },
+  RB2: { min: 0, max: 594.34 },
 };
 
 const sanitizeData = (key, value) => {
