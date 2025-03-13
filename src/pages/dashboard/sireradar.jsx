@@ -41,17 +41,6 @@ const HorseProfile = ({ setSearchQuery }) => {
 
 const ROWS_PER_PAGE = 3;
 
-// const fieldLimits = {
-//   WTR: { min: 0, max: 100 },
-//   SWTR: { min: 0, max: 5.88 },
-//   GWTR: { min: 0, max: 2.30 },
-//   G1WTR: { min: 0, max: 0.41 },
-//   WIV: { min: 0, max: 2 },
-//   WOE: { min: -17.91, max: 25.85 },
-//   WAX: { min: -5.26, max: 37.26 },
-//   RB2: { min: 0, max: 66.92 },
-// };
-
 const fieldLimits = {
   WTR: { min: 0, max: 100 },
   SWTR: { min: 0, max: 16.67 },
@@ -122,6 +111,11 @@ const D3RadarChart = ({ entry1Data, entry2Data }) => {
       : {}),
   }));
 
+  // Find the maximum value dynamically across all keys
+  const maxChartValue = Math.max(
+    ...chartData.flatMap((d) => Object.values(d).filter((v) => typeof v === "number"))
+  );
+
   return (
     <div className="radar-chart-container flex items-center gap-6" style={{ width: "100%" }}>
       <div style={{ flex: 1, height: "400px" }}>
@@ -129,7 +123,7 @@ const D3RadarChart = ({ entry1Data, entry2Data }) => {
           data={chartData}
           keys={[entry1Data?.Sire || "Entry 1", ...(entry2Data ? [entry2Data?.Sire || "Entry 2"] : [])]}
           indexBy="field"
-          maxValue={1}
+          maxValue={maxChartValue}  // Dynamically adjust max value
           margin={{ top: 70, right: 80, bottom: 40, left: 80 }}
           colors={{ scheme: "category10" }}
           borderWidth={2}
