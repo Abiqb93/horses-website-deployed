@@ -67,7 +67,7 @@ export const routes = [
         name: "Sire",
         children: [
           {
-            name: "Sire Profile",
+            name: "Sire Table",
             path: "/profile",
             element: <Profile />,
           },
