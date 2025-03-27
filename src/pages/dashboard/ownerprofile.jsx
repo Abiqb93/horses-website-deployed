@@ -256,8 +256,8 @@ export function OwnerProfiles() {
   const fetchFilteredData = async () => {
     try {
       const queryParams = buildQueryParams();
-      // const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
-      const response = await fetch(`http://localhost:8080/api/${selectedTable}?${queryParams}`);
+      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
+      // const response = await fetch(`http://localhost:8080/api/${selectedTable}?${queryParams}`);
       
       const data = await response.json();
       setTableData(data.data);
