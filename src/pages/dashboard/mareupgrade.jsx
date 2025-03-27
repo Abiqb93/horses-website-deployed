@@ -212,11 +212,11 @@ export function MareUpLift() {
   const handleSireClick = async (sireName) => {
     try {
       const [sireRes, upliftRes] = await Promise.all([
-        // fetch(`https://horseracesbackend-production.up.railway.app/api/mareupdates?sireName=${sireName}`),
-        // fetch(`https://horseracesbackend-production.up.railway.app/api/sire_uplift?sire=${sireName}`)
+        fetch(`https://horseracesbackend-production.up.railway.app/api/mareupdates?sireName=${sireName}`),
+        fetch(`https://horseracesbackend-production.up.railway.app/api/sire_uplift?sire=${sireName}`)
 
-        fetch(`http://localhost:8080/api/mareupdates?sireName=${sireName}`),
-        fetch(`http://localhost:8080/api/sire_uplift?sire=${sireName}`)
+        // fetch(`http://localhost:8080/api/mareupdates?sireName=${sireName}`),
+        // fetch(`http://localhost:8080/api/sire_uplift?sire=${sireName}`)
       ]);
 
       const sireData = await sireRes.json();
