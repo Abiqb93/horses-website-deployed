@@ -44,7 +44,18 @@ const HorseProfile = ({ setSearchQuery }) => {
   );
 };
 
-const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages, addHorseToList }) => {
+const ReportTable = ({
+  tableData,
+  title,
+  currentPage,
+  setCurrentPage,
+  totalPages,
+  addHorseToList,
+  sortBy,
+  setSortBy,
+  order,
+  setOrder
+}) => {
   const startPage = Math.max(1, currentPage - 5);
   const endPage = Math.min(startPage + 9, totalPages);
 
@@ -87,8 +98,37 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
             <tr>
               {["Add", "Horse", "Country", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins", "Group_1_Winners", "Group_1_Wins", "WTR", "SWTR", "GWTR", "G1WTR", "WIV", "WOE", "WAX", "Percent_RB2"]
                 .map((el) => (
-                  <th key={el} className="border-b border-blue-gray-50 py-3 px-5 text-left">
-                    <Typography variant="small" className="text-[11px] font-bold uppercase text-blue-gray-400">{el}</Typography>
+                  <th
+                    key={el}
+                    className="border-b border-blue-gray-50 py-3 px-5 text-left cursor-pointer hover:text-blue-500 transition duration-200"
+                    onClick={() => {
+                      const actualColumn =
+                        el === "Horse" ? "Sire" :
+                        el === "Win %" ? "WinPercent_" :
+                        el === "%RB2" ? "Percent_RB2" :
+                        el;
+
+                      if (sortBy === actualColumn) {
+                        setOrder(order === "asc" ? "desc" : "asc");
+                      } else {
+                        setSortBy(actualColumn);
+                        setOrder("asc");
+                      }
+                    }}
+                  >
+                    <Typography variant="small" className="text-[11px] font-bold uppercase flex items-center gap-1 text-blue-gray-400">
+                      {el}
+                      <span className="text-gray-400">
+                        {sortBy === (
+                          el === "Horse" ? "Sire" :
+                          el === "Win %" ? "WinPercent_" :
+                          el === "%RB2" ? "Percent_RB2" :
+                          el
+                        )
+                          ? (order === "asc" ? "🔼" : "🔽")
+                          : "↕"}
+                      </span>
+                    </Typography>
                   </th>
                 ))}
             </tr>
@@ -307,6 +347,8 @@ export function HorseProfiles() {
         </select>
       </div>
 
+
+      {false && (
       <div className="flex justify-end items-center gap-2 mb-2">
         <label htmlFor="sortBy" className="text-xs font-semibold">Sort By:</label>
         <select
@@ -358,7 +400,7 @@ export function HorseProfiles() {
           ↓
         </button>
       </div>
-
+      )}
 
       <ReportTable
         tableData={tableData}
@@ -367,6 +409,10 @@ export function HorseProfiles() {
         setCurrentPage={setCurrentPage}
         totalPages={totalPages}
         addHorseToList={addHorseToList}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        order={order}
+        setOrder={setOrder}
       />
 
       <div className="mt-2 bg-white p-4 rounded shadow">

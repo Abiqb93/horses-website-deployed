@@ -4,14 +4,14 @@ import { ResponsiveRadar } from "@nivo/radar";
 
 import _ from "lodash";
 
-const HorseProfile = ({ setSearchQuery }) => {
+const HorseProfile = ({ setSearchQuery, placeholder  }) => {
   // Debounced function for search input
   const debouncedSearch = _.debounce((query) => {
     setSearchQuery(query); // Update search query
   }, 300); // Adjust delay as needed
 
   return (
-    <div className="relative mb-0 max-w-lg">
+    <div className="relative mb-4 max-w-lg">
       <div className="flex items-center rounded-full shadow-md border border-gray-300 bg-white overflow-hidden focus-within:ring focus-within:ring-blue-300">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -29,10 +29,11 @@ const HorseProfile = ({ setSearchQuery }) => {
         </svg>
         <input
           type="text"
-          placeholder="Search Jockey..."
-          className="flex-grow p-3 text-sm text-gray-700 focus:outline-none focus:ring-0 bg-transparent"
+          placeholder={placeholder}
+          className="flex-grow py-1 px-2 text-xs text-gray-700 focus:outline-none focus:ring-0 bg-transparent h-8"
           onChange={(e) => debouncedSearch(e.target.value)}
         />
+
       </div>
     </div>
 
@@ -43,13 +44,13 @@ const ROWS_PER_PAGE = 3;
 
 const fieldLimits = {
   WTR: { min: 0, max: 100 },
-  SWTR: { min: 0, max: 100 },
-  GWTR: { min: 0, max: 100 },
-  G1WTR: { min: 0, max: 100 },
-  WIV: { min: 0, max: 110.77 },
-  WOE: { min: -186.57, max: 1203.3 },
-  WAX: { min: -173.19, max: 784.34 },
-  RB2: { min: 0, max: 240000 },
+  SWTR: { min: 0, max: 16.67 },
+  GWTR: { min: 0, max: 7.89 },
+  G1WTR: { min: 0, max: 2.27 },
+  WIV: { min: 0, max: 9 },
+  WOE: { min: -17.91, max: 173.06 },
+  WAX: { min: -5.26, max: 163.72 },
+  RB2: { min: 0, max: 100 },
 };
 
 const sanitizeData = (key, value) => {
@@ -61,7 +62,7 @@ const sanitizeData = (key, value) => {
 
 const normalize = (value, field) => {
   const fieldLimit = fieldLimits[field];
-  const epsilon = 0;
+  const epsilon = 1e-6;
 
   if (!fieldLimit) {
     console.warn(`Field "${field}" does not have defined limits.`);
@@ -70,28 +71,32 @@ const normalize = (value, field) => {
 
   let { min, max } = fieldLimit;
 
-  if ((field === "WOE" || field === "WAX")) {
+  if (field === "WOE" || field === "WAX") {
     const adjustment = Math.abs(min);
     value += adjustment;
     min += adjustment;
     max += adjustment;
   }
 
-  if (value === 0) {
-    value = epsilon;
-  }
+  // Ensure value is not negative
+  value = Math.max(value, 0);
 
-  const transformedValue = Math.log1p(Math.abs(value)) * Math.sign(value);
-  const transformedMin = Math.log1p(Math.abs(min)) * Math.sign(min);
-  const transformedMax = Math.log1p(Math.abs(max)) * Math.sign(max);
+  // Apply log transformation
+  const transformedValue = Math.log1p(value);
+  const transformedMin = Math.log1p(Math.max(min, 0));
+  const transformedMax = Math.log1p(Math.max(max, epsilon));
 
   if (transformedMax === transformedMin) {
     console.error(`Invalid range for field "${field}".`);
     return 0.5;
   }
 
-  return ((transformedValue - transformedMin) / (transformedMax - transformedMin));
+  const normalizedValue = (transformedValue - transformedMin) / (transformedMax - transformedMin);
+
+  // Ensure final normalization stays within [0, 1]
+  return Math.min(Math.max(normalizedValue, 0), 1);
 };
+
 
 const D3RadarChart = ({ entry1Data, entry2Data }) => {
   const fields = Object.keys(fieldLimits);
@@ -111,6 +116,11 @@ const D3RadarChart = ({ entry1Data, entry2Data }) => {
       : {}),
   }));
 
+  // Find the maximum value dynamically across all keys
+  const maxChartValue = Math.max(
+    ...chartData.flatMap((d) => Object.values(d).filter((v) => typeof v === "number"))
+  );
+
   return (
     <div className="radar-chart-container flex items-center gap-6" style={{ width: "100%" }}>
       <div style={{ flex: 1, height: "400px" }}>
@@ -118,7 +128,7 @@ const D3RadarChart = ({ entry1Data, entry2Data }) => {
           data={chartData}
           keys={[entry1Data?.Sire || "Entry 1", ...(entry2Data ? [entry2Data?.Sire || "Entry 2"] : [])]}
           indexBy="field"
-          maxValue={1}
+          maxValue={maxChartValue}  // Dynamically adjust max value
           margin={{ top: 70, right: 80, bottom: 40, left: 80 }}
           colors={{ scheme: "category10" }}
           borderWidth={2}
@@ -159,8 +169,8 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
           <thead>
             <tr>
               {["Jockey", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins", "RB2"].map((el) => (
-                <th key={el} className="border-b border-gray-300 py-3 px-5 text-left">
-                  <Typography variant="small" className="text-[11px] font-bold uppercase text-blue-gray-600">
+                <th key={el} className="border-b border-gray-300 py-3 px-2 text-left">
+                  <Typography variant="small" className="text-[10px] font-bold uppercase text-blue-gray-600">
                     {el}
                   </Typography>
                 </th>
@@ -171,8 +181,8 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
             {tableData.map((item, index) => (
               <tr key={index} onClick={() => onSelectRow(item)} className="cursor-pointer hover:bg-gray-100">
                 {["Sire", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins", "Percent_RB2"].map((key, i) => (
-                  <td key={i} className={`py-3 px-5 border-b border-gray-300`}>
-                    <Typography className="text-xs font-semibold text-blue-gray-600">
+                  <td key={i} className={`py-2 px-3 border-b border-gray-300`}>
+                    <Typography className="text-[10px] font-semibold text-blue-gray-600">
                       {item[key] !== null && item[key] !== undefined ? item[key] : "-"}
                     </Typography>
                   </td>
@@ -185,7 +195,7 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-2 py-1 mx-1 text-sm border bg-gray-200 disabled:opacity-50"
+            className="px-1 py-0.5 mx-1 text-xs border bg-gray-200 disabled:opacity-50"
           >
             Previous
           </button>
@@ -193,7 +203,7 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
             <button
               key={index}
               onClick={() => setCurrentPage(startPage + index)}
-              className={`px-2 py-1 mx-1 text-sm border ${
+              className={`px-1 py-0.5 mx-1 text-xs border ${
                 currentPage === startPage + index ? "bg-blue-500 text-white" : "bg-gray-200"
               }`}
             >
@@ -203,7 +213,7 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
           <button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
-            className="px-2 py-1 mx-1 text-sm border bg-gray-200 disabled:opacity-50"
+            className="px-1 py-0.5 mx-1 text-xs border bg-gray-200 disabled:opacity-50"
           >
             Next
           </button>
@@ -221,7 +231,7 @@ const ComparisonTable = ({ entry1, entry2 }) => (
           <tr>
             <th className="border border-gray-300 py-1 px-2 text-left">Field</th>
             <th className="border border-gray-300 py-1 px-2 text-left">{entry1?.Sire || "Entry 1"}</th>
-            <th className="border border-gray-300 py-1 px-2 text-left">{entry2 ? entry2.Sire : "Entry 2 (Select a jockey)"}</th>
+            <th className="border border-gray-300 py-1 px-2 text-left">{entry2 ? entry2.Sire : "Entry 2 (Select a sire)"}</th>
           </tr>
         </thead>
         <tbody>
@@ -246,70 +256,104 @@ const ComparisonTable = ({ entry1, entry2 }) => (
 
 
 export function JockeyRadar() {
-  const [tableData, setTableData] = useState([]);
+  // const [tableData, setTableData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
+  // const [searchQuery, setSearchQuery] = useState("");
   const [selectedEntry1, setSelectedEntry1] = useState(null);
   const [selectedEntry2, setSelectedEntry2] = useState(null);
   const [currentSelection, setCurrentSelection] = useState("entry1");
+  const [searchQuery1, setSearchQuery1] = useState("");
+  const [searchQuery2, setSearchQuery2] = useState("");
+  const [tableData1, setTableData1] = useState([]);
+  const [tableData2, setTableData2] = useState([]);
 
-  const fetchFilteredData = async () => {
-    try {
-      const params = new URLSearchParams({
-        page: currentPage,
-        limit: ROWS_PER_PAGE,
-        sire: searchQuery || "",
-      });
-      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/jockey_name_profile?${params.toString()}`);
-      const data = await response.json();
-      setTableData(data.data);
-      setTotalPages(data.totalPages);
-    } catch (error) {
-      console.error("Error fetching filtered data:", error);
-    }
-  };
+  const fetchFilteredData = async (searchQuery, setTableData) => {
+      try {
+        const params = new URLSearchParams({
+          sire: searchQuery || "",
+          limit: 3, // Ensure only 3 rows per table
+        });
+        
+        const response = await fetch(
+          `https://horseracesbackend-production.up.railway.app/api/jockey_name_profile?${params.toString()}`
+        );
+        const data = await response.json();
+        
+        console.log("API Response:", data); // Add this to inspect the response
+        setTableData(data.data || []); // Ensure it does not break if `data.data` is undefined
+      } catch (error) {
+        console.error("Error fetching filtered data:", error);
+      }
+    };
+  
 
-  const handleSelectRow = (row) => {
-    if (currentSelection === "entry1") {
-      setSelectedEntry1(row);
-    } else if (currentSelection === "entry2") {
-      setSelectedEntry2(row);
-    }
+  // const handleSelectRow = (row) => {
+  //   if (currentSelection === "entry1") {
+  //     setSelectedEntry1(row);
+  //   } else if (currentSelection === "entry2") {
+  //     setSelectedEntry2(row);
+  //   }
+  // };
+
+  const handleSelectRow1 = (row) => {
+    setSelectedEntry1(row);
   };
+  
+  const handleSelectRow2 = (row) => {
+    setSelectedEntry2(row);
+  };
+  
+
+  // useEffect(() => {
+  //   fetchFilteredData();
+  // }, [currentPage, searchQuery]);
 
   useEffect(() => {
-    fetchFilteredData();
-  }, [currentPage, searchQuery]);
+    fetchFilteredData(searchQuery1, setTableData1);
+  }, [searchQuery1]);
+  
+  useEffect(() => {
+    fetchFilteredData(searchQuery2, setTableData2);
+  }, [searchQuery2]);
 
   return (
     <div className="mt-4 mb-0 flex flex-col gap-5">
 
-      <div className="flex items-center gap-4">
-        <label htmlFor="jockey-selector" className="text-sm font-medium">
+      {/* <div className="flex items-center gap-4">
+        <label htmlFor="sire-selector" className="text-sm font-medium">
           Select Entry:
         </label>
         <select
-          id="jockey-selector"
+          id="sire-selector"
           value={currentSelection}
           onChange={(e) => setCurrentSelection(e.target.value)}
           className="p-2 border rounded-md"
         >
-          <option value="entry1">Jockey 1</option>
-          <option value="entry2">Jockey 2</option>
+          <option value="entry1">Sire 1</option>
+          <option value="entry2">Sire 2</option>
         </select>
-      </div>
+      </div> */}
       {/* Search Box */}
-      <HorseProfile setSearchQuery={setSearchQuery} />
+      {/* <HorseProfile setSearchQuery={setSearchQuery} /> */}
+      {/* <HorseProfile setSearchQuery={setSearchQuery1} placeholder="Search Jockey 1..." />
+      <HorseProfile setSearchQuery={setSearchQuery2} placeholder="Search Jockey 2..." />
+      <ReportTable tableData={tableData1} title="Jockey 1 Table" onSelectRow={handleSelectRow1} />
+      <ReportTable tableData={tableData2} title="Jockey 2 Table" onSelectRow={handleSelectRow2} /> */}
 
-      <ReportTable
-        tableData={tableData}
-        title="Search and Click"
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        totalPages={totalPages}
-        onSelectRow={handleSelectRow}
-      />
+      <div className="flex justify-between gap-4">
+        <div className="w-1/2">
+          <HorseProfile setSearchQuery={setSearchQuery1} placeholder="Search Jockey 1..." className="mb-4"  />
+          <ReportTable tableData={tableData1} title="Jockey 1 Table" onSelectRow={setSelectedEntry1} />
+        </div>
+
+        <div className="w-1/2">
+          <HorseProfile setSearchQuery={setSearchQuery2} placeholder="Search Jockey 2..." className="mb-4"  />
+          <ReportTable tableData={tableData2} title="Jockey 2 Table" onSelectRow={setSelectedEntry2} />
+        </div>
+      </div>
+
+
       {selectedEntry1 && (
         <div className="flex justify-between">
           <D3RadarChart entry1Data={selectedEntry1} entry2Data={selectedEntry2} />

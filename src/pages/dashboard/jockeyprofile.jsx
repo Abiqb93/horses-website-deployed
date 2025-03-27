@@ -47,9 +47,18 @@ const HorseProfile = ({ setSearchQuery }) => {
 
 const ROWS_PER_PAGE = 10;
 
-const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages }) => {
+const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages, sortBy, setSortBy, order, setOrder }) => {
   const startPage = Math.max(1, currentPage - 5);
   const endPage = Math.min(startPage + 9, totalPages);
+
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setOrder(order === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setOrder("asc");
+    }
+  };
 
   const Pagination = () => (
     <div className="flex justify-center items-center mt-4">
@@ -81,9 +90,6 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
 
   return (
     <Card className="bg-white text-black">
-      {/* <CardHeader className="mb-8 p-6">
-        <Typography variant="h6" className="text-black">{title}</Typography>
-      </CardHeader> */}
       <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
         <table className="w-full min-w-[640px] table-auto">
           <thead>
@@ -93,9 +99,31 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
                 "Group_Winners", "Group_Wins", "Group_1_Winners", "Group_1_Wins", "WTR", "SWTR",
                 "GWTR", "G1WTR", "WIV", "WOE", "WAX", "Percent_RB2",
               ].map((el) => (
-                <th key={el} className="border-b border-blue-gray-50 py-3 px-5 text-left">
-                  <Typography variant="small" className="text-[11px] font-bold uppercase text-blue-gray-400">{el}</Typography>
+                <th
+                  key={el}
+                  className="border-b border-blue-gray-50 py-3 px-5 text-left cursor-pointer hover:text-blue-500 transition duration-200"
+                  onClick={() => {
+                    const actualColumn =
+                      el === "Jockey" ? "Sire" :
+                      el;
+                
+                    if (sortBy === actualColumn) {
+                      setOrder(order === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortBy(actualColumn);
+                      setOrder("asc");
+                    }
+                  }}
+                >
+                    <Typography variant="small" className="text-[11px] font-bold uppercase flex items-center gap-1">
+                    {el}
+                    {/* ✅ Show sorting icon always, but highlight when active */}
+                    <span className="text-gray-400">
+                      {sortBy === el ? (order === "asc" ? "🔼" : "🔽") : "↕"}
+                    </span>
+                  </Typography>
                 </th>
+
               ))}
             </tr>
           </thead>
@@ -145,6 +173,7 @@ export function JockeyProfiles() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedRaceType, setSelectedRaceType] = useState("");
 
   // ✅ NEW: Sorting state
   const [sortBy, setSortBy] = useState(""); // Column to sort
@@ -185,34 +214,51 @@ export function JockeyProfiles() {
     fetchFilteredData();
   };
 
+
   const buildQueryParams = () => {
     const params = new URLSearchParams();
     params.append("page", currentPage);
     params.append("limit", ROWS_PER_PAGE);
-
-    filters.forEach((filter, index) => {
-      if (Array.isArray(filterValues[index])) {
-        params.append(`${filter.id}Min`, filterValues[index][0]);
-        params.append(`${filter.id}Max`, filterValues[index][1]);
-      } else {
-        params.append(filter.id, filterValues[index]);
-      }
-    });
-
     if (searchQuery) params.append("sire", searchQuery);
     if (selectedCountry) params.append("country", selectedCountry);
-
+    if (selectedRaceType) params.append("RaceTypeDetail", selectedRaceType);
+    
     // ✅ NEW: Append Sorting Parameters
     if (sortBy) params.append("sortBy", sortBy);
     if (order) params.append("order", order);
 
     return params.toString();
   };
+  // const buildQueryParams = () => {
+  //   const params = new URLSearchParams();
+  //   params.append("page", currentPage);
+  //   params.append("limit", ROWS_PER_PAGE);
+
+  //   filters.forEach((filter, index) => {
+  //     if (Array.isArray(filterValues[index])) {
+  //       params.append(`${filter.id}Min`, filterValues[index][0]);
+  //       params.append(`${filter.id}Max`, filterValues[index][1]);
+  //     } else {
+  //       params.append(filter.id, filterValues[index]);
+  //     }
+  //   });
+
+  //   if (searchQuery) params.append("sire", searchQuery);
+  //   if (selectedCountry) params.append("country", selectedCountry);
+
+  //   // ✅ NEW: Append Sorting Parameters
+  //   if (sortBy) params.append("sortBy", sortBy);
+  //   if (order) params.append("order", order);
+
+  //   return params.toString();
+  // };
 
   const fetchFilteredData = async () => {
     try {
       const queryParams = buildQueryParams();
-      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
+      // const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
+      const response = await fetch(`http://localhost:8080/api/${selectedTable}?${queryParams}`);
+      
       const data = await response.json();
       setTableData(data.data);
       setTotalPages(data.totalPages);
@@ -221,9 +267,12 @@ export function JockeyProfiles() {
     }
   };
 
+  // useEffect(() => {
+  //   fetchFilteredData();
+  // }, [currentPage, filterValues, selectedTable, searchQuery, selectedCountry, sortBy, order]);
   useEffect(() => {
     fetchFilteredData();
-  }, [currentPage, filterValues, selectedTable, searchQuery, selectedCountry, sortBy, order]);
+    }, [currentPage, selectedTable, selectedRaceType, searchQuery, selectedCountry, sortBy, order]);
 
   return (
     <div className="mt-12 mb-8 flex flex-col gap-3">
@@ -284,7 +333,24 @@ export function JockeyProfiles() {
               >
                 <option value="">All</option>
                 {countryCodes.map((code) => (
-                  <option key={code} value={code}>{code}</option>
+                  <option key={code} value={code}>
+                    {code}
+                  </option>
+                ))}
+              </select>
+
+              <label htmlFor="raceType-select" className="text-sm w-25 ml-6">Race Type:</label>
+              <select
+                id="raceType-select"
+                value={selectedRaceType}
+                onChange={(e) => setSelectedRaceType(e.target.value)}
+                className="p-2 rounded-md border border-gray-300"
+              >
+                <option value="">All</option>
+                {["FLT","HRD", "STC", "HCH", "NHF"].map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
                 ))}
               </select>
             </div>
@@ -297,59 +363,62 @@ export function JockeyProfiles() {
 
             {/* Sorting Section - Aligned Right */}
       {/* ✅ Sorting Section - Moved Below Search Box, Above Table */}
-      <div className="flex justify-end items-center gap-2 mb-2">
-        <label htmlFor="sortBy" className="text-xs font-semibold">Sort By:</label> {/* Reduced text size */}
-        <select
-          id="sortBy"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="p-1 text-xs border border-gray-300 rounded-md"
-        >
-          <option value="">Select Column</option>
-          {[
-            { value: "Sire", label: "Jockey" }, // ✅ Display "Jockey" but keep "Sire" in the query
-            { value: "Country", label: "Country" },
-            { value: "Runners", label: "Runners" },
-            { value: "Runs", label: "Runs" },
-            { value: "Winners", label: "Winners" },
-            { value: "Wins", label: "Wins" },
-            { value: "WinPercent_", label: "Win %" },
-            { value: "Stakes_Winners", label: "Stakes Winners" },
-            { value: "Stakes_Wins", label: "Stakes Wins" },
-            { value: "Group_Winners", label: "Group Winners" },
-            { value: "Group_Wins", label: "Group Wins" },
-            { value: "Group_1_Winners", label: "Group 1 Winners" },
-            { value: "Group_1_Wins", label: "Group 1 Wins" },
-            { value: "WTR", label: "WTR" },
-            { value: "SWTR", label: "SWTR" },
-            { value: "GWTR", label: "GWTR" },
-            { value: "G1WTR", label: "G1WTR" },
-            { value: "WIV", label: "WIV" },
-            { value: "WOE", label: "WOE" },
-            { value: "WAX", label: "WAX" },
-            { value: "Percent_RB2", label: "%RB2" }
-          ].map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+      {false && (
+        <div className="flex justify-end items-center gap-2 mb-2">
+          <label htmlFor="sortBy" className="text-xs font-semibold">Sort By:</label>
+          <select
+            id="sortBy"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="p-1 text-xs border border-gray-300 rounded-md"
+          >
+            <option value="">Select Column</option>
+            {[
+              { value: "Sire", label: "Jockey" },
+              { value: "Country", label: "Country" },
+              { value: "Runners", label: "Runners" },
+              { value: "Runs", label: "Runs" },
+              { value: "Winners", label: "Winners" },
+              { value: "Wins", label: "Wins" },
+              { value: "WinPercent_", label: "Win %" },
+              { value: "Stakes_Winners", label: "Stakes Winners" },
+              { value: "Stakes_Wins", label: "Stakes Wins" },
+              { value: "Group_Winners", label: "Group Winners" },
+              { value: "Group_Wins", label: "Group Wins" },
+              { value: "Group_1_Winners", label: "Group 1 Winners" },
+              { value: "Group_1_Wins", label: "Group 1 Wins" },
+              { value: "WTR", label: "WTR" },
+              { value: "SWTR", label: "SWTR" },
+              { value: "GWTR", label: "GWTR" },
+              { value: "G1WTR", label: "G1WTR" },
+              { value: "WIV", label: "WIV" },
+              { value: "WOE", label: "WOE" },
+              { value: "WAX", label: "WAX" },
+              { value: "Percent_RB2", label: "%RB2" }
+            ].map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
 
-        {/* Sorting Order Buttons */}
-        <button
-          className={`p-1 text-xs rounded ${order === "asc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-          onClick={() => setOrder("asc")}
-        >
-          <FaArrowUp size={12} />
-        </button>
+          {/* Sorting Order Buttons */}
+          <button
+            className={`p-1 text-xs rounded ${order === "asc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+            onClick={() => setOrder("asc")}
+          >
+            <FaArrowUp size={12} />
+          </button>
 
-        <button
-          className={`p-1 text-xs rounded ${order === "desc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-          onClick={() => setOrder("desc")}
-        >
-          <FaArrowDown size={12} />
-        </button>
-      </div>
+          <button
+            className={`p-1 text-xs rounded ${order === "desc" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
+            onClick={() => setOrder("desc")}
+          >
+            <FaArrowDown size={12} />
+          </button>
+        </div>
+      )}
+
 
 
       {/* Table Section */}
@@ -359,6 +428,10 @@ export function JockeyProfiles() {
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         totalPages={totalPages}
+        sortBy={sortBy}        // ✅ Added
+        setSortBy={setSortBy}  // ✅ Added
+        order={order}          // ✅ Added
+        setOrder={setOrder}    // ✅ Added
       />
     </div>
 

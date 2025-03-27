@@ -50,7 +50,7 @@ const fieldLimits = {
   WIV: { min: 0, max: 9 },
   WOE: { min: -17.91, max: 173.06 },
   WAX: { min: -5.26, max: 163.72 },
-  RB2: { min: 0, max: 594.34 },
+  RB2: { min: 0, max: 100 },
 };
 
 const sanitizeData = (key, value) => {

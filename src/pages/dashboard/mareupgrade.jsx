@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import Tree from "react-d3-tree";
 import _ from "lodash";
+import UpliftCharts from "./UpliftCharts";
+
 
 const ROWS_PER_PAGE = 3;
 
@@ -131,12 +133,53 @@ const SireTreeGraph = ({ sireData }) => {
   );
 };
 
+const UpliftTable = ({ upliftData }) => {
+  if (!upliftData.length) return null;
+
+  return (
+    <Card className="bg-white text-black">
+      <CardBody className="overflow-x-auto px-0 pt-0 pb-2">
+        <Typography variant="h6" className="text-lg font-semibold text-blue-gray-700 px-5 mb-2">
+          Uplift Report
+        </Typography>
+        <table className="w-full min-w-[600px] table-auto">
+          <thead>
+            <tr>
+              {Object.keys(upliftData[0]).map((key) => (
+                <th key={key} className="border-b border-blue-gray-50 py-3 px-5 text-left">
+                  <Typography variant="small" className="text-[11px] font-bold uppercase text-blue-gray-400">
+                    {key.replace(/_/g, ' ')}
+                  </Typography>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {upliftData.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {Object.values(row).map((val, i) => (
+                  <td key={i} className="py-3 px-5 border-b border-blue-gray-50">
+                    <Typography className="text-xs font-semibold text-blue-gray-600">
+                      {val !== null && val !== undefined ? val : "-"}
+                    </Typography>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </CardBody>
+    </Card>
+  );
+};
+
 export function MareUpLift() {
   const [tableData, setTableData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [sireSearchQuery, setSireSearchQuery] = useState("");
   const [selectedSireData, setSelectedSireData] = useState([]);
+  const [upliftData, setUpliftData] = useState([]);
 
   useEffect(() => {
     fetchFilteredData();
@@ -154,8 +197,11 @@ export function MareUpLift() {
       }
 
       const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/mareupdates?${queryParams.toString()}`);
-      const data = await response.json();
+      // const response = await fetch(`http://localhost:8080/api/mareupdates?${queryParams.toString()}`);
+
       
+      const data = await response.json();
+
       setTableData(data.data);
       setTotalPages(data.totalPages);
     } catch (error) {
@@ -165,18 +211,28 @@ export function MareUpLift() {
 
   const handleSireClick = async (sireName) => {
     try {
-      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/mareupdates?sireName=${sireName}`);
-      const data = await response.json();
-      
-      setSelectedSireData(data.data);
+      const [sireRes, upliftRes] = await Promise.all([
+        // fetch(`https://horseracesbackend-production.up.railway.app/api/mareupdates?sireName=${sireName}`),
+        // fetch(`https://horseracesbackend-production.up.railway.app/api/sire_uplift?sire=${sireName}`)
+
+        fetch(`http://localhost:8080/api/mareupdates?sireName=${sireName}`),
+        fetch(`http://localhost:8080/api/sire_uplift?sire=${sireName}`)
+      ]);
+
+      const sireData = await sireRes.json();
+      const uplift = await upliftRes.json();
+
+      setSelectedSireData(sireData.data);
+      setUpliftData(uplift.data);
     } catch (error) {
-      console.error("Error fetching sire data:", error);
+      console.error("Error fetching sire or uplift data:", error);
     }
   };
 
   return (
     <div className="mt-12 mb-8 flex flex-col gap-12">
       <SearchBox setSearchQuery={setSireSearchQuery} setCurrentPage={setCurrentPage} />
+      
       <ReportTable 
         tableData={tableData} 
         currentPage={currentPage} 
@@ -184,9 +240,15 @@ export function MareUpLift() {
         totalPages={totalPages} 
         onSireClick={handleSireClick}
       />
+      
       <SireTreeGraph sireData={selectedSireData} />
+      
+      <UpliftTable upliftData={upliftData} />
+      
+      <UpliftCharts upliftData={upliftData} />
     </div>
   );
+  
 }
 
 export default MareUpLift;

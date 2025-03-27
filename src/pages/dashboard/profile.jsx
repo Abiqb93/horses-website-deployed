@@ -210,7 +210,7 @@ export function Profile() {
     params.append("limit", ROWS_PER_PAGE);
     if (searchQuery) params.append("sire", searchQuery);
     if (selectedCountry) params.append("country", selectedCountry);
-    if (selectedRaceType) params.append("raceType", selectedRaceType);
+    if (selectedRaceType) params.append("RaceTypeDetail", selectedRaceType);
     
     // ✅ NEW: Append Sorting Parameters
     if (sortBy) params.append("sortBy", sortBy);
@@ -246,6 +246,8 @@ export function Profile() {
     try {
       const queryParams = buildQueryParams();
       const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
+      // const response = await fetch(`http://localhost:8080/api/${selectedTable}?${queryParams}`);
+      
       const data = await response.json();
       setTableData(data.data);
       setTotalPages(data.totalPages);
@@ -334,7 +336,7 @@ export function Profile() {
                 className="p-2 rounded-md border border-gray-300"
               >
                 <option value="">All</option>
-                {["Hurdle", "Chase", "Bumper", "Flat"].map((type) => (
+                {["FLT","HRD", "STC", "HCH", "NHF"].map((type) => (
                   <option key={type} value={type}>
                     {type}
                   </option>

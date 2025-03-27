@@ -39,6 +39,8 @@ import {
   MyRace,
   MareUpLift,
   Broodmare,
+  SireProfiles,
+  SireGoing,
 
 } from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
@@ -72,6 +74,12 @@ export const routes = [
             element: <Profile />,
           },
           {
+            name: "Sire Profiles",
+            path: "/sireprofiles",
+            element: <SireProfiles />,
+          },
+
+          {
             name: "Sire Radar",
             path: "/sireradar",
             element: <SireRadar />,
@@ -80,6 +88,11 @@ export const routes = [
             name: "Mare Upgrade Analysis",
             path: "/mareanalysis",
             element: <MareUpLift />,
+          },
+          {
+            name: "Going Reports",
+            path: "/siregoinganalysis",
+            element: <SireGoing />,
           },
         ],
       },
