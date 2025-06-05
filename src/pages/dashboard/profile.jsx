@@ -1,5 +1,9 @@
 const countryFlagURL = (countryCode) => {
-  const correctedCode = countryCode === "UK" ? "GB" : countryCode;
+  const correctedCode =
+    countryCode === "UK" ? "GB" :
+    countryCode === "IRE" ? "IE" :
+    countryCode;
+    
   return `https://flagcdn.com/w40/${correctedCode.toLowerCase()}.png`;
 };
 
@@ -165,8 +169,8 @@ export function Profile() {
   const [selectedRaceType, setSelectedRaceType] = useState("");
 
   // ✅ NEW: Sorting state
-  const [sortBy, setSortBy] = useState(""); // Column to sort
-  const [order, setOrder] = useState("asc"); // Sorting order (asc/desc)
+  const [sortBy, setSortBy] = useState("Runners"); // Default sort column
+  const [order, setOrder] = useState("desc");      // Default sort order
 
   const countryCodes = [
     "MU", "US", "SA", "MX", "UY", "AU", "ZA", "CL", "NZ", "JP", "FI", "AR", "AE", "TR", "UK", "DK", "AT", "CZ",

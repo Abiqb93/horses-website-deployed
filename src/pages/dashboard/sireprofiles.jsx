@@ -3,6 +3,8 @@ import { Card, CardBody, Typography } from "@material-tailwind/react";
 import _ from "lodash";
 import { ResponsiveRadar } from "@nivo/radar";
 
+const metersToFurlongs = (meters) => (meters / 201.168).toFixed(1);
+
 const fieldLimits = {
     WTR: { min: 0, max: 100 },
     SWTR: { min: 0, max: 16.67 },
@@ -13,7 +15,141 @@ const fieldLimits = {
     WAX: { min: -5.26, max: 163.72 },
     RB2: { min: 0, max: 99.9 },
   };
-  
+
+
+const DistanceDPIRadarChart = ({ data }) => {
+  if (!data || data.length === 0) return null;
+
+  const chartData = data
+    .filter(d => {
+      const dpi = Number(d.DPI);
+      return d.Distancecategory &&
+             !d.Distancecategory.toLowerCase().includes("unknown") &&
+             !isNaN(dpi) && isFinite(dpi);
+    })
+    .map(d => ({
+      distance: d.Distancecategory.replace(" (meters)", "").trim(),
+      DPI: Number(d.DPI),
+    }));
+
+  return (
+    <div className="w-full h-[500px] mt-4">
+      <Typography variant="h6" className="text-center mb-3 font-semibold text-gray-800">
+        Distance Preference Index (DPI)
+      </Typography>
+      <ResponsiveRadar
+        data={chartData}
+        keys={["DPI"]}
+        indexBy="distance"
+        maxValue={40} // Fixed scale for clear grid levels
+        valueFormat={v => `${v.toFixed(2)}`}
+        margin={{ top: 50, right: 80, bottom: 60, left: 80 }}
+        curve="linearClosed"
+        borderWidth={3}
+        borderColor="#f59e0b"
+        gridLevels={4} // 10, 20, 30, 40
+        gridShape="circular"
+        gridLabelOffset={18}
+        enableDots={true}
+        dotSize={8}
+        dotColor="#fff"
+        dotBorderWidth={2}
+        dotBorderColor="#f59e0b"
+        colors={{ scheme: "nivo" }}
+        fillOpacity={0.3}
+        blendMode="multiply"
+        isInteractive={true}
+        legends={[
+          {
+            anchor: "top-left",
+            direction: "column",
+            translateX: -50,
+            translateY: -40,
+            itemWidth: 80,
+            itemHeight: 20,
+            itemTextColor: "#777",
+            symbolSize: 12,
+          }
+        ]}
+        customLayers={[
+          // Add numeric labels on the concentric circles
+          ({ centerX, centerY, radius, scale }) => {
+            const ticks = [10, 20, 30, 40];
+            return (
+              <g>
+                {ticks.map((tick) => {
+                  const r = scale(tick);
+                  return (
+                    <text
+                      key={tick}
+                      x={centerX + 5}
+                      y={centerY - r}
+                      fontSize={10}
+                      fill="#666"
+                      dominantBaseline="central"
+                    >
+                      {tick}
+                    </text>
+                  );
+                })}
+              </g>
+            );
+          }
+        ]}
+      />
+    </div>
+  );
+};  
+const calculateDPI = (data) => {
+  if (!data || data.length === 0) return [];
+
+  const toNumber = (val) => Number(val) || 0;
+
+  const runners = data.map(d => toNumber(d["Runners"]));
+  const wins = data.map(d => toNumber(d["Wins"]));
+  const winRates = runners.map((r, i) => r ? wins[i] / r : 0);
+
+  const stakesWinners = data.map(d => {
+    const str = String(d["SWs (GWs)"] || "");
+    const match = str.match(/^(\d+)/);
+    return match ? parseInt(match[1]) : 0;
+  });
+
+  const groupWinners = data.map(d => {
+    const str = String(d["SWs (GWs)"] || "");
+    const match = str.match(/\((\d+)\)/);
+    return match ? parseInt(match[1]) : 0;
+  });
+
+  const avgEarnings = data.map(d => toNumber(d["Average Earnings (£)"]));
+
+  const normalize = (arr) => {
+    const min = Math.min(...arr);
+    const max = Math.max(...arr);
+    return arr.map(v => (max !== min ? ((v - min) / (max - min)) * 100 : 0));
+  };
+
+  const normRuns = normalize(runners);
+  const normWins = normalize(wins);
+  const normWinRate = normalize(winRates);
+  const normSWs = normalize(stakesWinners);
+  const normGWs = normalize(groupWinners);
+  const normAvgEarnings = normalize(avgEarnings);
+
+  return data.map((d, i) => ({
+    ...d,
+    DPI: (
+      0.2 * normRuns[i] +
+      0.1 * normWins[i] +
+      0.15 * normWinRate[i] +
+      0.2 * normSWs[i] +
+      0.2 * normGWs[i] +
+      0.15 * normAvgEarnings[i]
+    ).toFixed(2)
+  }));
+};
+
+
   const sanitizeData = (key, value) => {
     if (typeof value === "string" && value.includes("%")) {
       return parseFloat(value.replace("%", ""));
@@ -48,7 +184,11 @@ const fieldLimits = {
   
 
 const countryFlagURL = (countryCode) => {
-  const correctedCode = countryCode === "UK" ? "GB" : countryCode;
+  const correctedCode =
+    countryCode === "UK" ? "GB" :
+    countryCode === "IRE" ? "IE" :
+    countryCode;
+    
   return `https://flagcdn.com/w40/${correctedCode.toLowerCase()}.png`;
 };
 
@@ -85,19 +225,43 @@ const HorseProfile = ({ setSearchQuery }) => {
   );
 };
 
-const ROWS_PER_PAGE = 3;
+const ROWS_PER_PAGE = 7;
 
-const ReportTable = ({ tableData, onSireClick, hideSireColumn = false }) => {
+const ReportTable = ({
+  tableData,
+  onSireClick,
+  hideSireColumn = false,
+  forceCountryFirst = false,
+  forceGenderFirst = false,
+  forceYearFirst = false
+}) => {
     if (!tableData || tableData.length === 0) {
       return <Typography className="text-sm px-4">No data available.</Typography>;
     }
   
     let columns = Object.keys(tableData[0]);
   
+    if (columns.includes("Distancecategory")) {
+      tableData = calculateDPI(tableData);
+      if (!columns.includes("DPI")) {
+        columns.push("DPI");
+      }
+    }
     if (hideSireColumn) {
       columns = columns.filter((col) => col !== "Sire");
     }
-  
+
+    if (forceCountryFirst && columns.includes("Country")) {
+      columns = ["Country", ...columns.filter((col) => col !== "Country")];
+    }  
+
+    if (forceGenderFirst && columns.includes("Gender")) {
+      columns = ["Gender", ...columns.filter((col) => col !== "Gender")];
+    }
+
+    if (forceYearFirst && columns.includes("Year")) {
+      columns = ["Year", ...columns.filter((col) => col !== "Year")];
+    }
     return (
       <Card className="bg-white text-black">
         <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
@@ -151,6 +315,47 @@ const ReportTable = ({ tableData, onSireClick, hideSireColumn = false }) => {
                         </td>
                       );
                     }
+
+                    if (col === "Distancecategory" && typeof item[col] === "string") {
+                      const distanceText = item[col].trim();
+
+                      let furlongText = "";
+
+                      if (distanceText.includes("-")) {
+                        // ✅ Range like 1001 - 1200
+                        const [startM, endM] = distanceText.split("-").map(v => parseInt(v.trim()));
+                        if (!isNaN(startM) && !isNaN(endM)) {
+                          const startF = metersToFurlongs(startM);
+                          const endF = metersToFurlongs(endM);
+                          furlongText = `${startF} - ${endF} (furlongs)`;
+                        }
+                      } else {
+                        // ✅ Single bound like <1001m or >2400
+                        const numberMatch = distanceText.match(/\d+/);
+                        if (numberMatch) {
+                          const meters = parseInt(numberMatch[0]);
+                          const furlongs = metersToFurlongs(meters);
+                          if (distanceText.includes("<")) {
+                            furlongText = `<${furlongs} (furlongs)`;
+                          } else if (distanceText.includes(">")) {
+                            furlongText = `>${furlongs} (furlongs)`;
+                          } else {
+                            furlongText = `${furlongs} (furlongs)`;
+                          }
+                        }
+                      }
+
+                      return (
+                        <td key={colIndex} className="py-3 px-5 border-b border-blue-gray-50">
+                          <Typography className="text-xs font-semibold text-blue-gray-600 leading-tight">
+                            {`${distanceText} (meters)`}<br />
+                            {furlongText}
+                          </Typography>
+                        </td>
+                      );
+                    }
+
+
   
                     return (
                       <td key={colIndex} className="py-3 px-5 border-b border-blue-gray-50">
@@ -281,8 +486,14 @@ export function SireProfiles() {
       params.append("page", 1);
       params.append("limit", ROWS_PER_PAGE);
       if (searchQuery) params.append("sire", searchQuery);
+
+      // Always sort by Runners in descending order
+      params.append("sortBy", "Runners");
+      params.append("order", "desc");
+
       return params.toString();
     };
+
   
     const fetchFilteredData = async () => {
       try {
@@ -314,7 +525,10 @@ export function SireProfiles() {
       fetchReportData("sire_sex_reports", setSexReportData, sireName);
       fetchReportData("sire_worldwide_reports", setWorldwideReportData, sireName);
       fetchReportData("sire_crop_reports", setCropReportData, sireName);
-      fetchReportData("sire_distance_reports", setDistanceReportData, sireName); 
+      fetchReportData("sire_distance_reports", (data) => {
+        const withDPI = calculateDPI(data);
+        setDistanceReportData(withDPI);
+      }, sireName);
     };
   
     useEffect(() => {
@@ -364,19 +578,28 @@ export function SireProfiles() {
               {countryReportData.length > 0 && (
                 <div>
                   <Typography variant="h6" className="mb-2">Analysis by Country: {selectedSire}</Typography>
-                  <ReportTable tableData={countryReportData} hideSireColumn={true} />
+                  <ReportTable tableData={countryReportData} hideSireColumn={true} forceCountryFirst={true} />
                 </div>
               )}
               {sexReportData.length > 0 && (
                 <div>
                   <Typography variant="h6" className="mb-2">Analysis by Sex: {selectedSire}</Typography>
-                  <ReportTable tableData={sexReportData} hideSireColumn={true} />
+                  <ReportTable
+                    tableData={sexReportData}
+                    hideSireColumn={true}
+                    forceGenderFirst={true}
+                  />
                 </div>
               )}
               {worldwideReportData.length > 0 && (
                 <div>
                   <Typography variant="h6" className="mb-2">Worldwide Analysis: {selectedSire}</Typography>
-                  <ReportTable tableData={worldwideReportData} hideSireColumn={true} />
+                  <ReportTable
+                    tableData={worldwideReportData}
+                    hideSireColumn={true}
+                    forceYearFirst={true}
+                  />
+
                 </div>
               )}
               {cropReportData.length > 0 && (
@@ -389,8 +612,10 @@ export function SireProfiles() {
                 <div>
                   <Typography variant="h6" className="mb-2">Analysis by Distance: {selectedSire}</Typography>
                   <ReportTable tableData={distanceReportData} hideSireColumn={true} />
+                  <DistanceDPIRadarChart data={distanceReportData} />
                 </div>
               )}
+
 
             </div>
           )}
