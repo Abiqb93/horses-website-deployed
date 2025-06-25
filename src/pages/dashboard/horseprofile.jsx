@@ -1,10 +1,63 @@
 const countryFlagURL = (countryCode) => {
-  const correctedCode = countryCode === "UK" ? "GB" : countryCode;
-  return `https://flagcdn.com/w40/${correctedCode.toLowerCase()}.png`;
+  const countryMap = {
+    GBR: "GB",
+    IRE: "IE",
+    FRA: "FR",
+    GER: "DE",
+    USA: "US",
+    SAF: "ZA",
+    AUS: "AU",
+    JAP: "JP",
+    CAN: "CA",
+    ITY: "IT",
+    ARG: "AR",
+    UAE: "AE",
+    HGK: "HK",
+    SWE: "SE",
+    SAU: "SA",
+    ZIM: "ZW",
+    TUR: "TR",
+    QAT: "QA",
+    BRA: "BR",
+    SWI: "CH",
+    NOR: "NO",
+    SIN: "SG",
+    URG: "UY",
+    BEL: "BE",
+    NZD: "NZ",
+    DEN: "DK",
+    JER: "JE",
+    BAH: "BH",
+    CHI: "CL",
+    RUS: "RU",
+    CZE: "CZ",
+    KAZ: "KZ",
+    SPA: "ES",
+    MAL: "MY",
+    MAC: "MO",
+    VEN: "VE",
+    PER: "PE",
+    SLO: "SI",
+    POL: "PL",
+    AST: "KZ",
+    HUN: "HU",
+    MEX: "MX",
+    HOL: "NL",
+    OMN: "OM",
+    MOR: "MA",
+    KOR: "KR",
+    GUR: "GU",  // Guam?
+    PAN: "PA",
+    ALL: "UN"   // or skip flag entirely for aggregated row
+  };
+
+  const isoCode = countryMap[countryCode] || countryCode?.slice(0, 2).toLowerCase(); // fallback or guess
+  return `https://flagcdn.com/w40/${isoCode.toLowerCase()}.png`;
 };
 
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, Typography } from "@material-tailwind/react";
+import DynamicTable from "./DynamicTable";
 import _ from "lodash";
 
 const ROWS_PER_PAGE = 10;
@@ -44,8 +97,9 @@ const HorseProfile = ({ setSearchQuery }) => {
   );
 };
 
+
 const ReportTable = ({
-  tableData,
+  tableData = [],
   title,
   currentPage,
   setCurrentPage,
@@ -54,8 +108,18 @@ const ReportTable = ({
   sortBy,
   setSortBy,
   order,
-  setOrder
+  setOrder,
+  setSelectedHorse,
+  setSelectedHorsePage
 }) => {
+
+
+  const columnsToDisplay = [
+    "Horse", "Country", "Runs", "Wins", "WinPercent_",
+    "Stakes_Wins", "Group_Wins", "Group_1_Wins", "WTR", "SWTR",
+    "GWTR", "G1WTR", "WIV", "WOE", "WAX", "Percent_RB2"
+  ];
+
   const startPage = Math.max(1, currentPage - 5);
   const endPage = Math.min(startPage + 9, totalPages);
 
@@ -96,8 +160,7 @@ const ReportTable = ({
         <table className="w-full min-w-[640px] table-auto">
           <thead>
             <tr>
-              {["Add", "Horse", "Country", "Runners", "Runs", "Winners", "Wins", "WinPercent_", "Stakes_Winners", "Stakes_Wins", "Group_Winners", "Group_Wins", "Group_1_Winners", "Group_1_Wins", "WTR", "SWTR", "GWTR", "G1WTR", "WIV", "WOE", "WAX", "Percent_RB2"]
-                .map((el) => (
+              {columnsToDisplay.map((el) => (
                   <th
                     key={el}
                     className="border-b border-blue-gray-50 py-3 px-5 text-left cursor-pointer hover:text-blue-500 transition duration-200"
@@ -134,55 +197,59 @@ const ReportTable = ({
             </tr>
           </thead>
           <tbody>
-            {tableData.map((item, index) => (
+            {Array.isArray(tableData) && tableData.map((item, index) => (
               <tr key={index}>
-                {[
-                  <button
-                    className="bg-blue-500 text-white px-2 py-1 rounded"
-                    onClick={() => addHorseToList(item)}
-                  >
-                    +
-                  </button>,
-                  item["Sire"],
-                  item["Country"] && (
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={countryFlagURL(item["Country"])}
-                        alt={item["Country"]}
-                        className="w-5 h-5"
-                      />
-                      <span>{item["Country"]}</span>
-                    </div>
-                  ),
-                  item["Runners"],
-                  item["Runs"],
-                  item["Winners"],
-                  item["Wins"],
-                  item["WinPercent_"],
-                  item["Stakes_Winners"],
-                  item["Stakes_Wins"],
-                  item["Group_Winners"],
-                  item["Group_Wins"],
-                  item["Group_1_Winners"],
-                  item["Group_1_Wins"],
-                  item["WTR"],
-                  item["SWTR"],
-                  item["GWTR"],
-                  item["G1WTR"],
-                  item["WIV"],
-                  item["WOE"],
-                  item["WAX"],
-                  item["Percent_RB2"],
-                ].map((value, i) => (
-                  <td key={i} className={`py-3 px-5 ${index === tableData.length - 1 ? "" : "border-b border-blue-gray-50"}`}>
-                    <Typography className="text-xs font-semibold text-blue-gray-600">
-                      {value !== null && value !== undefined ? value : "-"}
-                    </Typography>
-                  </td>
-                ))}
+                {columnsToDisplay.map((key, i) => {
+                  let value;
+
+                  if (key === "Add") {
+                    value = (
+                      <button
+                        className="bg-blue-500 text-white px-2 py-1 rounded"
+                        onClick={() => addHorseToList(item)}
+                      >
+                        +
+                      </button>
+                    );
+                  } else if (key === "Horse") {
+                    value = (
+                      <span
+                        className="text-blue-600 underline cursor-pointer"
+                        onClick={() => {
+                          setSelectedHorse(item["Sire"]);
+                          setSelectedHorsePage(1);
+                        }}
+                      >
+                        {item["Sire"]}
+                      </span>
+                    );
+                  } else if (key === "Country") {
+                    value = item["Country"] && (
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={countryFlagURL(item["Country"])}
+                          alt={item["Country"]}
+                          className="w-5 h-5"
+                        />
+                        <span>{item["Country"]}</span>
+                      </div>
+                    );
+                  } else {
+                    value = item[key];
+                  }
+
+                  return (
+                    <td key={i} className={`py-3 px-5 ${index === tableData.length - 1 ? "" : "border-b border-blue-gray-50"}`}>
+                      <Typography className="text-xs font-semibold text-blue-gray-600">
+                        {value !== null && value !== undefined ? value : "-"}
+                      </Typography>
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
+
         </table>
         <Pagination />
       </CardBody>
@@ -199,6 +266,12 @@ export function HorseProfiles() {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedHorses, setSelectedHorses] = useState([]);
+  const [selectedHorse, setSelectedHorse] = useState(null);
+  const [selectedHorseData, setSelectedHorseData] = useState([]);
+  const [loadingHorseData, setLoadingHorseData] = useState(false);
+  const [selectedHorsePage, setSelectedHorsePage] = useState(1);
+  const [selectedHorseTotalPages, setSelectedHorseTotalPages] = useState(1);
+
 
   const countryCodes = [
     "MU", "US", "SA", "MX", "UY", "AU", "ZA", "CL", "NZ", "JP", "FI", "AR", "AE", "TR", "UK", "DK", "AT", "CZ",
@@ -269,6 +342,10 @@ export function HorseProfiles() {
   };
     
   
+  const refreshHorseData = () => {
+    if (selectedHorse) fetchHorseEntries(selectedHorse);
+  };
+
 
 
   const updateHorseNote = (index, note) => {
@@ -310,9 +387,38 @@ export function HorseProfiles() {
     }
   };
 
+  const fetchHorseEntries = async (horseName) => {
+  setLoadingHorseData(true);
+  try {
+    const params = new URLSearchParams({
+      horseName,
+      page: selectedHorsePage,
+      limit: ROWS_PER_PAGE
+    });
+
+    // const response = await fetch(`http://localhost:8080/api/APIData_Table2/horse?${params}`);
+    const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/horse?${params}`);
+    
+    const data = await response.json();
+    setSelectedHorseData(data.data);
+    setSelectedHorseTotalPages(data.totalPages || 1);
+  } catch (error) {
+    console.error("Error fetching race records for horse:", error);
+    setSelectedHorseData([]); // fallback to empty on error
+  } finally {
+    setLoadingHorseData(false);
+  }
+};
+
+
+
   useEffect(() => {
     fetchFilteredData();
   }, [currentPage, searchQuery, selectedCountry, sortBy, order]);
+
+  useEffect(() => {
+    if (selectedHorse) fetchHorseEntries(selectedHorse);
+  }, [selectedHorse, selectedHorsePage, sortBy, order]);
 
   return (
     <div className="mt-0 mb-0 flex flex-col gap-3">
@@ -413,33 +519,17 @@ export function HorseProfiles() {
         setSortBy={setSortBy}
         order={order}
         setOrder={setOrder}
+        setSelectedHorse={setSelectedHorse}
+        setSelectedHorsePage={setSelectedHorsePage}
       />
-
-      <div className="mt-2 bg-white p-4 rounded shadow">
-        <Typography variant="h5" className="mb-4 font-bold text-sm">Selected Horses</Typography>
-        <ul>
-          {selectedHorses.map((horse, index) => (
-            <li key={index} className="mb-4">
-              <div className="flex items-start gap-4">
-                <div>
-                  <Typography variant="subtitle2" className="font-medium text-sm">
-                    {horse.Sire}
-                  </Typography>
-                  <Typography variant="small" className="text-blue-gray-400 text-xs">
-                    {horse.Country}
-                  </Typography>
-                </div>
-                {/* <textarea
-                  value={horse.note}
-                  onChange={(e) => updateHorseNote(index, e.target.value)}
-                  placeholder="Add a note..."
-                  className="border rounded-md p-2 w-full h-16"
-                /> */}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {selectedHorse && (
+        <div className="mt-6">
+          <Typography variant="h6" className="mb-2 text-sm font-semibold">
+            Showing results for: <span className="text-blue-600">{selectedHorse}</span>
+          </Typography>
+          <DynamicTable data={selectedHorseData} refreshHorseData={refreshHorseData} />
+        </div>
+      )}
     </div>
   );
 }

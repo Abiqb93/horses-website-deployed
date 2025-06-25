@@ -20,3 +20,7 @@ export * from "@/pages/dashboard/mareupgrade";
 export * from "@/pages/dashboard/dampedigree";
 export * from "@/pages/dashboard/sireprofiles";
 export * from "@/pages/dashboard/siregoing";
+export * from "@/pages/dashboard/closingentries";
+export * from "@/pages/dashboard/entriesandraces";
+export * from "@/pages/dashboard/entriestracking";
+export * from "@/pages/dashboard/declarationstracking";

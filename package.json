@@ -16,6 +16,7 @@
     "@material-tailwind/react": "2.1.4",
     "@nivo/radar": "^0.88.0",
     "apexcharts": "3.44.0",
+    "axios": "^1.10.0",
     "chart.js": "^4.4.5",
     "cors": "^2.8.5",
     "express": "^4.21.1",

@@ -41,6 +41,10 @@ import {
   Broodmare,
   SireProfiles,
   SireGoing,
+  ClosingEntries,
+  RacesAndEntries,
+  EntriesTracking,
+  DeclarationsTracking,
 
 } from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
@@ -64,6 +68,71 @@ export const routes = [
         path: "/home",
         element: <Home />,
       },
+
+
+            {
+        icon: <img src={TablesIcon} alt="Horse" style={iconStyle} />,
+        name: "Races",
+        children: [
+          {
+            name: "Races",
+            path: "/races",
+            element: <Races />,
+          },
+          {
+            name: "My Race",
+            path: "/myraces",
+            element: <MyRace />,
+          },
+          {
+            name: "Early Closing Entries",
+            path: "/closingentries",
+            element: <ClosingEntries />,
+          },
+          {
+            name: "Racecards & Entries",
+            path: "/entiresandraces",
+            element: <RacesAndEntries />,
+          },
+
+          {
+            name: "EntriesTracking",
+            path: "/entirestracking",
+            element: <EntriesTracking />,
+          },
+
+          {
+            name: "DeclarationsTracking",
+            path: "/declarationstracking",
+            element: <DeclarationsTracking />,
+          },
+
+
+        ],
+      },
+
+      {
+        icon: <img src={HorseIcon} alt="Horse" style={iconStyle} />,
+        name: "Horse",
+        children: [
+          {
+            name: "Horse Profile",
+            path: "/horseprofile",
+            element: <HorseProfiles />,
+          },
+          {
+            name: "Horse Radar",
+            path: "/horseradar",
+            element: <HorseRadar />,
+          },
+          {
+            name: "My Horses",
+            path: "/myhorses",
+            element: <MyHorses />,
+          },
+        ],
+      },
+
       {
         icon: <img src={SireIcon} alt="Horse" style={iconStyle} />,
         name: "Sire",
@@ -168,27 +237,7 @@ export const routes = [
         ],
       },
 
-      {
-        icon: <img src={HorseIcon} alt="Horse" style={iconStyle} />,
-        name: "Horse",
-        children: [
-          {
-            name: "Horse Profile",
-            path: "/horseprofile",
-            element: <HorseProfiles />,
-          },
-          {
-            name: "Horse Radar",
-            path: "/horseradar",
-            element: <HorseRadar />,
-          },
-          {
-            name: "My Horses",
-            path: "/myhorses",
-            element: <MyHorses />,
-          },
-        ],
-      },
+
 
 
       // {
@@ -199,23 +248,6 @@ export const routes = [
       // },
 
 
-      {
-        icon: <img src={TablesIcon} alt="Horse" style={iconStyle} />,
-        name: "Races",
-        children: [
-          {
-            name: "Races",
-            path: "/races",
-            element: <Races />,
-          },
-          {
-            name: "My Race",
-            path: "/myraces",
-            element: <MyRace />,
-          },
-
-        ],
-      },
 
 
     ],
