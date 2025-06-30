@@ -20,19 +20,22 @@ export function RacesAndEntries() {
     }
   };
 
+  const normalizeDateString = (str) => str.replace(/\s{2,}/g, " ").trim();
+
   const groupByDateWithUniqueRaces = (data) => {
     const grouped = {};
     const seen = new Set();
 
     data.forEach((item) => {
-      const date = item.FixtureDate;
-      const key = `${item.FixtureTrack}-${item.FixtureDate}-${item.Session}-${item.RaceType}`;
+      const rawDate = item.FixtureDate;
+      const date = normalizeDateString(rawDate);
+      const key = `${item.FixtureTrack}-${date}-${item.Session}-${item.RaceType}`;
       if (!seen.has(key)) {
         seen.add(key);
         if (!grouped[date]) grouped[date] = [];
         grouped[date].push({
           track: item.FixtureTrack,
-          date: item.FixtureDate,
+          date,
           race_type: item.RaceType,
           session: item.Session,
         });
@@ -44,7 +47,7 @@ export function RacesAndEntries() {
 
   const formatDate = (dateStr) => {
     if (!dateStr || typeof dateStr !== "string") return "";
-    const cleaned = dateStr.replace(/\s{2,}/g, " ");
+    const cleaned = normalizeDateString(dateStr);
     const dateObj = new Date(cleaned);
     if (isNaN(dateObj)) return cleaned;
     return dateObj.toLocaleDateString("en-GB", {
@@ -56,7 +59,8 @@ export function RacesAndEntries() {
   };
 
   const toggleExpanded = (track, date) => {
-    const key = `${track}-${date}`;
+    const normalizedDate = normalizeDateString(date);
+    const key = `${track}-${normalizedDate}`;
     setExpandedKey((prev) => (prev === key ? null : key));
     setExpandedRaceId(null);
   };
@@ -67,8 +71,9 @@ export function RacesAndEntries() {
 
   const getUniqueRacesForTrackDate = (track, date) => {
     const seen = new Set();
+    const normalizedDate = normalizeDateString(date);
     return RacesAndEntries.filter((entry) => {
-      const match = entry.FixtureTrack === track && entry.FixtureDate === date;
+      const match = entry.FixtureTrack === track && normalizeDateString(entry.FixtureDate) === normalizedDate;
       const id = entry.RaceID;
       if (match && !seen.has(id)) {
         seen.add(id);
@@ -92,7 +97,7 @@ export function RacesAndEntries() {
           </Typography>
 
           {races.map((race, index) => {
-            const cardKey = `${race.track}-${race.date}`;
+            const cardKey = `${race.track}-${normalizeDateString(race.date)}`;
             const isExpanded = expandedKey === cardKey;
 
             return (

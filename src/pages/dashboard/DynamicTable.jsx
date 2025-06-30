@@ -29,6 +29,7 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   const [trackingDate, setTrackingDate] = useState(null);
   const [trackingRefreshFlag, setTrackingRefreshFlag] = useState(0);
   const [activeTab, setActiveTab] = useState("history"); // Default to history tab
+  const [trackingType, setTrackingType] = useState("Prospect");
 
   const sortedByDate = data && data.length > 0
     ? [...data].sort((a, b) => new Date(b.meetingDate) - new Date(a.meetingDate))
@@ -40,6 +41,7 @@ const DynamicTable = ({ data, refreshHorseData }) => {
     const fetchTracking = async () => {
       try {
         const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${latestRecord?.horseName}`);
+        
         const json = await res.json();
         if (Array.isArray(json.data) && json.data.length > 0) {
           setTrackingData(json.data);
@@ -79,6 +81,9 @@ const DynamicTable = ({ data, refreshHorseData }) => {
     performanceRating,
   } = latestRecord;
 
+
+  const user = localStorage.getItem("userId") || "Guest";
+
   const handleTrackHorse = async () => {
     setIsSubmitting(true);
     try {
@@ -86,9 +91,15 @@ const DynamicTable = ({ data, refreshHorseData }) => {
         horseName,
         note: note.trim(),
         trackingDate: new Date().toISOString(),
+        TrackingType: trackingType,
+        User: user,
       };
 
+      console.log("Tracking payload being sent:", payload);
+
+      // const res = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
       const res = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -107,7 +118,9 @@ const DynamicTable = ({ data, refreshHorseData }) => {
       // ✅ Re-fetch full tracking notes to update the list
       const refreshTrackingData = async () => {
         try {
+          // const r = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`);
           const r = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`);
+
           const json = await r.json();
           setTrackingData(Array.isArray(json.data) ? json.data : []);
         } catch (err) {
@@ -132,7 +145,9 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   const handleStopTracking = async () => {
     if (!window.confirm(`Are you sure you want to stop tracking ${horseName}?`)) return;
     try {
+      // const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`, {
       const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`, {
+        
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to stop tracking");
@@ -196,6 +211,18 @@ return (
       {/* Horse Summary */}
       <div className="mb-6 p-4 rounded-xl shadow bg-gradient-to-r from-gray-100 to-gray-50 border border-gray-300 relative">
         <div className="absolute top-4 right-4 flex flex-col items-end space-y-2">
+          <select
+            className="text-xs border rounded px-2 py-1"
+            value={trackingType}
+            onChange={(e) => setTrackingType(e.target.value)}
+          >
+            <option value="Prospect">Prospect</option>
+            <option value="Purchase">Purchase</option>
+            <option value="Future Bet">Future Bet</option>
+            <option value="Stallion">Stallion</option>
+            <option value="Mare">Mare</option>
+            <option value="Relative">Relative</option>
+          </select>
           <div className="flex space-x-2 items-center">
             <input
               type="text"
@@ -215,7 +242,9 @@ return (
 
           {isTracked && (
             <>
-              <button className="px-3 py-1 bg-green-700 text-white text-xs rounded">Tracking</button>
+              <button className="px-3 py-1 bg-green-700 text-white text-xs rounded">
+                Tracked as {trackingData?.[0]?.TrackingType || "Unspecified"}
+              </button>
               {trackingDate && (
                 <Typography className="text-[10px] italic text-gray-500 mt-1">
                   Since {new Date(trackingDate).toLocaleString()}

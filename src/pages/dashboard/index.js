@@ -24,3 +24,5 @@ export * from "@/pages/dashboard/closingentries";
 export * from "@/pages/dashboard/entriesandraces";
 export * from "@/pages/dashboard/entriestracking";
 export * from "@/pages/dashboard/declarationstracking";
+export * from "@/pages/dashboard/ireland_race_records";
+export * from "@/pages/dashboard/france_race_records";

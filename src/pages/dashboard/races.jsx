@@ -2,40 +2,56 @@ import React, { useState, useEffect } from "react";
 import { Card, Typography, Input, Select, Option, Button } from "@material-tailwind/react";
 
 // RaceTile Component
-const RaceTile = ({ race, onClick }) => {
+const RaceTile = ({ race, isTracked, onTrackClick, onClick }) => {
   return (
-    <Card
-      className="p-4 m-2 shadow-md cursor-pointer hover:shadow-lg"
-      onClick={() => onClick(race)}
-    >
-      <Typography variant="h6" className="text-blue-gray-700 font-bold">
-        {race.raceTitle}
-      </Typography>
-      <Typography variant="small" className="text-blue-gray-600 mt-2">
-        <strong>Country:</strong> {race.countryCode}
-      </Typography>
-      <Typography variant="small" className="text-blue-gray-600">
-        <strong>Surface:</strong> {race.raceSurfaceName}
-      </Typography>
-      <Typography variant="small" className="text-blue-gray-600">
-        <strong>Runners:</strong> {race.numberOfRunners}
-      </Typography>
-      <Typography variant="small" className="text-blue-gray-600">
-        <strong>Prize Fund:</strong> {race.prizeFund}
-      </Typography>
-      <Typography variant="small" className="text-blue-gray-600 mt-2">
-        <strong>Top Horses:</strong>
-      </Typography>
-      <ul className="list-disc list-inside">
-        {race.topHorses.map((horse, index) => (
-          <li key={index} className="text-blue-gray-600">
-            {horse.horseName} (Position: {horse.positionOfficial})
-          </li>
-        ))}
-      </ul>
+    <Card className="p-4 m-2 shadow-md hover:shadow-lg">
+      <div className="flex justify-between items-center mb-2">
+        <Typography
+          variant="h6"
+          className="text-blue-gray-700 font-bold cursor-pointer"
+          onClick={() => onClick(race)}
+        >
+          {race.raceTitle}
+        </Typography>
+        <span
+          onClick={(e) => {
+            e.stopPropagation(); // prevent triggering onClick
+            onTrackClick(race);
+          }}
+          className="text-green-700 text-sm font-semibold cursor-pointer"
+        >
+          {isTracked ? "Tracking" : "+Track"}
+        </span>
+      </div>
+
+      <div onClick={() => onClick(race)} className="cursor-pointer">
+        <Typography variant="small" className="text-blue-gray-600">
+          <strong>Country:</strong> {race.countryCode}
+        </Typography>
+        <Typography variant="small" className="text-blue-gray-600">
+          <strong>Surface:</strong> {race.raceSurfaceName}
+        </Typography>
+        <Typography variant="small" className="text-blue-gray-600">
+          <strong>Runners:</strong> {race.numberOfRunners}
+        </Typography>
+        <Typography variant="small" className="text-blue-gray-600">
+          <strong>Prize Fund:</strong> {race.prizeFund}
+        </Typography>
+        <Typography variant="small" className="text-blue-gray-600 mt-2">
+          <strong>Top Horses:</strong>
+        </Typography>
+        <ul className="list-disc list-inside">
+          {race.topHorses.map((horse, index) => (
+            <li key={index} className="text-blue-gray-600">
+              {horse.horseName} (Position: {horse.positionOfficial})
+            </li>
+          ))}
+        </ul>
+      </div>
     </Card>
   );
 };
+
 
 // ReportTable Component
 const ReportTable = ({ tableData }) => {
@@ -143,6 +159,7 @@ export function Races() {
   const [selectedRaceRecords, setSelectedRaceRecords] = useState([]);
   const [logs, setLogs] = useState([]);
   const [showTable, setShowTable] = useState(false);
+  const [trackedRaces, setTrackedRaces] = useState([]);
 
   const fetchRacesData = async () => {
     try {
@@ -162,7 +179,7 @@ export function Races() {
             acc[record.raceTitle] = {
               raceTitle: record.raceTitle,
               countryCode: record.countryCode,
-              courseName: record.courseName,
+              courseName: 'Beta',
               courseId: record.courseId, // Add courseId here
               raceNumber: record.raceNumber, // Add raceNumber here
               raceSurfaceName: record.raceSurfaceName,
@@ -237,7 +254,7 @@ export function Races() {
     if (selectedCountry) {
       const courses = racesData
         .filter((race) => race.countryCode === selectedCountry)
-        .map((race) => race.courseName);
+        .map((race) => race.courseId);
       setCourseOptions([...new Set(courses)]);
       setSelectedCourse("");
     }
@@ -249,7 +266,7 @@ export function Races() {
         racesData.filter(
           (race) =>
             race.countryCode === selectedCountry &&
-            race.courseName === selectedCourse
+            race.courseId === selectedCourse
         )
       );
     }
@@ -268,7 +285,7 @@ export function Races() {
       meetingDate,
       raceTitle: race.raceTitle,
       countryCode: race.countryCode,
-      courseName: race.courseName,
+      courseName: 'Beta',
       courseId: race.courseId, // Add courseId here
       raceNumber: race.raceNumber, // Add raceNumber here
       raceSurfaceName: race.raceSurfaceName,
@@ -281,7 +298,8 @@ export function Races() {
     console.log("Payload being sent to backend:", raceData);
   
     try {
-      const response = await fetch("https://horseracesbackend-production.up.railway.app/api/save-race", {
+      // const response = await fetch("https://horseracesbackend-production.up.railway.app/api/save-race", {
+      const response = await fetch("https://horseracesbackend-production.up.railway.app/api/save-race", {  
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -299,6 +317,44 @@ export function Races() {
       console.error("Error saving race selection:", error);
     }
   };
+
+const handleTrackClick = async (race) => {
+  if (trackedRaces.includes(race.raceTitle)) return;
+
+  const raceData = {
+    meetingDate,
+    raceTitle: race.raceTitle,
+    countryCode: race.countryCode,
+    courseName: 'Beta',
+    courseId: race.courseId,
+    raceNumber: race.raceNumber,
+    raceSurfaceName: race.raceSurfaceName,
+    numberOfRunners: race.numberOfRunners,
+    prizeFund: race.prizeFund,
+    allHorses: race.allHorses,
+    user: localStorage.getItem("userId"),
+  };
+
+  try {
+    const response = await fetch("https://horseracesbackend-production.up.railway.app/api/save-race", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(raceData),
+    });
+
+    if (response.ok) {
+      console.log("Race saved");
+      setTrackedRaces((prev) => [...prev, race.raceTitle]);
+    } else {
+      const errorText = await response.text();
+      console.error("Failed to save race:", errorText);
+    }
+  } catch (error) {
+    console.error("Error saving race:", error);
+  }
+};
 
   return (
     <div className="mt-12 mb-8 flex flex-col gap-4">
@@ -367,7 +423,13 @@ export function Races() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredData.map((race, index) => (
-              <RaceTile key={index} race={race} onClick={handleTileClick} />
+              <RaceTile
+                key={index}
+                race={race}
+                onClick={handleTileClick}
+                onTrackClick={handleTrackClick}
+                isTracked={trackedRaces.includes(race.raceTitle)}
+              />
             ))}
           </div>
 

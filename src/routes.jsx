@@ -45,6 +45,8 @@ import {
   RacesAndEntries,
   EntriesTracking,
   DeclarationsTracking,
+  IrelandRaceRecords,
+  FranceRaceRecords,
 
 } from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
@@ -105,6 +107,18 @@ export const routes = [
             name: "DeclarationsTracking",
             path: "/declarationstracking",
             element: <DeclarationsTracking />,
+          },
+
+          {
+            name: "Ireland Race Records",
+            path: "/irelandracerecords",
+            element: <IrelandRaceRecords />,
+          },
+
+          {
+            name: "France Race Records",
+            path: "/franceracerecords",
+            element: <FranceRaceRecords />,
           },
 
 

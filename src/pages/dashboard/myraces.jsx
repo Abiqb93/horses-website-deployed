@@ -1,116 +1,141 @@
 import React, { useState, useEffect } from "react";
 
 export function MyRace() {
-  const [raceData, setRaceData] = useState([]); // State to store race data
+  const [raceData, setRaceData] = useState([]);
+  const [relatedMap, setRelatedMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchRaceData = async () => {
+    const fetchAllData = async () => {
       try {
-        const response = await fetch("https://horseracesbackend-production.up.railway.app/api/race_selection_log");
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} - ${response.statusText}`);
-        }
-        const data = await response.json();
-        setRaceData(data.data); // Use `data.data` to extract the actual records
-      } catch (err) {
-        setError(err.message);
+        const resLog = await fetch("https://horseracesbackend-production.up.railway.app/api/race_selection_log");
+        const jsonLog = await resLog.json();
+        const races = jsonLog.data || [];
+        setRaceData(races);
+
+        const sources = [
+          { key: "RacesAndEntries", url: "https://horseracesbackend-production.up.railway.app/api/RacesAndEntries" },
+          { key: "FranceRaceRecords", url: "https://horseracesbackend-production.up.railway.app/api/FranceRaceRecords" },
+          { key: "IrelandRaceRecords", url: "https://horseracesbackend-production.up.railway.app/api/IrelandRaceRecords" },
+          { key: "ClosingEntries", url: "https://horseracesbackend-production.up.railway.app/api/ClosingEntries" },
+          { key: "DeclarationsTracking", url: "https://horseracesbackend-production.up.railway.app/api/DeclarationsTracking" },
+          { key: "EntriesTracking", url: "https://horseracesbackend-production.up.railway.app/api/EntriesTracking" },
+        ];
+        const results = await Promise.all(sources.map(s => fetch(s.url).then(r => r.json())));
+
+        const matchMap = {};
+        results.forEach((json, i) => {
+          const key = sources[i].key;
+          (json.data || []).forEach(ent => {
+            const horseNameRaw = ent.Horse || ent["Horse Name"];
+            if (!horseNameRaw) return;
+            const horseName = horseNameRaw.toLowerCase().trim();
+
+            const title = ent.RaceTitle || ent.Race || ent.title || "";
+            const track = ent.FixtureTrack || ent.Track || ent.Course || ent.Racecourse || ent.track || "";
+            const time = ent.RaceTime || ent.Time || ent.time || "";
+
+            const match = { source: key, title, track, time };
+
+            if (!matchMap[horseName]) matchMap[horseName] = [];
+            matchMap[horseName].push(match);
+          });
+        });
+        setRelatedMap(matchMap);
+      } catch (e) {
+        console.error(e);
+        setError("Failed to fetch race data or related entries.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchRaceData();
+    fetchAllData();
   }, []);
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this record?");
-    if (!confirmDelete) return;
-
+  const handleDelete = async id => {
+    if (!window.confirm("Delete this record?")) return;
     try {
-      const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_selection_log/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} - ${response.statusText}`);
-      }
-      // Remove the deleted record from the UI
-      setRaceData((prevData) => prevData.filter((race) => race.id !== id));
-      alert("Record deleted successfully.");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete the record. Please try again.");
+      await fetch(`https://horseracesbackend-production.up.railway.app/api/race_selection_log/${id}`, { method: "DELETE" });
+      setRaceData(d => d.filter(r => r.id !== id));
+    } catch (e) {
+      alert("Delete failed");
     }
+  };
+
+  const renderMatches = race => {
+    const horses = JSON.parse(race.allHorses) || [];
+    const lines = horses.map(h => {
+      const key = h.horseName.toLowerCase().trim();
+      const matches = relatedMap[key];
+      if (!matches) return null;
+      return matches.map((m, idx) => (
+        <div key={idx} className="text-xs mb-1">
+          • <strong>{h.horseName}</strong> – {m.source} @ {m.track} {m.time} <em>{m.title}</em>
+        </div>
+      ));
+    });
+    return lines.flat().length ? lines : <div className="text-xs text-gray-500">—</div>;
   };
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
       <h1 className="text-lg font-bold mb-4">Race Selection Log</h1>
-      {isLoading && <p>Loading...</p>}
-      {error && <p className="text-red-500">Error: {error}</p>}
+      {isLoading && <div className="italic">Loading data...</div>}
+      {error && <div className="text-red-500">{error}</div>}
       {!isLoading && !error && raceData.length > 0 && (
-        <table className="table-auto border-collapse border border-gray-300 w-full text-sm bg-white shadow-md">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border border-gray-300 px-2 py-2 w-12">ID</th>
-              <th className="border border-gray-300 px-2 py-2 w-32">Meeting Date</th>
-              <th className="border border-gray-300 px-2 py-2 w-64">Race Title</th>
-              <th className="border border-gray-300 px-2 py-2 w-16">Country</th>
-              <th className="border border-gray-300 px-2 py-2 w-32">Course</th>
-              <th className="border border-gray-300 px-2 py-2 w-32">Race Surface</th>
-              <th className="border border-gray-300 px-2 py-2 w-20">Number of Runners</th>
-              <th className="border border-gray-300 px-2 py-2 w-20">Prize Fund</th>
-              <th className="border border-gray-300 px-2 py-2 w-20">User</th>
-              <th className="border border-gray-300 px-2 py-2 w-96">Horses</th>
-              <th className="border border-gray-300 px-2 py-2 w-32">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {raceData.map((race) => {
-              const horses = JSON.parse(race.allHorses).sort(
-                (a, b) => a.positionOfficial - b.positionOfficial
-              );
+        <div className="space-y-4">
+          {raceData.map(race => {
+            const horses = JSON.parse(race.allHorses).sort(
+              (a, b) => a.positionOfficial - b.positionOfficial
+            );
 
-              return (
-                <tr key={race.id} className="hover:bg-gray-100">
-                  <td className="border border-gray-300 px-2 py-2">{race.id}</td>
-                  <td className="border border-gray-300 px-2 py-2">
-                    {new Date(race.meetingDate).toLocaleDateString()}
-                  </td>
-                  <td className="border border-gray-300 px-2 py-2">{race.raceTitle}</td>
-                  <td className="border border-gray-300 px-2 py-2">{race.countryCode}</td>
-                  <td className="border border-gray-300 px-2 py-2">{race.courseName}</td>
-                  <td className="border border-gray-300 px-2 py-2">{race.raceSurfaceName}</td>
-                  <td className="border border-gray-300 px-2 py-2">{race.numberOfRunners}</td>
-                  <td className="border border-gray-300 px-2 py-2">{race.prizeFund}</td>
-                  <td className="border border-gray-300 px-2 py-2">{race.user}</td>
-                  <td className="border border-gray-300 px-2 py-2">
-                    <ul className="list-disc ml-4">
-                      {horses.map((horse, index) => (
-                        <li key={index} className="py-1">
-                          {horse.positionOfficial}. {horse.horseName}
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">
-                    <button
-                      onClick={() => handleDelete(race.id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+            return (
+              <div key={race.id} className="bg-white rounded-lg shadow p-4 grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+                {/* Column 1: Metadata */}
+                <div className="text-sm space-y-1 relative">
+                  <button
+                    onClick={() => handleDelete(race.id)}
+                    className="absolute top-0 right-0 text-red-500 text-xs hover:underline"
+                  >
+                    Delete
+                  </button>
+                  <div><strong>ID:</strong> {race.id}</div>
+                  <div><strong>Date:</strong> {new Date(race.meetingDate).toLocaleDateString()}</div>
+                  <div><strong>Title:</strong> {race.raceTitle}</div>
+                  <div><strong>Country:</strong> {race.countryCode}</div>
+                  <div><strong>Course:</strong> {race.courseName}</div>
+                  <div><strong>Surface:</strong> {race.raceSurfaceName}</div>
+                </div>
+
+                {/* Column 2: Horses */}
+                <div className="text-sm">
+                  <div className="font-semibold text-gray-700 mb-2">Horses</div>
+                  <ul className="list-disc ml-5 space-y-1 text-xs">
+                    {horses.map((h, idx) => (
+                      <li key={idx}>{h.positionOfficial}. {h.horseName}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Column 3: Ongoing Activities */}
+                <div className="text-sm">
+                  <div className="font-semibold text-gray-700 mb-2">Ongoing Activities</div>
+                  <div className="space-y-1 text-xs">
+                    {renderMatches(race)}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
-      {!isLoading && !error && raceData.length === 0 && <p>No race data available.</p>}
+      {!isLoading && !error && raceData.length === 0 && (
+        <div className="text-gray-500 italic">No race data available.</div>
+      )}
     </div>
   );
-};
+}
 
 export default MyRace;

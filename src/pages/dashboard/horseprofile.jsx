@@ -316,7 +316,7 @@ export function HorseProfiles() {
         console.log("Formatted data being sent to the server:", formattedHorse);
   
         const response = await fetch("https://horseracesbackend-production.up.railway.app/api/selected_horses", {
-        // const response = await fetch("http://localhost:8080/api/selected_horses", {
+        // const response = await fetch("https://horseracesbackend-production.up.railway.app/api/selected_horses", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -378,7 +378,7 @@ export function HorseProfiles() {
     try {
       const queryParams = buildQueryParams();
       const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
-      // const response = await fetch(`http://localhost:8080/api/${selectedTable}?${queryParams}`);
+      // const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
       const data = await response.json();
       setTableData(data.data);
       setTotalPages(data.totalPages);
@@ -396,8 +396,8 @@ export function HorseProfiles() {
       limit: ROWS_PER_PAGE
     });
 
-    // const response = await fetch(`http://localhost:8080/api/APIData_Table2/horse?${params}`);
     const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/horse?${params}`);
+    // const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/horse?${params}`);
     
     const data = await response.json();
     setSelectedHorseData(data.data);
