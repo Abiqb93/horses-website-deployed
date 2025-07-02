@@ -33,7 +33,7 @@ export function SignIn() {
       {/* Blandford Analytics Header */}
       <div className="text-center mb-8">
         <Typography variant="h3" className="font-bold text-gray-800 text-2xl">
-          Blandford Analytics
+          Blandford Bloodstock
         </Typography>
       </div>
 
