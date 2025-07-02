@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-
-const BASE_PATH = "/horses-website-deployed";
+import { Link } from "react-router-dom";
 
 export function Home() {
   const [trackedHorses, setTrackedHorses] = useState([]);
@@ -70,22 +69,22 @@ export function Home() {
             const encodedUrl = encodeURIComponent(url);
             const encodedRaceTitle = encodeURIComponent(raceTitle);
 
-            const message = `
-              <div class="text-sm leading-snug">
-                <a href="${BASE_PATH}/dashboard/horse/${encodedHorseName}" class="text-blue-600 font-medium hover:underline">
-                  ${rawHorseName}
-                </a>
-                at <span class="italic text-gray-600">${raceTrack}</span> <strong>${raceTime}</strong><br/>
-                <a href="${BASE_PATH}/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}" class="text-indigo-700 font-medium hover:underline">
-                  ${raceTitle}
-                </a>
-              </div>
-            `;
+            const notification = {
+              rawHorseName,
+              encodedHorseName,
+              raceTrack,
+              raceTime,
+              raceTitle,
+              encodedUrl,
+              encodedRaceTitle,
+              dayDiff,
+              raceKey: `${rawHorseName}-${raceTitle}-${dateStr}`
+            };
 
             if (dayDiff === 0) {
-              grouped[targetGroup].today.push(`🟢 ${message}`);
+              grouped[targetGroup].today.push(notification);
             } else if (dayDiff > 0) {
-              grouped[targetGroup].upcoming.push(`📅 In ${dayDiff} day(s): ${message}`);
+              grouped[targetGroup].upcoming.push(notification);
             }
           }
         }
@@ -113,8 +112,24 @@ export function Home() {
           <div>
             <h3 className="text-green-700 text-sm font-semibold">Today</h3>
             <ul className="space-y-1 mt-1">
-              {todayList.map((msg, idx) => (
-                <li key={idx} dangerouslySetInnerHTML={{ __html: msg }} className="pl-2 border-l-4 border-green-300" />
+              {todayList.map((item) => (
+                <li key={item.raceKey} className="pl-2 border-l-4 border-green-300 text-sm leading-snug">
+                  <Link
+                    to={`/dashboard/horse/${item.encodedHorseName}`}
+                    className="text-blue-600 font-medium hover:underline"
+                  >
+                    {item.rawHorseName}
+                  </Link>{" "}
+                  at <span className="italic text-gray-600">{item.raceTrack}</span>{" "}
+                  <strong>{item.raceTime}</strong>
+                  <br />
+                  <Link
+                    to={`/dashboard/racedetails?url=${item.encodedUrl}&RaceTitle=${item.encodedRaceTitle}`}
+                    className="text-indigo-700 font-medium hover:underline"
+                  >
+                    {item.raceTitle}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
@@ -124,8 +139,25 @@ export function Home() {
           <div>
             <h3 className="text-blue-700 text-sm font-semibold">Upcoming</h3>
             <ul className="space-y-1 mt-1">
-              {upcomingList.map((msg, idx) => (
-                <li key={idx} dangerouslySetInnerHTML={{ __html: msg }} className="pl-2 border-l-4 border-blue-200" />
+              {upcomingList.map((item) => (
+                <li key={item.raceKey} className="pl-2 border-l-4 border-blue-200 text-sm leading-snug">
+                  📅 In {item.dayDiff} day(s):{" "}
+                  <Link
+                    to={`/dashboard/horse/${item.encodedHorseName}`}
+                    className="text-blue-600 font-medium hover:underline"
+                  >
+                    {item.rawHorseName}
+                  </Link>{" "}
+                  at <span className="italic text-gray-600">{item.raceTrack}</span>{" "}
+                  <strong>{item.raceTime}</strong>
+                  <br />
+                  <Link
+                    to={`/dashboard/racedetails?url=${item.encodedUrl}&RaceTitle=${item.encodedRaceTitle}`}
+                    className="text-indigo-700 font-medium hover:underline"
+                  >
+                    {item.raceTitle}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
@@ -152,8 +184,8 @@ export function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {Object.entries(groupedNotifications).map(([label, data]) => {
             const formattedLabel = label
-              .replace(/([a-z])([A-Z])/g, '$1 $2') // adds space before capital letters
-              .replace(/^./, str => str.toUpperCase()); // capitalize first letter
+              .replace(/([a-z])([A-Z])/g, '$1 $2')
+              .replace(/^./, str => str.toUpperCase());
 
             return renderGroupCard(formattedLabel, data.today, data.upcoming);
           })}
