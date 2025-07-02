@@ -179,7 +179,7 @@ export function Races() {
             acc[record.raceTitle] = {
               raceTitle: record.raceTitle,
               countryCode: record.countryCode,
-              courseName: 'Beta',
+              courseName: record.courseName,
               courseId: record.courseId, // Add courseId here
               raceNumber: record.raceNumber, // Add raceNumber here
               raceSurfaceName: record.raceSurfaceName,
@@ -254,7 +254,7 @@ export function Races() {
     if (selectedCountry) {
       const courses = racesData
         .filter((race) => race.countryCode === selectedCountry)
-        .map((race) => race.courseId);
+        .map((race) => race.courseName);
       setCourseOptions([...new Set(courses)]);
       setSelectedCourse("");
     }
@@ -266,7 +266,7 @@ export function Races() {
         racesData.filter(
           (race) =>
             race.countryCode === selectedCountry &&
-            race.courseId === selectedCourse
+            race.courseName === selectedCourse
         )
       );
     }
@@ -285,7 +285,7 @@ export function Races() {
       meetingDate,
       raceTitle: race.raceTitle,
       countryCode: race.countryCode,
-      courseName: 'Beta',
+      courseName: race.courseName,
       courseId: race.courseId, // Add courseId here
       raceNumber: race.raceNumber, // Add raceNumber here
       raceSurfaceName: race.raceSurfaceName,
@@ -325,7 +325,7 @@ const handleTrackClick = async (race) => {
     meetingDate,
     raceTitle: race.raceTitle,
     countryCode: race.countryCode,
-    courseName: 'Beta',
+    courseName: race.courseName,
     courseId: race.courseId,
     raceNumber: race.raceNumber,
     raceSurfaceName: race.raceSurfaceName,

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
+import { Link } from "react-router-dom";
+
 
 export function ClosingEntries() {
   const [entries, setEntries] = useState([]);
@@ -150,9 +152,20 @@ export function ClosingEntries() {
                                           record.Owner,
                                         ].map((value, j) => (
                                           <td key={j} className="py-3 px-5 border-b border-blue-gray-50">
-                                            <Typography className="text-xs font-semibold text-blue-gray-600">
-                                              {value ?? "-"}
-                                            </Typography>
+                                            {j === 0 ? (
+                                              <Typography className="text-xs font-semibold text-blue-700 underline">
+                                                <Link
+                                                  to={`/dashboard/horse/${encodeURIComponent(record.Horse?.trim())}`}
+                                                  className="text-blue-700 underline hover:text-blue-900 text-xs font-semibold"
+                                                >
+                                                  {record.Horse ?? "-"}
+                                                </Link>
+                                              </Typography>
+                                            ) : (
+                                              <Typography className="text-xs font-semibold text-blue-gray-600">
+                                                {value ?? "-"}
+                                              </Typography>
+                                            )}
                                           </td>
                                         ))}
                                       </tr>

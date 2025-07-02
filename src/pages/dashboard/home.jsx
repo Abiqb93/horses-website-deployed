@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 
+const BASE_PATH = "/horses-website-deployed";
+
 export function Home() {
   const [trackedHorses, setTrackedHorses] = useState([]);
   const [groupedNotifications, setGroupedNotifications] = useState({});
@@ -9,12 +11,12 @@ export function Home() {
     const fetchTrackedAndRaces = async () => {
       try {
         const trackedRes = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking/all");
-        // const trackedRes = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking/all");
         const trackedJson = await trackedRes.json();
         const trackedNames = [...new Set(trackedJson.data.map(h => h.horseName?.toLowerCase().trim()))];
         setTrackedHorses(trackedNames);
 
-        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         const grouped = {
           RaceUpdates: { today: [], upcoming: [] },
@@ -35,12 +37,14 @@ export function Home() {
         const fetches = await Promise.all(sources.map(src => fetch(src.url).then(r => r.json())));
         for (let i = 0; i < fetches.length; i++) {
           const label = sources[i].label;
+          const url = sources[i].url;
           const data = fetches[i].data || [];
           const isMergedGroup = ["RacesAndEntries", "FranceRaceRecords", "IrelandRaceRecords"].includes(label);
           const targetGroup = isMergedGroup ? "RaceUpdates" : label;
 
           for (const entry of data) {
-            const horseName = (entry.Horse || entry["Horse Name"])?.toLowerCase().trim();
+            const rawHorseName = entry.Horse || entry["Horse Name"];
+            const horseName = rawHorseName?.toLowerCase().trim();
             if (!trackedNames.includes(horseName)) continue;
 
             const raceTrack = entry.FixtureTrack || entry.Track || entry.Course || entry.Racecourse || entry.track || "-";
@@ -62,7 +66,21 @@ export function Home() {
             raceDate.setHours(0, 0, 0, 0);
 
             const dayDiff = Math.floor((raceDate - today) / (1000 * 60 * 60 * 24));
-            const message = `<strong>${entry.Horse || entry["Horse Name"]}</strong> is racing at <em>${raceTrack}</em> <strong>${raceTime}</strong><br/><u>${raceTitle}</u>`;
+            const encodedHorseName = encodeURIComponent(rawHorseName?.trim() || "");
+            const encodedUrl = encodeURIComponent(url);
+            const encodedRaceTitle = encodeURIComponent(raceTitle);
+
+            const message = `
+              <div class="text-sm leading-snug">
+                <a href="${BASE_PATH}/dashboard/horse/${encodedHorseName}" class="text-blue-600 font-medium hover:underline">
+                  ${rawHorseName}
+                </a>
+                at <span class="italic text-gray-600">${raceTrack}</span> <strong>${raceTime}</strong><br/>
+                <a href="${BASE_PATH}/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}" class="text-indigo-700 font-medium hover:underline">
+                  ${raceTitle}
+                </a>
+              </div>
+            `;
 
             if (dayDiff === 0) {
               grouped[targetGroup].today.push(`🟢 ${message}`);
@@ -88,29 +106,29 @@ export function Home() {
     if (!hasContent) return null;
 
     return (
-      <div className="bg-white border rounded-lg shadow p-4" key={label}>
-        <h2 className="text-md font-bold text-gray-700 mb-2">{label}</h2>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3" key={label}>
+        <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">{label}</h2>
 
         {todayList.length > 0 && (
-          <>
-            <h3 className="text-green-700 font-semibold text-sm mb-1">Today</h3>
-            <ul className="list-disc pl-4 text-sm text-gray-800 mb-3 space-y-1">
+          <div>
+            <h3 className="text-green-700 text-sm font-semibold">Today</h3>
+            <ul className="space-y-1 mt-1">
               {todayList.map((msg, idx) => (
-                <li key={idx} dangerouslySetInnerHTML={{ __html: msg }} />
+                <li key={idx} dangerouslySetInnerHTML={{ __html: msg }} className="pl-2 border-l-4 border-green-300" />
               ))}
             </ul>
-          </>
+          </div>
         )}
 
         {upcomingList.length > 0 && (
-          <>
-            <h3 className="text-blue-700 font-semibold text-sm mb-1">Upcoming</h3>
-            <ul className="list-disc pl-4 text-sm text-gray-800 space-y-1">
+          <div>
+            <h3 className="text-blue-700 text-sm font-semibold">Upcoming</h3>
+            <ul className="space-y-1 mt-1">
               {upcomingList.map((msg, idx) => (
-                <li key={idx} dangerouslySetInnerHTML={{ __html: msg }} />
+                <li key={idx} dangerouslySetInnerHTML={{ __html: msg }} className="pl-2 border-l-4 border-blue-200" />
               ))}
             </ul>
-          </>
+          </div>
         )}
       </div>
     );
@@ -119,11 +137,11 @@ export function Home() {
   const hasAny = Object.values(groupedNotifications).some(g => g.today.length || g.upcoming.length);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">🏇 My Horses Dashboard</h1>
+    <div className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-6 tracking-tight">🏇 My Horses Dashboard</h1>
 
       {loading ? (
-        <div className="flex items-center space-x-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
           <svg className="animate-spin h-4 w-4 text-gray-600" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
@@ -131,10 +149,14 @@ export function Home() {
           <span>Loading tracked horse updates...</span>
         </div>
       ) : hasAny ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Object.entries(groupedNotifications).map(([label, data]) =>
-            renderGroupCard(label, data.today, data.upcoming)
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {Object.entries(groupedNotifications).map(([label, data]) => {
+            const formattedLabel = label
+              .replace(/([a-z])([A-Z])/g, '$1 $2') // adds space before capital letters
+              .replace(/^./, str => str.toUpperCase()); // capitalize first letter
+
+            return renderGroupCard(formattedLabel, data.today, data.upcoming);
+          })}
         </div>
       ) : (
         <p className="text-gray-500 italic">No upcoming races for your tracked horses.</p>

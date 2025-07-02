@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
+import { Link } from "react-router-dom";
 
 export function RacesAndEntries() {
   const [RacesAndEntries, setRacesAndEntries] = useState([]);
@@ -182,7 +183,12 @@ export function RacesAndEntries() {
                                       {[
                                         record["No."],
                                         record.No_Draw,
-                                        record.Horse,
+                                        <Link
+                                          to={`/dashboard/horse/${encodeURIComponent(record.Horse?.trim())}`}
+                                          className="text-blue-700 underline hover:text-blue-900"
+                                        >
+                                          {record.Horse ?? "-"}
+                                        </Link>,
                                         record.Rider,
                                         record.Age,
                                         record.Sex,

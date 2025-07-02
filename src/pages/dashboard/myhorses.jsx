@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
+import { Link } from "react-router-dom";
+const BASE_PATH = "/horses-website-deployed";
 
 export function MyHorses() {
   const [lastRaces, setLastRaces] = useState([]);
@@ -7,6 +9,7 @@ export function MyHorses() {
   const [upcomingRaces, setUpcomingRaces] = useState([]);
   const [error, setError] = useState(null);
   const [trackingStates, setTrackingStates] = useState({});
+  
 
   useEffect(() => {
     const fetchTrackedAndRaces = async () => {
@@ -230,26 +233,45 @@ export function MyHorses() {
     const state = trackingStates[horseKey] || {};
     return (
       <div className="text-[11px] w-52">
-        <div className="flex items-center gap-1 mb-1">
+        <div className="flex items-center justify-between mb-1">
           <input
             type="text"
             value={state.noteInput}
             onChange={(e) => handleNoteChange(horseKey, e.target.value)}
             placeholder="Note"
-            className="border px-2 py-0.5 rounded w-24 text-[11px]"
+            className="px-1 py-0.5 rounded w-2/3 text-[11px] bg-gray-50"
           />
-          <button onClick={() => handleTrackNote(horse, horseKey)} className="text-blue-600 hover:underline text-[11px]">+</button>
-          <button onClick={() => toggleShowNotes(horseKey)} className="text-gray-600 hover:underline text-[11px]">View</button>
-          <button onClick={() => handleStopTracking(horse, horseKey)} className="text-red-500 hover:underline text-[11px]">✖</button>
+          <button
+            onClick={() => toggleShowNotes(horseKey)}
+            className="text-gray-600 hover:underline text-[11px]"
+          >
+            View Notes
+          </button>
         </div>
+
+        <div className="flex items-center gap-1 mb-1">
+          <button
+            onClick={() => handleTrackNote(horse, horseKey)}
+            className="text-blue-600 hover:underline text-[11px]"
+          >
+            Add Note
+          </button>
+          <button
+            onClick={() => handleStopTracking(horse, horseKey)}
+            className="text-red-500 hover:underline text-[11px]"
+          >
+            ✖
+          </button>
+        </div>
+
         {state.showNotes && (
           <div className="border-t pt-1 text-[10px] text-gray-700 max-h-24 overflow-y-auto">
-            {state.notes?.map((n, i) => (
+            {state.notes?.length ? state.notes.map((n, i) => (
               <div key={i} className="mb-1 border-b pb-1">
                 <div>📝 {n.note}</div>
                 <div>{new Date(n.trackingDate).toLocaleString()}</div>
               </div>
-            )) || <div className="italic text-gray-400">No notes</div>}
+            )) : <div className="italic text-gray-400">No notes</div>}
           </div>
         )}
       </div>
@@ -280,12 +302,16 @@ export function MyHorses() {
               return (
                 <tr key={idx} className="border-b border-gray-200 align-top">
                   <td className="px-2 py-2">{renderTrackingControls(race.horse, race.horseKey)}</td>
-                  <td className="px-2 py-2">{race.horse}</td>
+                  <td className="px-2 py-2 text-blue-700 underline hover:text-blue-900">
+                    <Link to={`/dashboard/horse/${encodeURIComponent(race.horse.trim())}`}>
+                      {race.horse}
+                    </Link>
+                  </td>
                   <td className="px-2 py-2">{category}</td> {/* ✅ FIXED: inside map */}
                   <td className="px-2 py-2">{race.raceDate}</td>
                   <td className="px-2 py-2">{race.raceTime}</td>
                   <td className="px-2 py-2">{race.raceTrack}</td>
-                  <td className="px-2 py-2">{race.raceTitle}</td>
+                  <td className="px-2 py-2 text-gray-900">{race.raceTitle}</td>
                   <td className="px-2 py-2">{race.source}</td>
                   {title === "Upcoming Races" && <td className="px-2 py-2 text-center">{race.daysUntilRace}d</td>}
                 </tr>
@@ -308,8 +334,21 @@ export function MyHorses() {
       {todayRaces.length > 0 && renderTable("Today’s Races", todayRaces, "green")}
       {upcomingRaces.length > 0 && renderTable("Upcoming Races", upcomingRaces, "blue")}
       {lastRaces.length === 0 && todayRaces.length === 0 && upcomingRaces.length === 0 && (
-        <Typography className="text-gray-500 italic">No upcoming races for your tracked horses.</Typography>
-      )}
+          <>
+            {error ? (
+              <Typography color="red" className="text-sm p-4">{error}</Typography>
+            ) : (
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <svg className="animate-spin h-4 w-4 text-gray-600" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                <span>Loading tracked horse races...</span>
+              </div>
+            )}
+          </>
+        )}
+
     </div>
   );
 }

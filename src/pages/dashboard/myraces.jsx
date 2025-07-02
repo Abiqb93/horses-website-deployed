@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 export function MyRace() {
   const [raceData, setRaceData] = useState([]);
@@ -114,7 +115,15 @@ export function MyRace() {
                   <div className="font-semibold text-gray-700 mb-2">Horses</div>
                   <ul className="list-disc ml-5 space-y-1 text-xs">
                     {horses.map((h, idx) => (
-                      <li key={idx}>{h.positionOfficial}. {h.horseName}</li>
+                      <li key={idx}>
+                        {h.positionOfficial}.{" "}
+                        <Link
+                          to={`/dashboard/horse/${encodeURIComponent(h.horseName.trim())}`}
+                          className="text-blue-600 underline hover:text-blue-800"
+                        >
+                          {h.horseName}
+                        </Link>
+                      </li>
                     ))}
                   </ul>
                 </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
+import { Link } from "react-router-dom";
 
 export function IrelandRaceRecords() {
   const [records, setRecords] = useState([]);
@@ -148,11 +149,25 @@ export function IrelandRaceRecords() {
                                 <tbody>
                                   {getEntriesForRace(race["Race Code"]).map((entry, idx) => (
                                     <tr key={idx}>
-                                      {columnMap.map((col, j) => (
-                                        <td key={j} className="py-2 px-3 border-b text-xs">
-                                          {entry[col] ?? "-"}
-                                        </td>
-                                      ))}
+                                      {columnMap.map((col, j) => {
+                                          const value = entry[col] ?? "-";
+                                          const isHorseCol = col === "Horse Name";
+
+                                          return (
+                                            <td key={j} className="py-2 px-3 border-b text-xs">
+                                              {isHorseCol ? (
+                                                <Link
+                                                  to={`/dashboard/horse/${encodeURIComponent(value.trim())}`}
+                                                  className="text-blue-700 underline hover:text-blue-900"
+                                                >
+                                                  {value}
+                                                </Link>
+                                              ) : (
+                                                value
+                                              )}
+                                            </td>
+                                          );
+                                        })}
                                     </tr>
                                   ))}
                                 </tbody>
