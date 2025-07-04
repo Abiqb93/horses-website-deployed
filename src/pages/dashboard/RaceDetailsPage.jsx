@@ -8,13 +8,14 @@ export function RaceDetailPage() {
 
   const tableUrl = queryParams.get("url");
   const raceTitleParam = queryParams.get("RaceTitle");
+  const meetingDate = queryParams.get("meetingDate");
 
   const [data, setData] = useState([]);
   const [error, setError] = useState(null);
   const [matchedTitle, setMatchedTitle] = useState("");
 
-  // Map table name to field name
   const getRaceTitleField = (url) => {
+    if (url.includes("APIData_Table2")) return "raceTitle";
     if (url.includes("RacesAndEntries")) return "RaceTitle";
     if (url.includes("FranceRaceRecords")) return "Race";
     if (url.includes("IrelandRaceRecords")) return "Race Title";
@@ -30,7 +31,7 @@ export function RaceDetailPage() {
   useEffect(() => {
     const fetchTableData = async () => {
       console.log("[RaceDetailPage] 🚀 Fetching from:", tableUrl);
-      console.log("[RaceDetailPage] 🎯 Filtering by RaceTitle param:", raceTitleParam);
+      console.log("[RaceDetailPage] 🎯 Filtering by RaceTitle:", raceTitleParam);
 
       try {
         if (!tableUrl) {
@@ -38,9 +39,25 @@ export function RaceDetailPage() {
           return;
         }
 
-        const response = await fetch(tableUrl);
-        const json = await response.json();
-        const records = json.data || [];
+        let records = [];
+
+        if (tableUrl.includes("APIData_Table2")) {
+          if (!meetingDate) {
+            setError("Meeting date is required for APIData_Table2.");
+            return;
+          }
+
+          const filteredUrl = `${tableUrl}?meetingDate=${encodeURIComponent(meetingDate)}`;
+          const response = await fetch(filteredUrl);
+          if (!response.ok) throw new Error("Failed to fetch from APIData_Table2");
+          const json = await response.json();
+          records = json.data || [];
+        } else {
+          const response = await fetch(tableUrl);
+          if (!response.ok) throw new Error("Failed to fetch from source");
+          const json = await response.json();
+          records = json.data || [];
+        }
 
         if (records.length === 0) {
           setError("No records found.");
@@ -48,28 +65,22 @@ export function RaceDetailPage() {
         }
 
         const raceField = getRaceTitleField(tableUrl);
-        console.log("[RaceDetailPage] 🧩 Using race field:", raceField);
-
         let filtered = records;
 
         if (raceTitleParam && raceField) {
           const target = normalize(raceTitleParam);
           filtered = records.filter((r) => {
             const val = normalize(r[raceField]);
-            const match = val.includes(target);
-            if (match) {
-              console.log("[MATCH ✅]", val);
-            }
-            return match;
+            return val.includes(target);
           });
 
           if (filtered.length > 0) {
             setMatchedTitle(filtered[0][raceField]);
           } else {
-            setMatchedTitle(raceTitleParam); // fallback
+            setMatchedTitle(raceTitleParam);
           }
         } else {
-          setMatchedTitle(raceTitleParam); // fallback
+          setMatchedTitle(raceTitleParam);
         }
 
         if (filtered.length === 0) {
@@ -78,13 +89,13 @@ export function RaceDetailPage() {
           setData(filtered);
         }
       } catch (err) {
-        console.error("[RaceDetailPage] ❗ Error fetching:", err);
+        console.error("[RaceDetailPage] ❗ Error:", err);
         setError("Failed to load race data.");
       }
     };
 
     fetchTableData();
-  }, [tableUrl, raceTitleParam]);
+  }, [tableUrl, raceTitleParam, meetingDate]);
 
   if (error) {
     return (
@@ -102,7 +113,6 @@ export function RaceDetailPage() {
     );
   }
 
-  // Clean up columns: remove URLs and race title column
   const raceField = getRaceTitleField(tableUrl);
   const columns = Object.keys(data[0]).filter((col) => {
     if (col === raceField) return false;
@@ -134,7 +144,13 @@ export function RaceDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {data.map((entry, idx) => (
+              {data
+                .sort((a, b) => {
+                  const posA = parseInt(a.positionOfficial);
+                  const posB = parseInt(b.positionOfficial);
+                  return (isNaN(posA) ? Infinity : posA) - (isNaN(posB) ? Infinity : posB);
+                })
+                .map((entry, idx) => (
                 <tr key={idx}>
                   {columns.map((col, j) => (
                     <td key={j} className="py-2 px-3 border-b text-xs">

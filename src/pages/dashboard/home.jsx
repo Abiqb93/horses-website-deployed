@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 export function Home() {
   const [trackedHorses, setTrackedHorses] = useState([]);
   const [groupedNotifications, setGroupedNotifications] = useState({});
+  const [resultsData, setResultsData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -89,7 +90,41 @@ export function Home() {
           }
         }
 
+        // Fetch recent results from APIData_Table2
+        const resultDates = [0, 1, 2].map(offset => {
+          const d = new Date();
+          d.setDate(d.getDate() - offset);
+          return d.toISOString().split("T")[0];
+        });
+
+        const resultsFetches = await Promise.all(
+          resultDates.map(date =>
+            fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2?meetingDate=${date}`)
+              .then(res => res.json())
+              .then(json => ({ date, records: json.data || [] }))
+          )
+        );
+
+        const filteredResults = [];
+
+        for (const { date, records } of resultsFetches) {
+          for (const record of records) {
+            const horseName = record.horseName?.toLowerCase().trim();
+            if (trackedNames.includes(horseName)) {
+              filteredResults.push({
+                horseName: record.horseName,
+                position: record.positionOfficial,
+                raceTitle: record.raceTitle,
+                country: record.countryCode,
+                date,
+                track: record.courseName || "-",
+              });
+            }
+          }
+        }
+
         setGroupedNotifications(grouped);
+        setResultsData(filteredResults);
       } catch (err) {
         console.error("Error checking upcoming races:", err);
       } finally {
@@ -105,7 +140,7 @@ export function Home() {
     if (!hasContent) return null;
 
     return (
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3" key={label}>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 min-w-[300px]" key={label}>
         <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">{label}</h2>
 
         {todayList.length > 0 && (
@@ -167,6 +202,7 @@ export function Home() {
   };
 
   const hasAny = Object.values(groupedNotifications).some(g => g.today.length || g.upcoming.length);
+  const hasResults = resultsData.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
@@ -180,18 +216,80 @@ export function Home() {
           </svg>
           <span>Loading tracked horse updates...</span>
         </div>
-      ) : hasAny ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {Object.entries(groupedNotifications).map(([label, data]) => {
-            const formattedLabel = label
-              .replace(/([a-z])([A-Z])/g, '$1 $2')
-              .replace(/^./, str => str.toUpperCase());
-
-            return renderGroupCard(formattedLabel, data.today, data.upcoming);
-          })}
-        </div>
       ) : (
-        <p className="text-gray-500 italic">No upcoming races for your tracked horses.</p>
+        <>
+          {/* 🔥 Results First */}
+          {hasResults && (
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 mb-6">
+              <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">Results (Last 3 Days)</h2>
+              <ul className="space-y-1 mt-1 text-sm leading-snug">
+                {resultsData
+                  .sort((a, b) => a.position - b.position)
+                  .map((res) => {
+                    let icon = "📌";
+                    if (res.position === 1) icon = "🏁";
+                    else if (res.position === 2) icon = "📈";
+                    else if (res.position === 3) icon = "🎯";
+
+                    const encodedRaceTitle = encodeURIComponent(res.raceTitle);
+                    const encodedDate = encodeURIComponent(res.date);
+                    const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
+
+                    return (
+                      <li
+                        key={`${res.horseName}-${res.raceTitle}-${res.date}`}
+                        className="pl-2 border-l-4 border-purple-300 flex items-start gap-2"
+                      >
+                        <span className="text-lg pt-[1px]">{icon}</span>
+                        <span className="text-sm leading-snug">
+                          <Link
+                            to={`/dashboard/horse/${encodeURIComponent(res.horseName)}`}
+                            className="text-blue-700 font-medium hover:underline"
+                          >
+                            {res.horseName}
+                          </Link>{" "}
+                          finished <strong>{res.position}</strong> in{" "}
+                          <Link
+                            to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
+                            className="text-indigo-700 font-medium hover:underline"
+                          >
+                            {res.raceTitle}
+                          </Link>{" "}
+                          at <span className="text-gray-800">{res.track}</span> ({res.country}) on{" "}
+                          <span className="text-gray-700">{res.date}</span>
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ul>
+
+
+            </div>
+          )}
+
+          {/* 🔥 Race Updates & Others */}
+          {hasAny ? (
+            <div className="flex flex-wrap gap-5">
+              {groupedNotifications["RaceUpdates"] &&
+                renderGroupCard(
+                  "Race Updates",
+                  groupedNotifications["RaceUpdates"].today,
+                  groupedNotifications["RaceUpdates"].upcoming
+                )}
+
+              {Object.entries(groupedNotifications)
+                .filter(([label]) => label !== "RaceUpdates")
+                .map(([label, data]) => {
+                  const formattedLabel = label
+                    .replace(/([a-z])([A-Z])/g, "$1 $2")
+                    .replace(/^./, str => str.toUpperCase());
+                  return renderGroupCard(formattedLabel, data.today, data.upcoming);
+                })}
+            </div>
+          ) : (
+            <p className="text-gray-500 italic">No upcoming races for your tracked horses.</p>
+          )}
+        </>
       )}
     </div>
   );

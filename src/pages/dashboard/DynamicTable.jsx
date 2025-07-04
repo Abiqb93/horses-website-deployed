@@ -31,11 +31,43 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   const [activeTab, setActiveTab] = useState("history"); // Default to history tab
   const [trackingType, setTrackingType] = useState("Prospect");
 
-  const sortedByDate = data && data.length > 0
-    ? [...data].sort((a, b) => new Date(b.meetingDate) - new Date(a.meetingDate))
-    : [];
+  // Group records by (horseName, foalingDate)
+  const groupedByHorse = data.reduce((acc, row) => {
+    const key = `${row.horseName}_${row.foalingDate}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(row);
+    return acc;
+  }, {});
 
-  const latestRecord = sortedByDate[0];
+  // Find the group with the latest meetingDate
+  let latestHorseKey = null;
+  let latestHorseRecord = null;
+
+  Object.entries(groupedByHorse).forEach(([key, records]) => {
+    const mostRecent = records.reduce((a, b) =>
+      new Date(a.meetingDate) > new Date(b.meetingDate) ? a : b
+    );
+    if (
+      !latestHorseRecord ||
+      new Date(mostRecent.meetingDate) > new Date(latestHorseRecord.meetingDate)
+    ) {
+      latestHorseRecord = mostRecent;
+      latestHorseKey = key;
+    }
+  });
+
+  const [selectedHorseName, selectedFoalingDate] = latestHorseKey
+    ? latestHorseKey.split("_")
+    : [null, null];
+
+  const filteredHorseRecords = data.filter(
+    (d) =>
+      d.horseName === selectedHorseName &&
+      d.foalingDate === selectedFoalingDate
+  );
+
+  const latestRecord = latestHorseRecord;
+
 
   useEffect(() => {
     const fetchTracking = async () => {
@@ -160,13 +192,27 @@ const DynamicTable = ({ data, refreshHorseData }) => {
     }
   };
 
-  const filteredColumns = Object.keys(data[0]).filter(key => !excludedColumns.has(key));
-  const disciplineOptions = [...new Set(data.map(d => d.raceType).filter(Boolean))].sort();
-  const yearOptions = [...new Set(data.map(d => new Date(d.meetingDate).getFullYear()).filter(Boolean))].sort((a, b) => b - a);
-  const trainerOptions = [...new Set(data.map(d => d.trainerFullName).filter(Boolean))].sort();
-  const ownerOptions = [...new Set(data.map(d => d.ownerFullName).filter(Boolean))].sort();
+const filteredColumns = Object.keys(filteredHorseRecords[0] || {}).filter(
+  key => !excludedColumns.has(key)
+);
 
-  const filteredData = data.filter(row => {
+  const disciplineOptions = [...new Set(
+    filteredHorseRecords.map(d => d.raceType).filter(Boolean)
+  )].sort();
+
+  const yearOptions = [...new Set(
+    filteredHorseRecords.map(d => new Date(d.meetingDate).getFullYear()).filter(Boolean)
+  )].sort((a, b) => b - a);
+
+  const trainerOptions = [...new Set(
+    filteredHorseRecords.map(d => d.trainerFullName).filter(Boolean)
+  )].sort();
+
+  const ownerOptions = [...new Set(
+    filteredHorseRecords.map(d => d.ownerFullName).filter(Boolean)
+  )].sort();
+
+  const filteredData = filteredHorseRecords.filter(row => {
     const matchDiscipline = !filters.discipline || row.raceType === filters.discipline;
     const matchYear = !filters.year || new Date(row.meetingDate).getFullYear().toString() === filters.year;
     const matchTrainer = !filters.trainer || row.trainerFullName === filters.trainer;
