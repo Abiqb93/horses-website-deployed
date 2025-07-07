@@ -72,7 +72,8 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   useEffect(() => {
     const fetchTracking = async () => {
       try {
-        const user = localStorage.getItem("userId");
+        const storedUser = localStorage.getItem("user");
+        const user = storedUser ? JSON.parse(storedUser).userId : "Guest";
         const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${latestRecord?.horseName}?user=${user}`);
         
         const json = await res.json();
@@ -115,7 +116,8 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   } = latestRecord;
 
 
-  const user = localStorage.getItem("userId") || "Guest";
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser).userId : "Guest";
 
   const handleTrackHorse = async () => {
     setIsSubmitting(true);

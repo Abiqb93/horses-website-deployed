@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, Typography, Input, Select, Option, Button } from "@material-tailwind/react";
 
+
 // RaceTile Component
 const RaceTile = ({ race, isTracked, onTrackClick, onClick }) => {
   return (
@@ -292,7 +293,10 @@ export function Races() {
       numberOfRunners: race.numberOfRunners,
       prizeFund: race.prizeFund,
       allHorses: race.allHorses, // Include all horses
-      user: localStorage.getItem("userId"), 
+      user: (() => {
+        const storedUser = localStorage.getItem("user");
+        return storedUser ? JSON.parse(storedUser).userId : "Guest";
+      })(),
     };
   
     console.log("Payload being sent to backend:", raceData);
