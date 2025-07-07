@@ -73,7 +73,7 @@ const DynamicTable = ({ data, refreshHorseData }) => {
     const fetchTracking = async () => {
       try {
         const user = localStorage.getItem("userId");
-        const res = await fetch(`http://localhost:8080/api/horseTracking/${latestRecord?.horseName}?user=${user}`);
+        const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${latestRecord?.horseName}?user=${user}`);
         
         const json = await res.json();
         if (Array.isArray(json.data) && json.data.length > 0) {
@@ -128,7 +128,7 @@ const DynamicTable = ({ data, refreshHorseData }) => {
         User: user,
       };
 
-      const res = await fetch("http://localhost:8080/api/horseTracking", {
+      const res = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -139,7 +139,7 @@ const DynamicTable = ({ data, refreshHorseData }) => {
       // ✅ Re-fetch full tracking notes to update the list
       const refreshTrackingData = async () => {
         try {
-          const r = await fetch(`http://localhost:8080/api/horseTracking/${horseName}?user=${user}`);
+          const r = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}?user=${user}`);
           const json = await r.json();
           const newData = Array.isArray(json.data) ? json.data : [];
           setTrackingData(newData);
@@ -170,8 +170,8 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   const handleStopTracking = async () => {
     if (!window.confirm(`Are you sure you want to stop tracking ${horseName}?`)) return;
     try {
-      // const res = await fetch(`http://localhost:8080/api/horseTracking/${horseName}`, {
-      const res = await fetch(`http://localhost:8080/api/horseTracking/${horseName}?user=${user}`, {
+      // const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`, {
+      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}?user=${user}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to stop tracking");

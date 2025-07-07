@@ -15,7 +15,7 @@ export function MyHorses() {
     const fetchTrackedAndRaces = async () => {
       try {
         const userId = localStorage.getItem("userId");
-        const trackedRes = await fetch(`http://localhost:8080/api/horseTracking?user=${userId}`);
+        const trackedRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${userId}`);
         const trackedJson = await trackedRes.json();
         const trackedData = trackedJson.data || [];
         const trackedMap = {};
@@ -89,12 +89,12 @@ export function MyHorses() {
           declRes,
           entriesRes
         ] = await Promise.all([
-          fetch("http://localhost:8080/api/RacesAndEntries"),
-          fetch("http://localhost:8080/api/FranceRaceRecords"),
-          fetch("http://localhost:8080/api/IrelandRaceRecords"),
-          fetch("http://localhost:8080/api/ClosingEntries"),
-          fetch("http://localhost:8080/api/DeclarationsTracking"),
-          fetch("http://localhost:8080/api/EntriesTracking"),
+          fetch("https://horseracesbackend-production.up.railway.app/api/RacesAndEntries"),
+          fetch("https://horseracesbackend-production.up.railway.app/api/FranceRaceRecords"),
+          fetch("https://horseracesbackend-production.up.railway.app/api/IrelandRaceRecords"),
+          fetch("https://horseracesbackend-production.up.railway.app/api/ClosingEntries"),
+          fetch("https://horseracesbackend-production.up.railway.app/api/DeclarationsTracking"),
+          fetch("https://horseracesbackend-production.up.railway.app/api/EntriesTracking"),
         ]);
 
         const [
@@ -143,7 +143,7 @@ export function MyHorses() {
     const userId = localStorage.getItem("userId");
 
     try {
-      await fetch("http://localhost:8080/api/horseTracking", {
+      await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -154,7 +154,7 @@ export function MyHorses() {
         }),
       });
 
-      const refreshed = await fetch(`http://localhost:8080/api/horseTracking/${horseName}?user=${userId}`);
+      const refreshed = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}?user=${userId}`);
       const refreshedJson = await refreshed.json();
       setTrackingStates(prev => ({
         ...prev,
@@ -175,7 +175,7 @@ export function MyHorses() {
     const userId = localStorage.getItem("userId");
     if (!window.confirm(`Stop tracking ${horseName}?`)) return;
 
-    await fetch(`http://localhost:8080/api/horseTracking/${horseName}?user=${userId}`, {
+    await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}?user=${userId}`, {
       method: "DELETE"
     });
 

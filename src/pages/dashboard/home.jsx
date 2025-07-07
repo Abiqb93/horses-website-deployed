@@ -11,7 +11,7 @@ export function Home() {
     const fetchTrackedAndRaces = async () => {
       try {
         const userId = localStorage.getItem("userId") || "Guest";
-        const trackedRes = await fetch(`http://localhost:8080/api/horseTracking?user=${encodeURIComponent(userId)}`);
+        const trackedRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${encodeURIComponent(userId)}`);
         const trackedJson = await trackedRes.json();
         const trackedNames = [...new Set(trackedJson.data.map(h => h.horseName?.toLowerCase().trim()))];
         setTrackedHorses(trackedNames);
@@ -27,12 +27,12 @@ export function Home() {
         };
 
         const sources = [
-          { label: "RacesAndEntries", url: "http://localhost:8080/api/RacesAndEntries" },
-          { label: "FranceRaceRecords", url: "http://localhost:8080/api/FranceRaceRecords" },
-          { label: "IrelandRaceRecords", url: "http://localhost:8080/api/IrelandRaceRecords" },
-          { label: "ClosingEntries", url: "http://localhost:8080/api/ClosingEntries" },
-          { label: "DeclarationsTracking", url: "http://localhost:8080/api/DeclarationsTracking" },
-          { label: "EntriesTracking", url: "http://localhost:8080/api/EntriesTracking" },
+          { label: "RacesAndEntries", url: "https://horseracesbackend-production.up.railway.app/api/RacesAndEntries" },
+          { label: "FranceRaceRecords", url: "https://horseracesbackend-production.up.railway.app/api/FranceRaceRecords" },
+          { label: "IrelandRaceRecords", url: "https://horseracesbackend-production.up.railway.app/api/IrelandRaceRecords" },
+          { label: "ClosingEntries", url: "https://horseracesbackend-production.up.railway.app/api/ClosingEntries" },
+          { label: "DeclarationsTracking", url: "https://horseracesbackend-production.up.railway.app/api/DeclarationsTracking" },
+          { label: "EntriesTracking", url: "https://horseracesbackend-production.up.railway.app/api/EntriesTracking" },
         ];
 
         const fetches = await Promise.all(sources.map(src => fetch(src.url).then(r => r.json())));
@@ -100,7 +100,7 @@ export function Home() {
 
         const resultsFetches = await Promise.all(
           resultDates.map(date =>
-            fetch(`http://localhost:8080/api/APIData_Table2?meetingDate=${date}`)
+            fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2?meetingDate=${date}`)
               .then(res => res.json())
               .then(json => ({ date, records: json.data || [] }))
           )
@@ -234,7 +234,7 @@ export function Home() {
 
                     const encodedRaceTitle = encodeURIComponent(res.raceTitle);
                     const encodedDate = encodeURIComponent(res.date);
-                    const encodedUrl = encodeURIComponent("http://localhost:8080/api/APIData_Table2");
+                    const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
 
                     return (
                       <li
