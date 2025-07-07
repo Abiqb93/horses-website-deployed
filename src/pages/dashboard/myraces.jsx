@@ -10,8 +10,10 @@ export function MyRace() {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const storedUser = localStorage.getItem("user");
-        const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+        const userId = (() => {
+          const storedUser = localStorage.getItem("user");
+          return storedUser ? JSON.parse(storedUser).userId : "Guest";
+        })();
         const resLog = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_selection_log?user=${userId}`);
         const jsonLog = await resLog.json();
         const races = jsonLog.data || [];

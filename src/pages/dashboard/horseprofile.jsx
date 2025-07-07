@@ -281,7 +281,10 @@ export function HorseProfiles() {
 
   const addHorseToList = async (horse) => {
     // const userId = "Tom"; // Hardcoded user_id for now
-    const userId = localStorage.getItem("userId") || "Guest"; 
+    const userId = (() => {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser).userId : "Guest";
+    })();
   
     if (!selectedHorses.some((selected) => selected.Sire === horse.Sire)) {
       try {

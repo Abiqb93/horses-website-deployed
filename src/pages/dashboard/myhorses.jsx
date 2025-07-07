@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
 
-
 export function MyHorses() {
   const [lastRaces, setLastRaces] = useState([]);
   const [todayRaces, setTodayRaces] = useState([]);
@@ -14,8 +13,10 @@ export function MyHorses() {
   useEffect(() => {
     const fetchTrackedAndRaces = async () => {
       try {
-        const storedUser = localStorage.getItem("user");
-        const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+        const userId = (() => {
+          const storedUser = localStorage.getItem("user");
+          return storedUser ? JSON.parse(storedUser).userId : "Guest";
+        })();
         const trackedRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${userId}`);
         const trackedJson = await trackedRes.json();
         const trackedData = trackedJson.data || [];
@@ -141,7 +142,10 @@ export function MyHorses() {
 
   const handleTrackNote = async (horseName, horseKey) => {
     const note = trackingStates[horseKey]?.noteInput || "";
-    const userId = localStorage.getItem("userId");
+    const userId = (() => {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser).userId : "Guest";
+    })();
 
     try {
       await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
@@ -173,7 +177,10 @@ export function MyHorses() {
 
 
   const handleStopTracking = async (horseName, horseKey) => {
-    const userId = localStorage.getItem("userId");
+    const userId = (() => {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser).userId : "Guest";
+    })();
     if (!window.confirm(`Stop tracking ${horseName}?`)) return;
 
     await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}?user=${userId}`, {

@@ -336,7 +336,10 @@ const handleTrackClick = async (race) => {
     numberOfRunners: race.numberOfRunners,
     prizeFund: race.prizeFund,
     allHorses: race.allHorses,
-    user: localStorage.getItem("userId"),
+    user: (() => {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser).userId : "Guest";
+    })(),
   };
 
   try {
