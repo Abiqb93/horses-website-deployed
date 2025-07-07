@@ -10,7 +10,8 @@ export function Home() {
   useEffect(() => {
     const fetchTrackedAndRaces = async () => {
       try {
-        const userId = localStorage.getItem("userId") || "Guest";
+        const storedUser = localStorage.getItem("user");
+        const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
         const trackedRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${encodeURIComponent(userId)}`);
         const trackedJson = await trackedRes.json();
         const trackedNames = [...new Set(trackedJson.data.map(h => h.horseName?.toLowerCase().trim()))];

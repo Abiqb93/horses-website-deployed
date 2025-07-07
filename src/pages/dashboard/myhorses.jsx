@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
-const BASE_PATH = "/horses-website-deployed";
+
 
 export function MyHorses() {
   const [lastRaces, setLastRaces] = useState([]);
