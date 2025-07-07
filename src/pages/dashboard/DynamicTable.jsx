@@ -72,7 +72,8 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   useEffect(() => {
     const fetchTracking = async () => {
       try {
-        const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${latestRecord?.horseName}`);
+        const user = localStorage.getItem("userId");
+        const res = await fetch(`http://localhost:8080/api/horseTracking/${latestRecord?.horseName}?user=${user}`);
         
         const json = await res.json();
         if (Array.isArray(json.data) && json.data.length > 0) {
@@ -127,11 +128,7 @@ const DynamicTable = ({ data, refreshHorseData }) => {
         User: user,
       };
 
-      console.log("Tracking payload being sent:", payload);
-
-      // const res = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
-      const res = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
-
+      const res = await fetch("http://localhost:8080/api/horseTracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -139,22 +136,18 @@ const DynamicTable = ({ data, refreshHorseData }) => {
 
       if (!res.ok) throw new Error("Failed to track horse");
 
-      // ✅ Immediately set UI to reflect tracked status
-      setIsTracked(true);
-      setShowNotes(true);
-      setTrackingDate(new Date().toISOString());
-
-      // ✅ Clear the input field
-      setNote("");
-
       // ✅ Re-fetch full tracking notes to update the list
       const refreshTrackingData = async () => {
         try {
-          // const r = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`);
-          const r = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`);
-
+          const r = await fetch(`http://localhost:8080/api/horseTracking/${horseName}?user=${user}`);
           const json = await r.json();
-          setTrackingData(Array.isArray(json.data) ? json.data : []);
+          const newData = Array.isArray(json.data) ? json.data : [];
+          setTrackingData(newData);
+
+          // ✅ Now update UI using the latest data
+          setIsTracked(true);
+          setShowNotes(true);
+          setTrackingDate(newData[0]?.trackingDate ?? new Date().toISOString());
         } catch (err) {
           console.error("Error re-fetching tracking list:", err);
         }
@@ -162,9 +155,8 @@ const DynamicTable = ({ data, refreshHorseData }) => {
 
       await refreshTrackingData();
 
-      // ✅ Trigger parent refresh (e.g. to reload race table)
       if (typeof refreshHorseData === 'function') refreshHorseData();
-
+      setNote(""); // Clear input
     } catch (err) {
       console.error("Error tracking horse:", err);
       alert("Error tracking horse.");
@@ -174,12 +166,12 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   };
 
 
+
   const handleStopTracking = async () => {
     if (!window.confirm(`Are you sure you want to stop tracking ${horseName}?`)) return;
     try {
-      // const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`, {
-      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`, {
-        
+      // const res = await fetch(`http://localhost:8080/api/horseTracking/${horseName}`, {
+      const res = await fetch(`http://localhost:8080/api/horseTracking/${horseName}?user=${user}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to stop tracking");

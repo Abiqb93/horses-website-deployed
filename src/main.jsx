@@ -1,66 +1,38 @@
-// /**
-// =========================================================
-// * Material Tailwind Dashboard React - v2.1.0
-// =========================================================
-// * Product Page: https://www.creative-tim.com/product/material-tailwind-dashboard-react
-// * Copyright 2023 Creative Tim (https://www.creative-tim.com)
-// * Licensed under MIT (https://github.com/creativetimofficial/material-tailwind-dashboard-react/blob/main/LICENSE.md)
-// * Coded by Creative Tim
-// =========================================================
-// * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// */
-// import React from "react";
-// import ReactDOM from "react-dom/client";
-// import App from "./App";
-// import { BrowserRouter } from "react-router-dom";
-// import { ThemeProvider } from "@material-tailwind/react";
-// import { MaterialTailwindControllerProvider } from "@/context";
-// import "../public/css/tailwind.css";
-
-// ReactDOM.createRoot(document.getElementById("root")).render(
-//   <React.StrictMode>
-//     <BrowserRouter>
-//       <ThemeProvider>
-//         <MaterialTailwindControllerProvider>
-//           <App />
-//         </MaterialTailwindControllerProvider>
-//       </ThemeProvider>
-//     </BrowserRouter>
-//   </React.StrictMode>
-// );
-
-
-/**
-=========================================================
-* Material Tailwind Dashboard React - v2.1.0
-=========================================================
-* Product Page: https://www.creative-tim.com/product/material-tailwind-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/material-tailwind-dashboard-react/blob/main/LICENSE.md)
-* Coded by Creative Tim
-=========================================================
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@material-tailwind/react";
 import { MaterialTailwindControllerProvider } from "@/context";
+import UserContext from "@/context/UserContext"; // ✅ Import
 import "../public/css/tailwind.css";
 
-// ✅ Set the base path for deployments in subdirectories like /horses-website-deployed/
 const BASE_URL = "/horses-website-deployed";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <BrowserRouter basename={BASE_URL}>
+function RootApp() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    console.log("Loaded user from localStorage:", storedUser); // ✅ Debug
+    if (storedUser) setUser(storedUser);
+  }, []);
+
+  return (
+    <UserContext.Provider value={{ user, setUser }}>
       <ThemeProvider>
         <MaterialTailwindControllerProvider>
           <App />
         </MaterialTailwindControllerProvider>
       </ThemeProvider>
+    </UserContext.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <BrowserRouter basename={BASE_URL}>
+      <RootApp />
     </BrowserRouter>
   </React.StrictMode>
 );

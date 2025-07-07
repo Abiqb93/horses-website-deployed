@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useContext } from "react";
 import PropTypes from "prop-types";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Navbar as MTNavbar,
   Collapse,
@@ -9,9 +9,15 @@ import {
   IconButton,
 } from "@material-tailwind/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import UserContext from "@/context/UserContext";
 
-export function Navbar({ brandName, routes, action }) {
+export function Navbar({ brandName, routes }) {
   const [openNav, setOpenNav] = React.useState(false);
+  const { user, setUser } = useContext(UserContext);
+  const navigate = useNavigate();
+
+  // ✅ Debug log for current user context
+  console.log("🧠 Navbar user context:", user);
 
   React.useEffect(() => {
     window.addEventListener(
@@ -19,6 +25,12 @@ export function Navbar({ brandName, routes, action }) {
       () => window.innerWidth >= 960 && setOpenNav(false)
     );
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    navigate("/auth/sign-in");
+  };
 
   const navList = (
     <ul className="mb-4 mt-2 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-6">
@@ -42,6 +54,26 @@ export function Navbar({ brandName, routes, action }) {
     </ul>
   );
 
+  const userSection = user ? (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium text-gray-700">Hi, {user.name}</span>
+      <Button
+        variant="text"
+        size="sm"
+        color="red"
+        onClick={handleLogout}
+      >
+        Logout
+      </Button>
+    </div>
+  ) : (
+    <Link to="/auth/sign-in">
+      <Button variant="gradient" size="sm">
+        Sign In
+      </Button>
+    </Link>
+  );
+
   return (
     <MTNavbar className="p-3">
       <div className="container mx-auto flex items-center justify-between text-blue-gray-900">
@@ -54,9 +86,9 @@ export function Navbar({ brandName, routes, action }) {
           </Typography>
         </Link>
         <div className="hidden lg:block">{navList}</div>
-        {React.cloneElement(action, {
-          className: "hidden lg:inline-block",
-        })}
+        <div className="hidden lg:flex items-center gap-4">
+          {userSection}
+        </div>
         <IconButton
           variant="text"
           size="sm"
@@ -73,9 +105,7 @@ export function Navbar({ brandName, routes, action }) {
       <Collapse open={openNav}>
         <div className="container mx-auto">
           {navList}
-          {React.cloneElement(action, {
-            className: "w-full block lg:hidden",
-          })}
+          <div className="mt-4">{userSection}</div>
         </div>
       </Collapse>
     </MTNavbar>
@@ -84,22 +114,11 @@ export function Navbar({ brandName, routes, action }) {
 
 Navbar.defaultProps = {
   brandName: "Material Tailwind React",
-  action: (
-    <a
-      href="https://www.creative-tim.com/product/material-tailwind-dashboard-react"
-      target="_blank"
-    >
-      <Button variant="gradient" size="sm" fullWidth>
-        free download
-      </Button>
-    </a>
-  ),
 };
 
 Navbar.propTypes = {
   brandName: PropTypes.string,
   routes: PropTypes.arrayOf(PropTypes.object).isRequired,
-  action: PropTypes.node,
 };
 
 Navbar.displayName = "/src/widgets/layout/navbar.jsx";

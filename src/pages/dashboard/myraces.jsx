@@ -10,18 +10,19 @@ export function MyRace() {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const resLog = await fetch("https://horseracesbackend-production.up.railway.app/api/race_selection_log");
+        const userId = localStorage.getItem("userId");
+        const resLog = await fetch(`http://localhost:8080/api/race_selection_log?user=${userId}`);
         const jsonLog = await resLog.json();
         const races = jsonLog.data || [];
         setRaceData(races);
 
         const sources = [
-          { key: "RacesAndEntries", url: "https://horseracesbackend-production.up.railway.app/api/RacesAndEntries" },
-          { key: "FranceRaceRecords", url: "https://horseracesbackend-production.up.railway.app/api/FranceRaceRecords" },
-          { key: "IrelandRaceRecords", url: "https://horseracesbackend-production.up.railway.app/api/IrelandRaceRecords" },
-          { key: "ClosingEntries", url: "https://horseracesbackend-production.up.railway.app/api/ClosingEntries" },
-          { key: "DeclarationsTracking", url: "https://horseracesbackend-production.up.railway.app/api/DeclarationsTracking" },
-          { key: "EntriesTracking", url: "https://horseracesbackend-production.up.railway.app/api/EntriesTracking" },
+          { key: "RacesAndEntries", url: "http://localhost:8080/api/RacesAndEntries" },
+          { key: "FranceRaceRecords", url: "http://localhost:8080/api/FranceRaceRecords" },
+          { key: "IrelandRaceRecords", url: "http://localhost:8080/api/IrelandRaceRecords" },
+          { key: "ClosingEntries", url: "http://localhost:8080/api/ClosingEntries" },
+          { key: "DeclarationsTracking", url: "http://localhost:8080/api/DeclarationsTracking" },
+          { key: "EntriesTracking", url: "http://localhost:8080/api/EntriesTracking" },
         ];
         const results = await Promise.all(sources.map(s => fetch(s.url).then(r => r.json())));
 
@@ -58,7 +59,7 @@ export function MyRace() {
   const handleDelete = async id => {
     if (!window.confirm("Delete this record?")) return;
     try {
-      await fetch(`https://horseracesbackend-production.up.railway.app/api/race_selection_log/${id}`, { method: "DELETE" });
+      await fetch(`http://localhost:8080/api/race_selection_log/${id}`, { method: "DELETE" });
       setRaceData(d => d.filter(r => r.id !== id));
     } catch (e) {
       alert("Delete failed");

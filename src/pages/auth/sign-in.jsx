@@ -1,32 +1,47 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Card, Input, Button, Typography } from "@material-tailwind/react";
 import { useNavigate, Link } from "react-router-dom";
+import UserContext from "@/context/UserContext"; // 👈 import context
 
 export function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { setUser } = useContext(UserContext); // 👈 access setUser
 
-  const handleSignIn = (e) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
-  
-    const validCredentials = [
-      { email: "tom@creativetim.com", password: "Horses_are_running", userId: "Tom" },
-      { email: "stuart@blandford.com", password: "stuart", userId: "Stuart" },
-    ];
-  
-    const user = validCredentials.find(
-      (u) => u.email === email && u.password === password
-    );
-  
-    if (user) {
-      localStorage.setItem("userId", user.userId); // Store userId in localStorage
-      navigate("/dashboard/home");
-    } else {
-      alert("Invalid credentials. Please try again.");
+
+    try {
+      const response = await fetch("http://localhost:8080/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Construct the user object (adjust field names to match your backend)
+        const userData = {
+          userId: result.userId,
+          name: result.name || "User", // use name from backend if available
+          email: result.email || email,
+        };
+
+        // Save to localStorage and context
+        localStorage.setItem("user", JSON.stringify(userData));
+        setUser(userData);
+
+        navigate("/dashboard/home");
+      } else {
+        alert(result.message || "Login failed.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("An error occurred during login.");
     }
   };
-  
 
   return (
     <section className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -42,7 +57,11 @@ export function SignIn() {
         <Typography variant="h4" className="font-bold text-center mb-4 text-lg">
           Sign In
         </Typography>
-        <Typography variant="paragraph" color="blue-gray" className="text-base text-center mb-6">
+        <Typography
+          variant="paragraph"
+          color="blue-gray"
+          className="text-base text-center mb-6"
+        >
           Enter your email and password to access your account.
         </Typography>
         <form onSubmit={handleSignIn}>
@@ -85,7 +104,10 @@ export function SignIn() {
             </a>
           </Typography>
         </div>
-        <Typography variant="paragraph" className="text-center mt-6 text-blue-gray-500 font-medium">
+        <Typography
+          variant="paragraph"
+          className="text-center mt-6 text-blue-gray-500 font-medium"
+        >
           Not registered?&nbsp;
           <Link to="/auth/sign-up" className="text-blue-500 underline">
             Create account

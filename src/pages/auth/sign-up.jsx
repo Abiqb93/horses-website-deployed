@@ -1,91 +1,173 @@
 import {
-  Card,
   Input,
-  Checkbox,
   Button,
   Typography,
+  IconButton,
 } from "@material-tailwind/react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 export function SignUp() {
+  const [formData, setFormData] = useState({
+    name: "",
+    userID: "",
+    email: "",
+    mobile: "",
+    password: "",
+    confirmPassword: "",
+    captcha: "",
+  });
+
+  const [captchaText, setCaptchaText] = useState("");
+  const canvasRef = useRef(null);
+
+  function generateCaptcha() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let text = "";
+    for (let i = 0; i < 5; i++) {
+      text += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCaptchaText(text);
+  }
+
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
+
+  useEffect(() => {
+    drawCaptcha();
+  }, [captchaText]);
+
+  const drawCaptcha = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, 100, 40);
+    ctx.fillStyle = "#f2f2f2";
+    ctx.fillRect(0, 0, 100, 40);
+
+    ctx.font = "bold 22px sans-serif";
+    ctx.fillStyle = "#333";
+    ctx.setTransform(1, 0.1, 0.1, 1, 0, 0);
+
+    for (let i = 0; i < captchaText.length; i++) {
+      const x = 10 + i * 16;
+      const y = 25 + Math.random() * 5;
+      ctx.fillText(captchaText[i], x, y);
+    }
+
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * 100, Math.random() * 40);
+      ctx.lineTo(Math.random() * 100, Math.random() * 40);
+      ctx.strokeStyle = "#aaa";
+      ctx.stroke();
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match.");
+      return;
+    }
+
+    if (formData.captcha.toUpperCase() !== captchaText) {
+      alert("Captcha is incorrect.");
+      generateCaptcha();
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8080/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        alert("Registration successful!");
+      } else {
+        alert(result.message || "Registration failed.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error submitting form.");
+    }
+  };
+
   return (
-    <section className="m-8 flex">
-            <div className="w-2/5 h-full hidden lg:block">
-        <img
-          src="/img/pattern.png"
-          className="h-full w-full object-cover rounded-3xl"
-        />
-      </div>
-      <div className="w-full lg:w-3/5 flex flex-col items-center justify-center">
-        <div className="text-center">
-          <Typography variant="h2" className="font-bold mb-4">Join Us Today</Typography>
-          <Typography variant="paragraph" color="blue-gray" className="text-lg font-normal">Enter your email and password to register.</Typography>
-        </div>
-        <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2">
-          <div className="mb-1 flex flex-col gap-6">
-            <Typography variant="small" color="blue-gray" className="-mb-3 font-medium">
-              Your email
-            </Typography>
+    <section className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-2">
+      <Typography variant="h6" className="mb-2 font-bold text-blue-gray-900 text-center">
+        Blandford Bloodstock
+      </Typography>
+
+      <div className="w-full max-w-sm bg-white shadow-md rounded-lg p-4">
+        <Typography variant="h6" className="mb-3 text-center font-semibold">
+          Sign Up
+        </Typography>
+
+        <form onSubmit={handleSubmit} className="space-y-2">
+          {[ 
+            { name: "name", label: "Full Name" },
+            { name: "userID", label: "User ID" },
+            { name: "email", label: "Email", type: "email" },
+            { name: "mobile", label: "Mobile Number" },
+            { name: "password", label: "Password", type: "password" },
+            { name: "confirmPassword", label: "Confirm Password", type: "password" },
+          ].map(({ name, label, type = "text" }) => (
+            <div key={name}>
+              <label className="text-xs font-medium text-gray-700 block mb-0.5">{label}</label>
+              <Input
+                name={name}
+                type={type}
+                size="sm"
+                onChange={handleChange}
+                className="!py-1 text-sm"
+                required={name !== "mobile"}
+              />
+            </div>
+          ))}
+
+          <div className="flex items-center gap-2 mt-1">
+            <canvas ref={canvasRef} width={100} height={40} className="border rounded bg-white" />
+            <IconButton
+              onClick={generateCaptcha}
+              variant="outlined"
+              size="sm"
+              className="rounded-full border-gray-400"
+            >
+              <ArrowPathIcon className="h-4 w-4" />
+            </IconButton>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-0.5">Enter Captcha</label>
             <Input
-              size="lg"
-              placeholder="name@mail.com"
-              className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{
-                className: "before:content-none after:content-none",
-              }}
+              name="captcha"
+              size="sm"
+              onChange={handleChange}
+              className="!py-1 text-sm"
+              required
             />
           </div>
-          <Checkbox
-            label={
-              <Typography
-                variant="small"
-                color="gray"
-                className="flex items-center justify-start font-medium"
-              >
-                I agree the&nbsp;
-                <a
-                  href="#"
-                  className="font-normal text-black transition-colors hover:text-gray-900 underline"
-                >
-                  Terms and Conditions
-                </a>
-              </Typography>
-            }
-            containerProps={{ className: "-ml-2.5" }}
-          />
-          <Button className="mt-6" fullWidth>
-            Register Now
+
+          <Button type="submit" className="w-full mt-2" size="sm">
+            Register
           </Button>
 
-          <div className="space-y-4 mt-8">
-            <Button size="lg" color="white" className="flex items-center gap-2 justify-center shadow-md" fullWidth>
-              <svg width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g clipPath="url(#clip0_1156_824)">
-                  <path d="M16.3442 8.18429C16.3442 7.64047 16.3001 7.09371 16.206 6.55872H8.66016V9.63937H12.9813C12.802 10.6329 12.2258 11.5119 11.3822 12.0704V14.0693H13.9602C15.4741 12.6759 16.3442 10.6182 16.3442 8.18429Z" fill="#4285F4" />
-                  <path d="M8.65974 16.0006C10.8174 16.0006 12.637 15.2922 13.9627 14.0693L11.3847 12.0704C10.6675 12.5584 9.7415 12.8347 8.66268 12.8347C6.5756 12.8347 4.80598 11.4266 4.17104 9.53357H1.51074V11.5942C2.86882 14.2956 5.63494 16.0006 8.65974 16.0006Z" fill="#34A853" />
-                  <path d="M4.16852 9.53356C3.83341 8.53999 3.83341 7.46411 4.16852 6.47054V4.40991H1.51116C0.376489 6.67043 0.376489 9.33367 1.51116 11.5942L4.16852 9.53356Z" fill="#FBBC04" />
-                  <path d="M8.65974 3.16644C9.80029 3.1488 10.9026 3.57798 11.7286 4.36578L14.0127 2.08174C12.5664 0.72367 10.6469 -0.0229773 8.65974 0.000539111C5.63494 0.000539111 2.86882 1.70548 1.51074 4.40987L4.1681 6.4705C4.8001 4.57449 6.57266 3.16644 8.65974 3.16644Z" fill="#EA4335" />
-                </g>
-                <defs>
-                  <clipPath id="clip0_1156_824">
-                    <rect width="16" height="16" fill="white" transform="translate(0.5)" />
-                  </clipPath>
-                </defs>
-              </svg>
-              <span>Sign in With Google</span>
-            </Button>
-            <Button size="lg" color="white" className="flex items-center gap-2 justify-center shadow-md" fullWidth>
-              <img src="/img/twitter-logo.svg" height={24} width={24} alt="" />
-              <span>Sign in With Twitter</span>
-            </Button>
-          </div>
-          <Typography variant="paragraph" className="text-center text-blue-gray-500 font-medium mt-4">
+          <Typography variant="small" className="text-center text-gray-600 text-xs mt-2">
             Already have an account?
-            <Link to="/auth/sign-in" className="text-gray-900 ml-1">Sign in</Link>
+            <Link to="/auth/sign-in" className="text-blue-700 ml-1 underline">Sign in</Link>
           </Typography>
         </form>
-
       </div>
     </section>
   );

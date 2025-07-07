@@ -14,8 +14,8 @@ export function MyHorses() {
   useEffect(() => {
     const fetchTrackedAndRaces = async () => {
       try {
-        // const trackedRes = await fetch("http://localhost:8080/api/horseTracking/all");
-        const trackedRes = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking/all");
+        const userId = localStorage.getItem("userId");
+        const trackedRes = await fetch(`http://localhost:8080/api/horseTracking?user=${userId}`);
         const trackedJson = await trackedRes.json();
         const trackedData = trackedJson.data || [];
         const trackedMap = {};
@@ -89,13 +89,12 @@ export function MyHorses() {
           declRes,
           entriesRes
         ] = await Promise.all([
-          fetch("https://horseracesbackend-production.up.railway.app/api/RacesAndEntries"),
-          // fetch("https://horseracesbackend-production.up.railway.app/api/RacesAndEntries"),
-          fetch("https://horseracesbackend-production.up.railway.app/api/FranceRaceRecords"),
-          fetch("https://horseracesbackend-production.up.railway.app/api/IrelandRaceRecords"),
-          fetch("https://horseracesbackend-production.up.railway.app/api/ClosingEntries"),
-          fetch("https://horseracesbackend-production.up.railway.app/api/DeclarationsTracking"),
-          fetch("https://horseracesbackend-production.up.railway.app/api/EntriesTracking"),
+          fetch("http://localhost:8080/api/RacesAndEntries"),
+          fetch("http://localhost:8080/api/FranceRaceRecords"),
+          fetch("http://localhost:8080/api/IrelandRaceRecords"),
+          fetch("http://localhost:8080/api/ClosingEntries"),
+          fetch("http://localhost:8080/api/DeclarationsTracking"),
+          fetch("http://localhost:8080/api/EntriesTracking"),
         ]);
 
         const [
@@ -114,65 +113,17 @@ export function MyHorses() {
           entriesRes.json()
         ]);
 
-        processEntries(racesJson.data || [],
-          e => e.Horse,
-          e => e.FixtureDate || e.Date,
-          e => e.FixtureTrack || e.Track,
-          e => e.RaceTime || "-",
-          e => e.RaceTitle || "-",
-          "RacesAndEntries"
-        );
-
-        processEntries(franceJson.data || [],
-          e => e.Horse,
-          e => e.Date,
-          e => e.Racecourse,
-          e => e.Time,
-          e => e.Race,
-          "FranceRaceRecords"
-        );
-
-        processEntries(irelandJson.data || [],
-          e => e["Horse Name"],
-          e => e.Date,
-          e => e.Course,
-          e => e["Race Time"],
-          e => e["Race Title"],
-          "IrelandRaceRecords"
-        );
-
-        processEntries(closingJson.data || [],
-          e => e.Horse,
-          e => e.date,
-          e => e.track,
-          e => e.time,
-          e => e.title,
-          "ClosingEntries"
-        );
-
-        processEntries(declJson.data || [],
-          e => e.Horse,
-          e => e.Date,
-          e => e.Track,
-          e => e.RaceTime,
-          e => e.RaceTitle,
-          "DeclarationsTracking"
-        );
-
-        processEntries(entriesJson.data || [],
-          e => e.Horse,
-          e => e.Date,
-          e => e.Track,
-          e => e.RaceTime,
-          e => e.RaceTitle,
-          "EntriesTracking"
-        );
+        processEntries(racesJson.data || [], e => e.Horse, e => e.FixtureDate || e.Date, e => e.FixtureTrack || e.Track, e => e.RaceTime || "-", e => e.RaceTitle || "-", "RacesAndEntries");
+        processEntries(franceJson.data || [], e => e.Horse, e => e.Date, e => e.Racecourse, e => e.Time, e => e.Race, "FranceRaceRecords");
+        processEntries(irelandJson.data || [], e => e["Horse Name"], e => e.Date, e => e.Course, e => e["Race Time"], e => e["Race Title"], "IrelandRaceRecords");
+        processEntries(closingJson.data || [], e => e.Horse, e => e.date, e => e.track, e => e.time, e => e.title, "ClosingEntries");
+        processEntries(declJson.data || [], e => e.Horse, e => e.Date, e => e.Track, e => e.RaceTime, e => e.RaceTitle, "DeclarationsTracking");
+        processEntries(entriesJson.data || [], e => e.Horse, e => e.Date, e => e.Track, e => e.RaceTime, e => e.RaceTitle, "EntriesTracking");
 
         setLastRaces(past);
         setTodayRaces(todayList);
         setUpcomingRaces(future);
         setTrackingStates(newTrackingStates);
-
       } catch (err) {
         console.error("Error loading tracked races:", err);
         setError("Failed to load tracked horses or race data.");
@@ -182,21 +133,28 @@ export function MyHorses() {
     fetchTrackedAndRaces();
   }, []);
 
+
   const handleNoteChange = (horseKey, value) => {
     setTrackingStates(prev => ({ ...prev, [horseKey]: { ...prev[horseKey], noteInput: value } }));
   };
 
   const handleTrackNote = async (horseName, horseKey) => {
     const note = trackingStates[horseKey]?.noteInput || "";
+    const userId = localStorage.getItem("userId");
+
     try {
-      await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
-        // await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
+      await fetch("http://localhost:8080/api/horseTracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ horseName, note, trackingDate: new Date().toISOString() })
+        body: JSON.stringify({
+          horseName,
+          note,
+          trackingDate: new Date().toISOString(),
+          user: userId
+        }),
       });
-      const refreshed = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`);
-      // const refreshed = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`);
+
+      const refreshed = await fetch(`http://localhost:8080/api/horseTracking/${horseName}?user=${userId}`);
       const refreshedJson = await refreshed.json();
       setTrackingStates(prev => ({
         ...prev,
@@ -212,22 +170,21 @@ export function MyHorses() {
     }
   };
 
+
   const handleStopTracking = async (horseName, horseKey) => {
+    const userId = localStorage.getItem("userId");
     if (!window.confirm(`Stop tracking ${horseName}?`)) return;
-    await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`, { method: "DELETE" });
-    // await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}`, { method: "DELETE" });
+
+    await fetch(`http://localhost:8080/api/horseTracking/${horseName}?user=${userId}`, {
+      method: "DELETE"
+    });
+
     setTrackingStates(prev => ({
       ...prev,
       [horseKey]: { isTracked: false, noteInput: "", showNotes: false, notes: [] }
     }));
   };
 
-  const toggleShowNotes = (horseKey) => {
-    setTrackingStates(prev => ({
-      ...prev,
-      [horseKey]: { ...prev[horseKey], showNotes: !prev[horseKey].showNotes }
-    }));
-  };
 
   const renderTrackingControls = (horse, horseKey) => {
     const state = trackingStates[horseKey] || {};
