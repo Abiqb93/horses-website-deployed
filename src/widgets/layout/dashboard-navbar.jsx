@@ -1,4 +1,5 @@
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useContext } from "react";
 
 import {
   Navbar,
@@ -13,6 +14,7 @@ import {
   MenuItem,
   Avatar,
 } from "@material-tailwind/react";
+
 import {
   UserCircleIcon,
   Cog6ToothIcon,
@@ -20,18 +22,30 @@ import {
   ClockIcon,
   CreditCardIcon,
   Bars3Icon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/solid";
+
 import {
   useMaterialTailwindController,
   setOpenConfigurator,
   setOpenSidenav,
 } from "@/context";
 
+import UserContext from "@/context/UserContext"; // ✅ import user context
+
 export function DashboardNavbar() {
   const [controller, dispatch] = useMaterialTailwindController();
   const { fixedNavbar, openSidenav } = controller;
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { user, setUser } = useContext(UserContext); // ✅ get user
   const [layout, page] = pathname.split("/").filter((el) => el !== "");
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    navigate("/auth/sign-in");
+  };
 
   return (
     <Navbar
@@ -45,6 +59,7 @@ export function DashboardNavbar() {
       blurred={fixedNavbar}
     >
       <div className="flex flex-col-reverse justify-between gap-6 md:flex-row md:items-center">
+        {/* LEFT: Breadcrumbs + Page Title */}
         <div className="capitalize">
           <Breadcrumbs
             className={`bg-transparent p-0 transition-all ${
@@ -72,10 +87,13 @@ export function DashboardNavbar() {
             {page}
           </Typography>
         </div>
-        <div className="flex items-center">
+
+        {/* RIGHT: Icons + Auth Dropdown */}
+        <div className="flex items-center gap-2">
           <div className="mr-auto md:mr-4 md:w-56">
             <Input label="Search" />
           </div>
+
           <IconButton
             variant="text"
             color="blue-gray"
@@ -84,23 +102,53 @@ export function DashboardNavbar() {
           >
             <Bars3Icon strokeWidth={3} className="h-6 w-6 text-blue-gray-500" />
           </IconButton>
-          <Link to="/auth/sign-in">
-            <Button
-              variant="text"
-              color="blue-gray"
-              className="hidden items-center gap-1 px-4 xl:flex normal-case"
-            >
-              <UserCircleIcon className="h-5 w-5 text-blue-gray-500" />
-              Sign In
-            </Button>
-            <IconButton
-              variant="text"
-              color="blue-gray"
-              className="grid xl:hidden"
-            >
-              <UserCircleIcon className="h-5 w-5 text-blue-gray-500" />
-            </IconButton>
-          </Link>
+
+          {/* ✅ Conditional Auth UI */}
+          {user ? (
+            <Menu>
+              <MenuHandler>
+                <Button
+                  variant="text"
+                  color="blue-gray"
+                  className="hidden items-center gap-1 px-4 xl:flex normal-case"
+                >
+                  <UserCircleIcon className="h-5 w-5 text-blue-gray-500" />
+                  Hi, {user.name}
+                  <ChevronDownIcon className="h-4 w-4" />
+                </Button>
+              </MenuHandler>
+              <MenuList>
+                <MenuItem onClick={() => navigate("/dashboard/userprofile")}>
+                  View Profile
+                </MenuItem>
+                <MenuItem onClick={handleLogout} className="text-red-600">
+                  Logout
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          ) : (
+            <>
+              <Link to="/auth/sign-in">
+                <Button
+                  variant="text"
+                  color="blue-gray"
+                  className="hidden items-center gap-1 px-4 xl:flex normal-case"
+                >
+                  <UserCircleIcon className="h-5 w-5 text-blue-gray-500" />
+                  Sign In
+                </Button>
+                <IconButton
+                  variant="text"
+                  color="blue-gray"
+                  className="grid xl:hidden"
+                >
+                  <UserCircleIcon className="h-5 w-5 text-blue-gray-500" />
+                </IconButton>
+              </Link>
+            </>
+          )}
+
+          {/* 🔔 Notifications */}
           <Menu>
             <MenuHandler>
               <IconButton variant="text" color="blue-gray">
@@ -179,6 +227,8 @@ export function DashboardNavbar() {
               </MenuItem>
             </MenuList>
           </Menu>
+
+          {/* ⚙️ Settings */}
           <IconButton
             variant="text"
             color="blue-gray"

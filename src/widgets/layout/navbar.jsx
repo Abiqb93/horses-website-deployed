@@ -8,7 +8,8 @@ import {
   Button,
   IconButton,
 } from "@material-tailwind/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { Menu } from "@headlessui/react";
 import UserContext from "@/context/UserContext";
 
 export function Navbar({ brandName, routes }) {
@@ -16,15 +17,15 @@ export function Navbar({ brandName, routes }) {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
-  // ✅ Debug log for current user context
-  console.log("🧠 Navbar user context:", user);
-
   React.useEffect(() => {
     window.addEventListener(
       "resize",
       () => window.innerWidth >= 960 && setOpenNav(false)
     );
   }, []);
+
+  // 🧠 Debug
+  console.log("🧠 Navbar user context:", user);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -55,23 +56,49 @@ export function Navbar({ brandName, routes }) {
   );
 
   const userSection = user ? (
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-medium text-gray-700">Hi, {user.name}</span>
-      <Button
-        variant="text"
-        size="sm"
-        color="red"
-        onClick={handleLogout}
-      >
-        Logout
-      </Button>
-    </div>
+    <Menu as="div" className="relative inline-block text-left">
+      <Menu.Button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+        Hi, {user.name}
+        <ChevronDownIcon className="w-4 h-4" />
+      </Menu.Button>
+      <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+        <div className="py-1">
+          <Menu.Item>
+            {({ active }) => (
+              <Link
+                to="/dashboard/profile"
+                className={`block px-4 py-2 text-sm ${
+                  active ? "bg-gray-100 text-gray-900" : "text-gray-700"
+                }`}
+              >
+                View Profile
+              </Link>
+            )}
+          </Menu.Item>
+          <Menu.Item>
+            {({ active }) => (
+              <button
+                onClick={handleLogout}
+                className={`block w-full text-left px-4 py-2 text-sm ${
+                  active ? "bg-gray-100 text-red-700" : "text-red-600"
+                }`}
+              >
+                Logout
+              </button>
+            )}
+          </Menu.Item>
+        </div>
+      </Menu.Items>
+    </Menu>
   ) : (
-    <Link to="/auth/sign-in">
-      <Button variant="gradient" size="sm">
-        Sign In
-      </Button>
-    </Link>
+    <div className="flex items-center gap-2 text-sm text-gray-500">
+      <span>Not Logged In</span>
+      <Link to="/auth/sign-in">
+        <Button variant="gradient" size="sm">
+          Sign In
+        </Button>
+      </Link>
+    </div>
   );
 
   return (
@@ -86,9 +113,15 @@ export function Navbar({ brandName, routes }) {
           </Typography>
         </Link>
         <div className="hidden lg:block">{navList}</div>
-        <div className="hidden lg:flex items-center gap-4">
+
+        {/* ✅ Debug wrapper */}
+        <div className="flex items-center gap-4 border border-blue-200 px-2 py-1 rounded bg-white shadow-sm">
+          <span className="text-xs text-blue-700">
+            Debug: {user ? user.name : "null"}
+          </span>
           {userSection}
         </div>
+
         <IconButton
           variant="text"
           size="sm"
@@ -102,6 +135,7 @@ export function Navbar({ brandName, routes }) {
           )}
         </IconButton>
       </div>
+
       <Collapse open={openNav}>
         <div className="container mx-auto">
           {navList}

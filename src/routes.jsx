@@ -39,6 +39,7 @@ import {
   FranceRaceRecords,
   HorseProfilePage,
   RaceDetailPage,
+  ProfilePage,
 
 } from "@/pages/dashboard";
 
@@ -135,6 +136,11 @@ export const routes = [
         element: <HorseProfilePage />,
       },
       { name: "Race Details Page", path: "/racedetails", element: <RaceDetailPage /> },
+      {
+        name: "User Profile",
+        path: "/userprofile",
+        element: <ProfilePage />, // ✅ Add this line
+      },
     ],
   },
   {

@@ -25,7 +25,7 @@ export function SignIn() {
         // Construct the user object (adjust field names to match your backend)
         const userData = {
           userId: result.userId,
-          name: result.name || "User", // use name from backend if available
+          name: result.name || result.userId || "User", // 👈 fallback logic improved
           email: result.email || email,
         };
 
