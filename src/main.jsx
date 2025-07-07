@@ -7,7 +7,7 @@ import { MaterialTailwindControllerProvider } from "@/context";
 import UserContext from "@/context/UserContext"; // ✅ Import
 import "../public/css/tailwind.css";
 
-const BASE_URL = "/horses-website-deployed";
+const BASE_URL = "/";
 
 function RootApp() {
   const [user, setUser] = useState(null);
