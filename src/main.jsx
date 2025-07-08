@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { BrowserRouter } from "react-router-dom";
+import { HashRouter } from "react-router-dom"; // ✅ use HashRouter
 import { ThemeProvider } from "@material-tailwind/react";
 import { MaterialTailwindControllerProvider } from "@/context";
 import UserContext from "@/context/UserContext";
@@ -43,8 +43,8 @@ function RootApp() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <HashRouter> {/* ✅ ONLY use this for GitHub Pages */}
       <RootApp />
-    </BrowserRouter>
+    </HashRouter>
   </React.StrictMode>
 );
