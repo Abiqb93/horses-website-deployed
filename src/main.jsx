@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { HashRouter } from "react-router-dom"; // ✅ changed from BrowserRouter
+import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@material-tailwind/react";
 import { MaterialTailwindControllerProvider } from "@/context";
-import UserContext from "@/context/UserContext"; // ✅ user context
+import UserContext from "@/context/UserContext";
 import "../public/css/tailwind.css";
 
 function RootApp() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ wait until localStorage is checked
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser) setUser(storedUser);
+    setLoading(false); // ✅ now done loading
   }, []);
+
+  if (loading) return null; // ✅ or a spinner/loading component
 
   return (
     <UserContext.Provider value={{ user, setUser }}>
@@ -28,8 +32,8 @@ function RootApp() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <HashRouter>
+    <BrowserRouter>
       <RootApp />
-    </HashRouter>
+    </BrowserRouter>
   </React.StrictMode>
 );
