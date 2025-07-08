@@ -9,15 +9,26 @@ import "../public/css/tailwind.css";
 
 function RootApp() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // ✅ wait until localStorage is checked
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser) setUser(storedUser);
-    setLoading(false); // ✅ now done loading
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser && parsedUser.userId) {
+          setUser(parsedUser);
+        }
+      } catch (err) {
+        console.error("Failed to parse stored user:", err);
+      }
+    }
+    setLoading(false);
   }, []);
 
-  if (loading) return null; // ✅ or a spinner/loading component
+  if (loading) {
+    return <div className="text-center p-10 text-gray-600">Loading...</div>;
+  }
 
   return (
     <UserContext.Provider value={{ user, setUser }}>
