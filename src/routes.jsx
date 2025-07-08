@@ -9,6 +9,9 @@ import SigninIcon from "@/assets/icons/Signin.png";
 import SignupIcon from "@/assets/icons/Signup.png";
 import TablesIcon from "@/assets/icons/Tables.png";
 
+import ChangePassword from "@/pages/dashboard/ChangePassword";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+
 import {
   Home,
   Profile,
@@ -43,7 +46,7 @@ import {
 
 } from "@/pages/dashboard";
 
-import { SignIn, SignUp } from "@/pages/auth";
+import { SignIn, SignUp} from "@/pages/auth";
 
 const iconStyle = {
   width: "20px",
@@ -141,6 +144,12 @@ export const routes = [
         path: "/userprofile",
         element: <ProfilePage />, // ✅ Add this line
       },
+
+        {
+          name: "Change Password",         // ✅ Add this block
+          path: "/change-password",
+          element: <ChangePassword />,
+        },
     ],
   },
   {
@@ -159,6 +168,12 @@ export const routes = [
         path: "/sign-up",
         element: <SignUp />,
       },
+
+      {
+          name: "Forgot Password",
+          path: "/forgot-password",
+          element: <ForgotPassword />,
+        },
     ],
   },
 ];

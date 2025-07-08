@@ -1,13 +1,13 @@
 import { useState, useContext } from "react";
 import { Card, Input, Button, Typography } from "@material-tailwind/react";
 import { useNavigate, Link } from "react-router-dom";
-import UserContext from "@/context/UserContext"; // 👈 import context
+import UserContext from "@/context/UserContext";
 
 export function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { setUser } = useContext(UserContext); // 👈 access setUser
+  const { setUser } = useContext(UserContext);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -22,14 +22,12 @@ export function SignIn() {
       const result = await response.json();
 
       if (response.ok) {
-        // Construct the user object (adjust field names to match your backend)
         const userData = {
           userId: result.userId,
-          name: result.name || result.userId || "User", // 👈 fallback logic improved
+          name: result.name || result.userId || "User",
           email: result.email || email,
         };
 
-        // Save to localStorage and context
         localStorage.setItem("user", JSON.stringify(userData));
         setUser(userData);
 
@@ -45,14 +43,14 @@ export function SignIn() {
 
   return (
     <section className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      {/* Blandford Analytics Header */}
+      {/* Header */}
       <div className="text-center mb-8">
         <Typography variant="h3" className="font-bold text-gray-800 text-2xl">
           Blandford Bloodstock
         </Typography>
       </div>
 
-      {/* Sign In Form */}
+      {/* Card */}
       <Card className="p-6 shadow-lg rounded-lg w-full max-w-md bg-white">
         <Typography variant="h4" className="font-bold text-center mb-4 text-lg">
           Sign In
@@ -97,13 +95,17 @@ export function SignIn() {
             Sign In
           </Button>
         </form>
+
+        {/* Forgot Password Link */}
         <div className="flex items-center justify-between mt-4">
           <Typography variant="small">
-            <a href="#" className="text-blue-500 underline">
+            <Link to="/auth/forgot-password" className="text-blue-500 underline">
               Forgot Password?
-            </a>
+            </Link>
           </Typography>
         </div>
+
+        {/* Sign Up Link */}
         <Typography
           variant="paragraph"
           className="text-center mt-6 text-blue-gray-500 font-medium"

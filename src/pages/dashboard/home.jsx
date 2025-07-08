@@ -222,59 +222,58 @@ export function Home() {
         <>
           {/* 🔥 Results First */}
           {hasResults && (
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 mb-6">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 min-w-[300px] mb-6">
               <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">Results (Last 3 Days)</h2>
-              <ul className="space-y-1 mt-1 text-sm leading-snug">
-                {resultsData
-                  .sort((a, b) => a.position - b.position)
-                  .map((res) => {
-                    let icon = "📌";
-                    if (res.position === 1) icon = "🏁";
-                    else if (res.position === 2) icon = "📈";
-                    else if (res.position === 3) icon = "🎯";
+              <div>
+                <ul className="space-y-1 mt-1 text-sm leading-snug">
+                  {resultsData
+                    .sort((a, b) => a.position - b.position)
+                    .map((res) => {
+                      const encodedRaceTitle = encodeURIComponent(res.raceTitle);
+                      const encodedDate = encodeURIComponent(res.date);
+                      const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
 
-                    const encodedRaceTitle = encodeURIComponent(res.raceTitle);
-                    const encodedDate = encodeURIComponent(res.date);
-                    const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
+                      const titleCase = (str) =>
+                        str
+                          .toLowerCase()
+                          .replace(/\b\w/g, (l) => l.toUpperCase());
 
-                    return (
-                      <li
-                        key={`${res.horseName}-${res.raceTitle}-${res.date}`}
-                        className="pl-2 border-l-4 border-purple-300 flex items-start gap-2"
-                      >
-                        <span className="text-lg pt-[1px]">{icon}</span>
-                        <span className="text-sm leading-snug">
+                      return (
+                        <li
+                          key={`${res.horseName}-${res.raceTitle}-${res.date}`}
+                          className="pl-2 border-l-4 border-purple-300 text-sm leading-snug"
+                        >
+                          📅{" "}
                           <Link
                             to={`/dashboard/horse/${encodeURIComponent(res.horseName)}`}
                             className="text-blue-700 font-medium hover:underline"
                           >
-                            {res.horseName}
+                            {titleCase(res.horseName)}
                           </Link>{" "}
                           finished <strong>{res.position}</strong> in{" "}
                           <Link
                             to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
                             className="text-indigo-700 font-medium hover:underline"
                           >
-                            {res.raceTitle}
+                            {titleCase(res.raceTitle)}
                           </Link>{" "}
                           at <span className="text-gray-800">{res.track}</span> ({res.country}) on{" "}
                           <span className="text-gray-700">{res.date}</span>
-                        </span>
-                      </li>
-                    );
-                  })}
-              </ul>
-
-
+                        </li>
+                      );
+                    })}
+                </ul>
+              </div>
             </div>
           )}
+
 
           {/* 🔥 Race Updates & Others */}
           {hasAny ? (
             <div className="flex flex-wrap gap-5">
               {groupedNotifications["RaceUpdates"] &&
                 renderGroupCard(
-                  "Race Updates",
+                  "Declarations & Entries",
                   groupedNotifications["RaceUpdates"].today,
                   groupedNotifications["RaceUpdates"].upcoming
                 )}
@@ -282,9 +281,14 @@ export function Home() {
               {Object.entries(groupedNotifications)
                 .filter(([label]) => label !== "RaceUpdates")
                 .map(([label, data]) => {
-                  const formattedLabel = label
-                    .replace(/([a-z])([A-Z])/g, "$1 $2")
-                    .replace(/^./, str => str.toUpperCase());
+                  let formattedLabel = label;
+                  if (label === "ClosingEntries") formattedLabel = "Early Closing Entries";
+                  else {
+                    formattedLabel = label
+                      .replace(/([a-z])([A-Z])/g, "$1 $2")
+                      .replace(/^./, str => str.toUpperCase());
+                  }
+
                   return renderGroupCard(formattedLabel, data.today, data.upcoming);
                 })}
             </div>
