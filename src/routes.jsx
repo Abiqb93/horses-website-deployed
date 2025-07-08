@@ -153,28 +153,33 @@ export const routes = [
     ],
   },
   {
-    title: "auth pages",
+    title: "",
     layout: "auth",
-    pages: [
-      {
-        icon: <img src={SigninIcon} alt="Horse" style={iconStyle} />,
-        name: "Sign In",
-        path: "/sign-in",
-        element: <SignIn />,
-      },
-      {
-        icon: <img src={SignupIcon} alt="Horse" style={iconStyle} />,
-        name: "Sign Up",
-        path: "/sign-up",
-        element: <SignUp />,
-      },
-
-      {
-          name: "Forgot Password",
-          path: "/forgot-password",
-          element: <ForgotPassword />,
-        },
+    pages: [],
+    hiddenRoutes: [
+      { name: "Sign In", path: "/sign-in", element: <SignIn /> },
+      { name: "Sign Up", path: "/sign-up", element: <SignUp /> },
+      { name: "Forgot Password", path: "/forgot-password", element: <ForgotPassword /> },
     ],
+    //   {
+    //     icon: <img src={SigninIcon} alt="Horse" style={iconStyle} />,
+    //     name: "Sign In",
+    //     path: "/sign-in",
+    //     element: <SignIn />,
+    //   },
+    //   {
+    //     icon: <img src={SignupIcon} alt="Horse" style={iconStyle} />,
+    //     name: "Sign Up",
+    //     path: "/sign-up",
+    //     element: <SignUp />,
+    //   },
+
+    //   {
+    //       name: "Forgot Password",
+    //       path: "/forgot-password",
+    //       element: <ForgotPassword />,
+    //     },
+    // ],
   },
 ];
 
