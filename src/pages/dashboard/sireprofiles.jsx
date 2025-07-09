@@ -581,7 +581,7 @@ export function SireProfiles() {
                   <ReportTable tableData={countryReportData} hideSireColumn={true} forceCountryFirst={true} />
                 </div>
               )}
-              {sexReportData.length > 0 && (
+              {/* {sexReportData.length > 0 && (
                 <div>
                   <Typography variant="h6" className="mb-2">Analysis by Sex: {selectedSire}</Typography>
                   <ReportTable
@@ -590,7 +590,7 @@ export function SireProfiles() {
                     forceGenderFirst={true}
                   />
                 </div>
-              )}
+              )} */}
               {worldwideReportData.length > 0 && (
                 <div>
                   <Typography variant="h6" className="mb-2">Worldwide Analysis: {selectedSire}</Typography>
