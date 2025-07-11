@@ -2,13 +2,36 @@ import React, { useState, useEffect } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
 
+const formatToMySQLDate = (input) => {
+  const parsed = new Date(input);
+  if (isNaN(parsed)) return null;
+  return parsed.toISOString().split("T")[0]; // returns YYYY-MM-DD
+};
+
 export function RacesAndEntries() {
   const [RacesAndEntries, setRacesAndEntries] = useState([]);
   const [expandedKey, setExpandedKey] = useState(null);
   const [expandedRaceId, setExpandedRaceId] = useState(null);
+  const [watchedRaceTitles, setWatchedRaceTitles] = useState([]);
 
   useEffect(() => {
     fetchData();
+
+    const fetchWatchedRaces = async () => {
+      const storedUser = localStorage.getItem("user");
+      const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
+      try {
+        const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_watchlist/${userId}`);
+        const data = await res.json();
+        const titles = data.map(item => item.race_title);
+        setWatchedRaceTitles(titles);
+      } catch (error) {
+        console.error("Error fetching watchlist races:", error);
+      }
+    };
+
+    fetchWatchedRaces();
   }, []);
 
   const fetchData = async () => {
@@ -20,6 +43,48 @@ export function RacesAndEntries() {
       console.error("Error fetching data:", error);
     }
   };
+
+
+  const storedUser = localStorage.getItem("user");
+  const userId = storedUser ? JSON.parse(storedUser).userId : null;
+
+  const handleAddToWatchlist = async (race) => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : null;
+
+    if (!userId) {
+      alert("Please log in to add to your watch list.");
+      return;
+    }
+
+    const payload = {
+      user_id: userId,
+      race_title: race.RaceTitle,
+      race_date: formatToMySQLDate(race.FixtureDate),
+      source_table: "RacesAndEntries"
+    };
+
+    try {
+      const res = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        setWatchedRaceTitles(prev => [...prev, race.RaceTitle]);
+      } else {
+        const errText = await res.text();
+        console.error("Watchlist add failed:", errText);
+      }
+    } catch (error) {
+      console.error("Error adding to watch list:", error);
+    }
+  };
+
+
 
   const normalizeDateString = (str) => str.replace(/\s{2,}/g, " ").trim();
 
@@ -134,6 +199,23 @@ export function RacesAndEntries() {
                               </span>
                               <span className="font-medium">{entry.RaceTime}</span>
                               <span className="font-normal text-gray-700">{entry.RaceTitle}</span>
+
+                              {/* +Watch Button */}
+                              {!watchedRaceTitles.includes(entry.RaceTitle) ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // prevent toggling the card
+                                    handleAddToWatchlist(entry);
+                                  }}
+                                  className="ml-2 px-2 py-0.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                >
+                                  +Watch
+                                </button>
+                              ) : (
+                                <span className="ml-2 px-2 py-0.5 text-xs bg-gray-400 text-white rounded">
+                                  Watching
+                                </span>
+                              )}
                             </div>
                             <span className="text-gray-500">{entry.Status}</span>
                           </div>

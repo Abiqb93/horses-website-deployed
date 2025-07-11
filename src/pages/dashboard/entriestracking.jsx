@@ -6,10 +6,69 @@ export function EntriesTracking() {
   const [RacesAndEntries, setRacesAndEntries] = useState([]);
   const [expandedKey, setExpandedKey] = useState(null);
   const [expandedRaceId, setExpandedRaceId] = useState(null);
+  const [watchedRaceTitles, setWatchedRaceTitles] = useState([]);
 
   useEffect(() => {
-    fetchData();
+  fetchData();
+    fetchWatchedRaces();
   }, []);
+
+  const fetchWatchedRaces = async () => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
+    try {
+      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_watchlist/${userId}`);
+      const data = await res.json();
+      const titles = data.map(item => item.race_title);
+      setWatchedRaceTitles(titles);
+    } catch (error) {
+      console.error("Error fetching watched races:", error);
+    }
+  };
+
+  const formatToMySQLDate = (input) => {
+    if (!input) return null;
+    // Normalize whitespace and trim
+    const cleaned = input.toString().replace(/\s+/g, " ").trim();
+    const parsed = new Date(cleaned);
+    if (isNaN(parsed)) return null;
+    return parsed.toISOString().split("T")[0]; // 'YYYY-MM-DD'
+  };
+
+  const handleAddToWatchlist = async (race) => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : null;
+
+    if (!userId) {
+      alert("Please log in to use the watch list feature.");
+      return;
+    }
+
+    const payload = {
+      user_id: userId,
+      race_title: race.RaceTitle,
+      race_date: formatToMySQLDate(race.Date),
+      source_table: "EntriesTracking"
+    };
+
+    try {
+      const response = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setWatchedRaceTitles(prev => [...prev, race.RaceTitle]);
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to add to watch list:", errorText);
+      }
+    } catch (error) {
+      console.error("Error adding to watch list:", error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -129,6 +188,22 @@ export function EntriesTracking() {
                               </span>
                               <span className="font-medium">{entry.RaceTime}</span>
                               <span className="font-normal text-gray-700">{entry.RaceTitle}</span>
+
+                                {!watchedRaceTitles.includes(entry.RaceTitle) ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // don't toggle expand
+                                      handleAddToWatchlist(entry);
+                                    }}
+                                    className="ml-2 px-2 py-0.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                  >
+                                    +Watch
+                                  </button>
+                                ) : (
+                                  <span className="ml-2 px-2 py-0.5 text-xs bg-gray-400 text-white rounded">
+                                    Watching
+                                  </span>
+                                )}
                             </div>
                             <span className="text-gray-500">{entry.Status}</span>
                           </div>

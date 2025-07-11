@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, Typography, Input, Select, Option, Button } from "@material-tailwind/react";
-
+import { Link } from "react-router-dom";
 
 // RaceTile Component
 const RaceTile = ({ race, isTracked, onTrackClick, onClick }) => {
@@ -44,7 +44,13 @@ const RaceTile = ({ race, isTracked, onTrackClick, onClick }) => {
         <ul className="list-disc list-inside">
           {race.topHorses.map((horse, index) => (
             <li key={index} className="text-blue-gray-600">
-              {horse.horseName} (Position: {horse.positionOfficial})
+              <Link
+                to={`/dashboard/horse/${encodeURIComponent(horse.horseName)}`}
+                className="text-blue-600 hover:underline"
+              >
+                {horse.horseName}
+              </Link>{" "}
+              (Position: {horse.positionOfficial})
             </li>
           ))}
         </ul>
@@ -108,15 +114,22 @@ const ReportTable = ({ tableData }) => {
                   "sireName",
                   "damName",
                   ...Object.keys(item).filter(
-                    (key) => !["positionOfficial", "horseName", "countryCode", "sireName", "damName"].includes(key)
+                    (key) =>
+                      !["positionOfficial", "horseName", "countryCode", "sireName", "damName"].includes(key)
                   ),
                 ].map((key, i) => (
                   <td key={i} className="py-2 px-4 border-b border-gray-300">
                     <Typography className="text-[10px] font-medium text-blue-gray-600">
-                      {/* {key === "positionOfficial" && index < 3 ? (
-                        <span className="mr-2">{getCupIcon(item[key])}</span>
-                      ) : null} */}
-                      {item[key] !== null && item[key] !== undefined ? item[key] : "-"}
+                      {key === "horseName" && item[key] ? (
+                        <Link
+                          to={`/dashboard/horse/${encodeURIComponent(item[key])}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {item[key]}
+                        </Link>
+                      ) : (
+                        item[key] ?? "-"
+                      )}
                     </Typography>
                   </td>
                 ))}

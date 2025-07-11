@@ -29,3 +29,4 @@ export * from "@/pages/dashboard/france_race_records";
 export * from "@/pages/dashboard/HorsesPage";
 export * from "@/pages/dashboard/RaceDetailsPage";
 export * from "@/pages/dashboard/profile_page";
+export * from "@/pages/dashboard/DailyWatchList";

@@ -2,19 +2,55 @@ import React, { useState, useEffect } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
 
+const formatToMySQLDate = (input) => {
+  const parsed = new Date(input);
+  if (isNaN(parsed)) return null;
+  return parsed.toISOString().split("T")[0]; // YYYY-MM-DD
+};
+
+const storedUser = localStorage.getItem("user");
+const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
 
 export function ClosingEntries() {
   const [entries, setEntries] = useState([]);
   const [expandedKey, setExpandedKey] = useState(null);
   const [expandedRaceId, setExpandedRaceId] = useState(null);
+  const [watchedRaceTitles, setWatchedRaceTitles] = useState([]);
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("https://horseracesbackend-production.up.railway.app/api/ClosingEntries");
+        const data = await response.json();
+        setEntries(data.data || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+
+    const fetchWatchedRaces = async () => {
+      const storedUser = localStorage.getItem("user");
+      const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
+      try {
+        const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_watchlist/${userId}`);
+        const data = await res.json();
+        const titles = data.map(item => item.race_title);
+        setWatchedRaceTitles(titles);
+      } catch (error) {
+        console.error("Error fetching watchlist races:", error);
+      }
+    };
+
     fetchData();
+    fetchWatchedRaces();
   }, []);
 
   const fetchData = async () => {
     try {
-      // const response = await fetch("http://localhost:8080/api/ClosingEntries");
+      // const response = await fetch("https://horseracesbackend-production.up.railway.app/api/ClosingEntries");
       const response = await fetch("https://horseracesbackend-production.up.railway.app/api/ClosingEntries");
       
       const data = await response.json();
@@ -46,6 +82,42 @@ export function ClosingEntries() {
     });
     return grouped;
   };
+
+  const handleAddToWatchlist = async (race) => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : null;
+
+    if (!userId) {
+      alert("Please log in to use the watch list feature.");
+      return;
+    }
+
+    const payload = {
+      user_id: userId,
+      race_title: race.title,
+      race_date: formatToMySQLDate(race.date),
+      source_table: "ClosingEntries"
+    };
+
+    try {
+      const response = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setWatchedRaceTitles(prev => [...prev, race.title]);
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to add to watch list:", errorText);
+      }
+    } catch (error) {
+      console.error("Error adding to watch list:", error);
+    }
+  };
+
+
 
   const toggleExpanded = (track, date) => {
     const key = `${track}-${date}`;
@@ -108,7 +180,24 @@ export function ClosingEntries() {
                               </span>
                               <span className="font-medium">{race.time}</span>
                               <span className="font-normal text-gray-700">{race.title}</span>
+
+                              {!watchedRaceTitles.includes(race.title) ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // prevent expand toggle
+                                    handleAddToWatchlist(race);
+                                  }}
+                                  className="ml-2 px-2 py-0.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                >
+                                  +Watch
+                                </button>
+                              ) : (
+                                <span className="ml-2 px-2 py-0.5 text-xs bg-gray-400 text-white rounded">
+                                  Watching
+                                </span>
+                              )}
                             </div>
+
                             <span className="text-gray-500">{race.status}</span>
                           </div>
                           <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 text-gray-700 text-right">

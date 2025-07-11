@@ -6,13 +6,87 @@ export function Home() {
   const [groupedNotifications, setGroupedNotifications] = useState({});
   const [resultsData, setResultsData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sharedWithMeUsers, setSharedWithMeUsers] = useState([]);
+  const [selectedSharedUser, setSelectedSharedUser] = useState(null);
+
+  const [reviewed_results, setreviewed_results] = useState(new Set());
+
+  useEffect(() => {
+    const fetchReviewed = async () => {
+      const storedUser = localStorage.getItem("user");
+      const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
+      try {
+        const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/reviewed_results?user_id=${encodeURIComponent(userId)}`);
+        const json = await res.json();
+
+        const reviewedKeys = json.data.map(r => {
+          const title = r.race_title.trim().toLowerCase();
+          const name = r.horse_name.trim().toLowerCase();
+          return `${name}-${title}`;
+        });
+
+        setreviewed_results(new Set(reviewedKeys));
+
+      } catch (err) {
+        console.error("Error fetching reviewed results:", err);
+      }
+    };
+
+    fetchReviewed();
+  }, []);
+
+  useEffect(() => {
+    const fetchSharedUsers = async () => {
+      const storedUser = localStorage.getItem("user");
+      const currentUserId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
+      try {
+        const res = await fetch("https://horseracesbackend-production.up.railway.app/api/horse_tracking_shares");
+        const json = await res.json();
+        const sharedWithMe = json.data.filter(r => r.shared_with_user_id === currentUserId);
+        setSharedWithMeUsers(sharedWithMe);
+      } catch (err) {
+        console.error("Error fetching shared users:", err);
+      }
+    };
+
+    fetchSharedUsers();
+  }, []);
+
+  const markAsReviewed = async (horseName, raceTitle, date) => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
+    const cleanDate = date; // ✅ already correct from res.date
+    const key = `${horseName.trim().toLowerCase()}-${raceTitle.trim().toLowerCase()}`;
+
+    setreviewed_results(prev => new Set(prev).add(key));
+
+    await fetch("https://horseracesbackend-production.up.railway.app/api/reviewed_results", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        horse_name: horseName,
+        race_title: raceTitle,
+        race_date: cleanDate,
+      }),
+    });
+  };
+
+
+
 
   useEffect(() => {
     const fetchTrackedAndRaces = async () => {
       try {
         const storedUser = localStorage.getItem("user");
-        const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
-        const trackedRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${encodeURIComponent(userId)}`);
+        const loggedInUserId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
+        const effectiveUserId = selectedSharedUser || loggedInUserId;
+
+        const trackedRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${encodeURIComponent(effectiveUserId)}`);
         const trackedJson = await trackedRes.json();
         const trackedNames = [...new Set(trackedJson.data.map(h => h.horseName?.toLowerCase().trim()))];
         setTrackedHorses(trackedNames);
@@ -109,17 +183,25 @@ export function Home() {
 
         const filteredResults = [];
 
-        for (const { date, records } of resultsFetches) {
+        for (const { date: meetingDate, records } of resultsFetches) {
           for (const record of records) {
             const horseName = record.horseName?.toLowerCase().trim();
             if (trackedNames.includes(horseName)) {
+              const localDate = new Date(record.meetingDate);
+              const yyyy = localDate.getFullYear();
+              const mm = String(localDate.getMonth() + 1).padStart(2, '0');
+              const dd = String(localDate.getDate()).padStart(2, '0');
+              const formattedDate = `${yyyy}-${mm}-${dd}`;
+              const reviewKey = `${record.horseName?.trim().toLowerCase()}-${record.raceTitle?.trim().toLowerCase()}`;
+
               filteredResults.push({
                 horseName: record.horseName,
                 position: record.positionOfficial,
                 raceTitle: record.raceTitle,
                 country: record.countryCode,
-                date,
+                date: formattedDate,
                 track: record.courseName || "-",
+                reviewKey, // ✅ use this key for comparing reviewed results
               });
             }
           }
@@ -135,12 +217,12 @@ export function Home() {
     };
 
     fetchTrackedAndRaces();
-  }, []);
+  }, [selectedSharedUser]);
 
   const renderGroupCard = (label, todayList, upcomingList) => {
     const hasContent = todayList.length > 0 || upcomingList.length > 0;
     if (!hasContent) return null;
-
+  
     return (
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 min-w-[300px]" key={label}>
         <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">{label}</h2>
@@ -210,6 +292,27 @@ export function Home() {
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">Dashboard</h1>
 
+      {sharedWithMeUsers.length > 0 && (
+        <div className="flex items-center justify-end mb-4 gap-2">
+          <label className="text-sm font-medium text-gray-700">View:</label>
+          <select
+            value={selectedSharedUser || ""}
+            onChange={(e) => {
+              setSelectedSharedUser(e.target.value || null);
+              setLoading(true); // triggers loading spinner
+            }}
+            className="text-sm border rounded px-2 py-1 bg-white"
+          >
+            <option value="">My Horses</option>
+            {sharedWithMeUsers.map(user => (
+              <option key={user.owner_user_id} value={user.owner_user_id}>
+                {user.owner_name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <svg className="animate-spin h-4 w-4 text-gray-600" viewBox="0 0 24 24">
@@ -221,56 +324,78 @@ export function Home() {
       ) : (
         <>
           {/* 🔥 Results First */}
-          {hasResults && (
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 min-w-[300px] mb-6">
-              <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">Results (Last 3 Days)</h2>
-              <div>
-                <ul className="space-y-1 mt-1 text-sm leading-snug">
-                  {resultsData
-                    .sort((a, b) => a.position - b.position)
-                    .map((res) => {
-                      const encodedRaceTitle = encodeURIComponent(res.raceTitle);
-                      const encodedDate = encodeURIComponent(res.date);
-                      const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
+          {(hasResults || hasAny) ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {hasResults && (
+                <div className="col-span-full">
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 w-full">
+                    <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">Results (Last 3 Days)</h2>
+                    <div>
+                      <ul className="space-y-1 mt-1 text-sm leading-snug">
+                        {resultsData
+                          .sort((a, b) => a.position - b.position)
+                          .map((res) => {
+                            const normalizedRaceTitle = res.raceTitle?.toLowerCase().replace(/\s+/g, " ").trim();
+                            const encodedRaceTitle = encodeURIComponent(normalizedRaceTitle);
+                            const encodedDate = encodeURIComponent(res.date);
+                            const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
 
-                      const titleCase = (str) =>
-                        str
-                          .toLowerCase()
-                          .replace(/\b\w/g, (l) => l.toUpperCase());
+                            const titleCase = (str) =>
+                              str.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
 
-                      return (
-                        <li
-                          key={`${res.horseName}-${res.raceTitle}-${res.date}`}
-                          className="pl-2 border-l-4 border-purple-300 text-sm leading-snug"
-                        >
-                          📅{" "}
-                          <Link
-                            to={`/dashboard/horse/${encodeURIComponent(res.horseName)}`}
-                            className="text-blue-700 font-medium hover:underline"
-                          >
-                            {titleCase(res.horseName)}
-                          </Link>{" "}
-                          finished <strong>{res.position}</strong> in{" "}
-                          <Link
-                            to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
-                            className="text-indigo-700 font-medium hover:underline"
-                          >
-                            {titleCase(res.raceTitle)}
-                          </Link>{" "}
-                          at <span className="text-gray-800">{res.track}</span> ({res.country}) on{" "}
-                          <span className="text-gray-700">{res.date}</span>
-                        </li>
-                      );
-                    })}
-                </ul>
-              </div>
-            </div>
-          )}
+                            return (
+                              <li
+                                key={res.reviewKey}
+                                className={`pl-2 text-sm leading-snug flex justify-between items-start
+                                  ${reviewed_results.has(res.reviewKey)
+                                    ? "border-l-4 border-gray-300 text-gray-400 opacity-60"
+                                    : "border-l-4 border-blue-300 text-gray-800"}
+                                `}
+                              >
+                                <div className="flex-1">
+                                  📅{" "}
+                                  <Link
+                                    to={`/dashboard/horse/${encodeURIComponent(res.horseName)}`}
+                                    className={`font-medium hover:underline ${
+                                      reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-blue-700"
+                                    }`}
+                                  >
+                                    {titleCase(res.horseName)}
+                                  </Link>{" "}
+                                  finished <strong>{res.position}</strong> in{" "}
+                                  <Link
+                                    to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
+                                    className={`font-medium hover:underline ${
+                                      reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-indigo-700"
+                                    }`}
+                                  >
+                                    {titleCase(res.raceTitle)}
+                                  </Link>{" "}
+                                  at {res.track} ({res.country}) on <strong>{res.date}</strong>
+                                </div>
+
+                                {!reviewed_results.has(res.reviewKey) && (
+                                  <button
+                                    onClick={() => markAsReviewed(res.horseName, res.raceTitle, res.date)}
+                                    className="ml-2 text-xs text-gray-400 hover:text-gray-600"
+                                    title="Mark as Reviewed"
+                                  >
+                                    ✓
+                                  </button>
+                                )}
+                              </li>
 
 
-          {/* 🔥 Race Updates & Others */}
-          {hasAny ? (
-            <div className="flex flex-wrap gap-5">
+
+                            );
+                          })}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Notification Boxes */}
               {groupedNotifications["RaceUpdates"] &&
                 renderGroupCard(
                   "Declarations & Entries",

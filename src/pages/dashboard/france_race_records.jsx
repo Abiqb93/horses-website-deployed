@@ -6,10 +6,26 @@ export function FranceRaceRecords() {
   const [records, setRecords] = useState([]);
   const [expandedKey, setExpandedKey] = useState(null);
   const [expandedRaceId, setExpandedRaceId] = useState(null);
+  const [watchedRaceTitles, setWatchedRaceTitles] = useState([]);
 
   useEffect(() => {
     fetchData();
+    fetchWatchedRaces(); // fetch watched list on load
   }, []);
+
+  const fetchWatchedRaces = async () => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
+    try {
+      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_watchlist/${userId}`);
+      const data = await res.json();
+      const titles = data.map(item => item.race_title?.trim().toLowerCase());
+      setWatchedRaceTitles(titles);
+    } catch (error) {
+      console.error("Error fetching watched races:", error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -20,6 +36,66 @@ export function FranceRaceRecords() {
       console.error("Error fetching FranceRaceRecords:", error);
     }
   };
+
+  const formatToMySQLDate = (input) => {
+    if (!input || typeof input !== "string") return null;
+
+    const cleaned = input
+      .trim()
+      .replace(/\s+/g, " ")
+      .replace(/(\d{1,2})(st|nd|rd|th)/g, "$1")  // remove ordinal suffix
+      .replace(/,/g, "");                        // remove commas
+
+    const parsed = Date.parse(cleaned);
+    if (isNaN(parsed)) return null;
+
+    return new Date(parsed).toISOString().split("T")[0]; // YYYY-MM-DD
+  };
+
+  const handleAddToWatchlist = async (race, date) => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : null;
+
+    if (!userId) {
+      alert("Please log in to use the watch list feature.");
+      return;
+    }
+
+    const raceTitle = race["Races"]?.trim();
+    const formattedDate = formatToMySQLDate(date); // ✅ use outer date
+
+    console.log("Payload being sent:", { raceTitle, formattedDate });
+
+    if (!raceTitle || !formattedDate) {
+      console.warn("Invalid race title or date", { raceTitle, formattedDate });
+      return;
+    }
+
+    const payload = {
+      user_id: userId,
+      race_title: raceTitle,
+      race_date: formattedDate,
+      source_table: "FranceRaceRecords"
+    };
+
+    try {
+      const response = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        await fetchWatchedRaces(); // refresh state
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to add to watch list:", errorText);
+      }
+    } catch (error) {
+      console.error("Error adding to watch list:", error);
+    }
+  };
+
 
   const normalizeDateString = (str) => str?.replace(/\s{2,}/g, " ").trim();
 
@@ -127,6 +203,21 @@ export function FranceRaceRecords() {
                               </span>
                               <span className="font-medium">{race["Start"] || "-"}</span>
                               <span className="font-normal text-gray-700">{race["Races"] || "-"}</span>
+                                {race["Races"] && !watchedRaceTitles.includes(race["Races"].trim().toLowerCase()) ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAddToWatchlist(race, cg.date);
+                                    }}
+                                    className="ml-2 px-2 py-0.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                  >
+                                    +Watch
+                                  </button>
+                                ) : race["Races"] ? (
+                                  <span className="ml-2 px-2 py-0.5 text-xs bg-gray-400 text-white rounded">
+                                    Watching
+                                  </span>
+                                ) : null}
                             </div>
                             <span className="text-gray-500 text-xs">{race["To note"] || "-"}</span>
                           </div>

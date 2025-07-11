@@ -71,7 +71,7 @@ export function RaceDetailPage() {
           const target = normalize(raceTitleParam);
           filtered = records.filter((r) => {
             const val = normalize(r[raceField]);
-            return val.includes(target);
+            return val === target;
           });
 
           if (filtered.length > 0) {
@@ -154,8 +154,26 @@ export function RaceDetailPage() {
                 <tr key={idx}>
                   {columns.map((col, j) => (
                     <td key={j} className="py-2 px-3 border-b text-xs">
-                      {entry[col] ?? "-"}
+                      {(() => {
+                        const rawHorseName = entry[col];
+                        const normalizedCol = col.toLowerCase().trim();
+                        const isHorseNameCol = ["horse", "horse name", "horsename"].includes(normalizedCol);
+
+                        if (isHorseNameCol && rawHorseName) {
+                          return (
+                            <a
+                              href={`/dashboard/horse/${encodeURIComponent(rawHorseName.trim())}`}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {rawHorseName}
+                            </a>
+                          );
+                        }
+
+                        return rawHorseName ?? "-";
+                      })()}
                     </td>
+
                   ))}
                 </tr>
               ))}

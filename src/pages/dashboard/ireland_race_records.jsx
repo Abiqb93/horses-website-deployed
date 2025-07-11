@@ -6,10 +6,27 @@ export function IrelandRaceRecords() {
   const [records, setRecords] = useState([]);
   const [expandedKey, setExpandedKey] = useState(null);
   const [expandedRaceId, setExpandedRaceId] = useState(null);
+  const [watchedRaceTitles, setWatchedRaceTitles] = useState([]);
 
   useEffect(() => {
     fetchData();
+    fetchWatchedRaces();
   }, []);
+
+  const fetchWatchedRaces = async () => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+
+    try {
+      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_watchlist/${userId}`);
+      const data = await res.json();
+      const titles = data.map(item => item.race_title?.trim().toLowerCase());
+      setWatchedRaceTitles(titles);
+    } catch (error) {
+      console.error("Error fetching watched races:", error);
+    }
+  };
+
 
   const fetchData = async () => {
     try {
@@ -20,6 +37,68 @@ export function IrelandRaceRecords() {
       console.error("Error fetching IrelandRaceRecords:", error);
     }
   };
+
+  const formatToMySQLDate = (input) => {
+    if (!input || typeof input !== "string") return null;
+
+    const cleaned = input
+      .trim()
+      .replace(/\s+/g, " ")                        // normalize spacing
+      .replace(/(\d{1,2})(st|nd|rd|th)/g, "$1")    // remove '11th' → '11'
+      .replace(/,/g, "");                          // remove comma after weekday
+
+    const parsed = Date.parse(cleaned);
+    if (isNaN(parsed)) return null;
+
+    const d = new Date(parsed);
+    return d.toISOString().split("T")[0];
+  };
+
+  const handleAddToWatchlist = async (race, date) => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : null;
+
+    if (!userId) {
+      alert("Please log in to use the watch list feature.");
+      return;
+    }
+    console.log("Raw date input:", date);
+    console.log("Parsed date:", formatToMySQLDate(date));
+    const raceTitle = race["Race Title"]?.trim();
+      const formattedDate = formatToMySQLDate(date); // ✅ use passed-in date
+
+      if (!raceTitle || !formattedDate) {
+        console.error("Invalid raceTitle or date", { raceTitle, formattedDate });
+        alert("Missing race title or date. Cannot add to watch list.");
+        return;
+      }
+
+      const payload = {
+        user_id: userId,
+        race_title: raceTitle,
+        race_date: formattedDate,
+        source_table: "IrelandRaceRecords"
+      };
+
+      console.log("Payload being sent:", payload); // ✅ Should now show correct date
+
+      try {
+        const response = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          await fetchWatchedRaces();
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to add to watch list:", errorText);
+        }
+      } catch (error) {
+        console.error("Error adding to watch list:", error);
+      }
+    };
 
   const normalizeDateString = (str) => str?.replace(/\s{2,}/g, " ").trim();
 
@@ -121,6 +200,21 @@ export function IrelandRaceRecords() {
                               </span>
                               <span className="font-medium">{race["Race Time"] || "-"}</span>
                               <span className="font-normal text-gray-700">{race["Race Title"] || "-"}</span>
+                                {race["Race Title"] && !watchedRaceTitles.includes(race["Race Title"].trim().toLowerCase()) ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // prevent race table toggle
+                                      handleAddToWatchlist(race, cg.date);
+                                    }}
+                                    className="ml-2 px-2 py-0.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                  >
+                                    +Watch
+                                  </button>
+                                ) : race["Race Title"] ? (
+                                  <span className="ml-2 px-2 py-0.5 text-xs bg-gray-400 text-white rounded">
+                                    Watching
+                                  </span>
+                                ) : null}
                             </div>
                             <span className="text-gray-500 text-xs">{race["Stage"] || "-"}</span>
                           </div>

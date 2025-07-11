@@ -43,6 +43,7 @@ import {
   HorseProfilePage,
   RaceDetailPage,
   ProfilePage,
+  DailyWatchList,
 
 } from "@/pages/dashboard";
 
@@ -64,15 +65,21 @@ export const routes = [
         element: <Home />,
       },
       {
+        icon: <img src={DashboardIcon} alt="Horse" style={iconStyle} />,
+        name: "Watch List",
+        path: "/watchlist",
+        element: <DailyWatchList />,
+      },
+      {
         icon: <img src={TablesIcon} alt="Horse" style={iconStyle} />,
         name: "Races",
         children: [
           { name: "Races", path: "/races", element: <Races /> },
-          { name: "My Race", path: "/myraces", element: <MyRace /> },
-          { name: "Early Closing Entries", path: "/closingentries", element: <ClosingEntries /> },
+          { name: "My Races", path: "/myraces", element: <MyRace /> },
           { name: "Racecards & Entries", path: "/entiresandraces", element: <RacesAndEntries /> },
-          { name: "EntriesTracking", path: "/entirestracking", element: <EntriesTracking /> },
-          { name: "DeclarationsTracking", path: "/declarationstracking", element: <DeclarationsTracking /> },
+          { name: "Declarations Tracking", path: "/declarationstracking", element: <DeclarationsTracking /> },
+          { name: "Entries Tracking", path: "/entirestracking", element: <EntriesTracking /> },
+          { name: "Early Closing Entries", path: "/closingentries", element: <ClosingEntries /> },
           { name: "Ireland Race Records", path: "/irelandracerecords", element: <IrelandRaceRecords /> },
           { name: "France Race Records", path: "/franceracerecords", element: <FranceRaceRecords /> },
           

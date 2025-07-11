@@ -8,6 +8,10 @@ export function MyHorses() {
   const [upcomingRaces, setUpcomingRaces] = useState([]);
   const [error, setError] = useState(null);
   const [trackingStates, setTrackingStates] = useState({});
+  const [allTrackedHorses, setAllTrackedHorses] = useState([]);
+  const [shareSearch, setShareSearch] = useState("");
+  const [shareResults, setShareResults] = useState([]);
+  const [selectedShareUser, setSelectedShareUser] = useState(null);
   
 
   useEffect(() => {
@@ -20,6 +24,7 @@ export function MyHorses() {
         const trackedRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${userId}`);
         const trackedJson = await trackedRes.json();
         const trackedData = trackedJson.data || [];
+        setAllTrackedHorses(trackedData);
         const trackedMap = {};
 
         for (const h of trackedData) {
@@ -194,6 +199,74 @@ export function MyHorses() {
   };
 
 
+  const handleUserSearch = async (query) => {
+    setShareSearch(query);
+    if (!query.trim()) {
+      setShareResults([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/userSearch?q=${encodeURIComponent(query)}`);
+      
+      // Optional: safer parse with fallback in case server returns HTML
+      const text = await res.text();
+      try {
+        const json = JSON.parse(text);
+        setShareResults(json.results || []);
+      } catch (err) {
+        console.error("Search error: Not valid JSON. Response:", text);
+        setShareResults([]);
+      }
+    } catch (err) {
+      console.error("Search error:", err);
+      setShareResults([]);
+    }
+  };
+
+  const handleShareUserSelect = async (user) => {
+    const ownerUser = (() => {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser).userId : null;
+    })();
+
+    if (!ownerUser) {
+      alert("You must be logged in to share your horses.");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://horseracesbackend-production.up.railway.app/api/horse_tracking_shares", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          owner_user_id: ownerUser,
+          shared_with_user_id: user.user_id,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (res.status === 201) {
+        alert(`✅ Tracking shared with ${user.name} (${user.user_id})`);
+      } else if (res.status === 409) {
+        alert(`⚠️ You have already shared tracking with ${user.name}`);
+      } else {
+        alert(`❌ Failed to share: ${json.message}`);
+      }
+
+      setSelectedShareUser(user);
+      setShareSearch(`${user.name} (${user.user_id})`);
+      setShareResults([]);
+    } catch (err) {
+      console.error("Error sharing tracking:", err);
+      alert("An error occurred while sharing.");
+    }
+  };
+
+
+
+
   const renderTrackingControls = (horse, horseKey) => {
     const state = trackingStates[horseKey] || {};
     return (
@@ -292,9 +365,149 @@ export function MyHorses() {
     return <Typography color="red" className="text-sm p-4">{error}</Typography>;
   }
 
+    const renderTrackedHorsesTable = () => {  
+    const [showCount, setShowCount] = useState(5);
+    const [expandedHorse, setExpandedHorse] = useState(null);
+    const [categoryFilter, setCategoryFilter] = useState("All");
+
+    if (!allTrackedHorses.length) return null;
+
+    const grouped = {};
+    allTrackedHorses.forEach((item) => {
+      const name = item.horseName?.trim();
+      if (!grouped[name]) grouped[name] = [];
+      grouped[name].push(item);
+    });
+
+    const uniqueCategories = ["All", ...new Set(allTrackedHorses.map(h => h.TrackingType).filter(Boolean))];
+
+    const rows = Object.entries(grouped)
+      .map(([name, entries]) => {
+        const first = entries[0];
+        return {
+          name,
+          category: first.TrackingType || "-",
+          started: first.trackingDate ? new Date(first.trackingDate).toLocaleDateString() : "-",
+          notes: entries,
+        };
+      })
+      .filter(row => categoryFilter === "All" || row.category === categoryFilter);
+
+    return (
+      <Card className="bg-white text-black mb-6">
+        <CardBody className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <Typography variant="h6" className="text-blue-700 font-semibold text-sm">
+              Tracked Horses Overview
+            </Typography>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Category Filter Dropdown */}
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="text-[11px] border px-1 py-0.5 rounded bg-gray-50"
+              >
+                {uniqueCategories.map((cat, i) => (
+                  <option key={i} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              {/* User Search Box */}
+              <div className="relative text-[11px]">
+                <input
+                  type="text"
+                  placeholder="Share with user..."
+                  value={shareSearch}
+                  onChange={(e) => handleUserSearch(e.target.value)}
+                  className="border px-1 py-0.5 rounded bg-gray-50 w-40"
+                />
+                {shareResults.length > 0 && (
+                  <ul className="absolute bg-white border w-40 mt-1 max-h-40 overflow-y-auto z-50 shadow-md rounded">
+                    {shareResults.map((u) => (
+                      <li
+                        key={u.user_id}
+                        onClick={() => handleShareUserSelect(u)}
+                        className="px-2 py-1 hover:bg-blue-100 cursor-pointer text-[11px]"
+                      >
+                        {u.name} ({u.user_id})
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+
+
+          <table className="min-w-full text-[11px] table-auto">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-2 py-1 text-left">Horse</th>
+                <th className="px-2 py-1 text-left">Category</th>
+                <th className="px-2 py-1 text-left">Tracking Since</th>
+                <th className="px-2 py-1 text-left">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.slice(0, showCount).map((t, idx) => (
+                <React.Fragment key={idx}>
+                  <tr className="border-b border-gray-200 align-top">
+                    <td className="px-2 py-1 text-blue-700 underline hover:text-blue-900">
+                      <Link to={`/dashboard/horse/${encodeURIComponent(t.name)}`}>
+                        {t.name}
+                      </Link>
+                    </td>
+                    <td className="px-2 py-1">{t.category}</td>
+                    <td className="px-2 py-1">{t.started}</td>
+                    <td className="px-2 py-1">
+                      {t.notes.length}
+                      <button
+                        className="ml-1 text-gray-500 hover:text-gray-800"
+                        onClick={() => setExpandedHorse(expandedHorse === t.name ? null : t.name)}
+                      >
+                        📝
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedHorse === t.name && (
+                    <tr>
+                      <td colSpan="4" className="px-2 py-1 text-[10px] bg-gray-50">
+                        {t.notes.map((n, i) => (
+                          <div key={i} className="border-b py-1">
+                            <div><span className="text-gray-600">📝</span> {n.note}</div>
+                            <div className="text-gray-500">{new Date(n.trackingDate).toLocaleString()}</div>
+                          </div>
+                        ))}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+
+          {rows.length > showCount && (
+            <div className="flex justify-center mt-2">
+              <button
+                className="text-blue-600 text-[11px] hover:underline"
+                onClick={() => setShowCount(prev => prev + 5)}
+              >
+                Show more...
+              </button>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+    );
+    };
+
+
+
   return (
     <div className="p-4">
       <Typography variant="h5" className="text-gray-800 font-bold mb-4">📋 Tracked Horses</Typography>
+      {renderTrackedHorsesTable()}
       {lastRaces.length > 0 && renderTable("Last Races", lastRaces, "red")}
       {todayRaces.length > 0 && renderTable("Today’s Races", todayRaces, "green")}
       {upcomingRaces.length > 0 && renderTable("Upcoming Races", upcomingRaces, "blue")}
