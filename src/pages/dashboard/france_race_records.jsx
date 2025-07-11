@@ -43,13 +43,17 @@ export function FranceRaceRecords() {
     const cleaned = input
       .trim()
       .replace(/\s+/g, " ")
-      .replace(/(\d{1,2})(st|nd|rd|th)/g, "$1")  // remove ordinal suffix
-      .replace(/,/g, "");                        // remove commas
+      .replace(/(\d{1,2})(st|nd|rd|th)/g, "$1")
+      .replace(/,/g, "");
 
-    const parsed = Date.parse(cleaned);
-    if (isNaN(parsed)) return null;
+    const parsedDate = new Date(cleaned);
+    if (isNaN(parsedDate)) return null;
 
-    return new Date(parsed).toISOString().split("T")[0]; // YYYY-MM-DD
+    const yyyy = parsedDate.getFullYear();
+    const mm = String(parsedDate.getMonth() + 1).padStart(2, "0");
+    const dd = String(parsedDate.getDate()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd}`; // ✅ local date in YYYY-MM-DD format
   };
 
   const handleAddToWatchlist = async (race, date) => {

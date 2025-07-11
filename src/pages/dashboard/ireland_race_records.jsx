@@ -43,15 +43,18 @@ export function IrelandRaceRecords() {
 
     const cleaned = input
       .trim()
-      .replace(/\s+/g, " ")                        // normalize spacing
-      .replace(/(\d{1,2})(st|nd|rd|th)/g, "$1")    // remove '11th' → '11'
-      .replace(/,/g, "");                          // remove comma after weekday
+      .replace(/\s+/g, " ")
+      .replace(/(\d{1,2})(st|nd|rd|th)/g, "$1")
+      .replace(/,/g, "");
 
-    const parsed = Date.parse(cleaned);
-    if (isNaN(parsed)) return null;
+    const parsedDate = new Date(cleaned);
+    if (isNaN(parsedDate)) return null;
 
-    const d = new Date(parsed);
-    return d.toISOString().split("T")[0];
+    const yyyy = parsedDate.getFullYear();
+    const mm = String(parsedDate.getMonth() + 1).padStart(2, "0");
+    const dd = String(parsedDate.getDate()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd}`; // ✅ Local YYYY-MM-DD
   };
 
   const handleAddToWatchlist = async (race, date) => {

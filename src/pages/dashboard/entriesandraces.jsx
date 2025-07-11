@@ -5,7 +5,12 @@ import { Link } from "react-router-dom";
 const formatToMySQLDate = (input) => {
   const parsed = new Date(input);
   if (isNaN(parsed)) return null;
-  return parsed.toISOString().split("T")[0]; // returns YYYY-MM-DD
+
+  const yyyy = parsed.getFullYear();
+  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+  const dd = String(parsed.getDate()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`; // ✅ Local date in YYYY-MM-DD format
 };
 
 export function RacesAndEntries() {

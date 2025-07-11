@@ -31,7 +31,12 @@ export function DeclarationsTracking() {
   const formatToMySQLDate = (input) => {
     const parsed = new Date(input?.trim().replace(/\s+/g, " "));
     if (isNaN(parsed)) return null;
-    return parsed.toISOString().split("T")[0];
+
+    const yyyy = parsed.getFullYear();
+    const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+    const dd = String(parsed.getDate()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd}`; // 🟢 Correct local YYYY-MM-DD
   };
 
   const fetchData = async () => {
