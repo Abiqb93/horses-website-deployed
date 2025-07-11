@@ -11,18 +11,20 @@ export function DailyWatchList() {
       const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const yyyyToday = today.getFullYear();
+      const mmToday = String(today.getMonth() + 1).padStart(2, "0");
+      const ddToday = String(today.getDate()).padStart(2, "0");
+      const todayStr = `${yyyyToday}-${mmToday}-${ddToday}`;
 
       const results = [];
 
       try {
-        // Fetch tracked horses
         const trackedRes = await fetch(
           `https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${encodeURIComponent(userId)}`
         );
         const trackedJson = await trackedRes.json();
         const trackedNames = [...new Set(trackedJson.data.map(h => h.horseName?.toLowerCase().trim()))];
 
-        // Fetch upcoming races and results
         const sources = [
           { label: "RacesAndEntries", url: "https://horseracesbackend-production.up.railway.app/api/RacesAndEntries" },
           { label: "FranceRaceRecords", url: "https://horseracesbackend-production.up.railway.app/api/FranceRaceRecords" },
@@ -57,11 +59,15 @@ export function DailyWatchList() {
             } else {
               raceDate = new Date(Date.parse(dateStr));
             }
-            if (isNaN(raceDate)) continue;
 
-            const encodedHorseName = encodeURIComponent(rawHorseName?.trim() || "");
-            const encodedRaceTitle = encodeURIComponent(raceTitle);
-            const encodedUrl = encodeURIComponent(sources[i].url);
+            if (isNaN(raceDate)) continue;
+            raceDate.setHours(0, 0, 0, 0); // force local midnight
+            const yyyy = raceDate.getFullYear();
+            const mm = String(raceDate.getMonth() + 1).padStart(2, "0");
+            const dd = String(raceDate.getDate()).padStart(2, "0");
+            const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+            if (formattedDate !== todayStr) continue;
 
             results.push({
               type: "race",
@@ -70,59 +76,29 @@ export function DailyWatchList() {
               raceTrack,
               raceTime,
               raceTitle,
-              encodedHorseName,
-              encodedRaceTitle,
-              encodedUrl,
-              date: dateStr
+              encodedHorseName: encodeURIComponent(rawHorseName?.trim() || ""),
+              encodedRaceTitle: encodeURIComponent(raceTitle),
+              encodedUrl: encodeURIComponent(sources[i].url),
+              date: formattedDate,
             });
           }
         }
 
-        // Fetch recent results
-        const recentDates = [0, 1, 2].map(offset => {
-          const d = new Date();
-          d.setDate(d.getDate() - offset);
-          return d.toISOString().split("T")[0];
-        });
-
-        const resultsFetches = await Promise.all(
-          recentDates.map(date =>
-            fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2?meetingDate=${date}`)
-              .then(res => res.json())
-              .then(json => ({ date, records: json.data || [] }))
-          )
-        );
-
-        for (const { date, records } of resultsFetches) {
-          for (const record of records) {
-            const horseName = record.horseName?.toLowerCase().trim();
-            if (trackedNames.includes(horseName)) {
-              results.push({
-                type: "result",
-                horseName: record.horseName,
-                position: record.positionOfficial,
-                raceTitle: record.raceTitle,
-                country: record.countryCode,
-                track: record.courseName || "-",
-                date,
-              });
-            }
-          }
-        }
-
-        // ✅ Fetch race_watchlist items
+        // Watchlist
         const watchListRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_watchlist/${userId}`);
         const userWatchList = await watchListRes.json();
 
         userWatchList.forEach((item) => {
-          results.push({
-            type: "manual",
-            id: item.id,
-            raceTitle: item.race_title,
-            raceDate: item.race_date?.split("T")[0],
-            source: item.source_table,
-            done: item.done,
-          });
+          if (item.race_date?.split("T")[0] === todayStr) {
+            results.push({
+              type: "manual",
+              id: item.id,
+              raceTitle: item.race_title,
+              raceDate: item.race_date?.split("T")[0],
+              source: item.source_table,
+              done: item.done,
+            });
+          }
         });
 
         setWatchListItems(results);
@@ -171,6 +147,7 @@ export function DailyWatchList() {
             <ul className="list-disc list-inside space-y-2">
               {watchListItems
                 .filter(item => item.type === "race")
+                .sort((a, b) => (a.raceTime || "").localeCompare(b.raceTime || ""))
                 .map((item, idx) => (
                   <li key={`update-${idx}`} className="text-sm text-gray-800 flex justify-between items-start">
                     <span>
@@ -187,36 +164,7 @@ export function DailyWatchList() {
                       >
                         {item.raceTitle}
                       </Link>{" "}
-                      at {item.raceTrack} on <strong>{item.date}</strong>
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          </div>
-
-          {/* === RESULTS === */}
-          <div>
-            <h2 className="text-md font-semibold text-green-900 mb-2">🏁 Results</h2>
-            <ul className="list-disc list-inside space-y-2">
-              {watchListItems
-                .filter(item => item.type === "result")
-                .map((item, idx) => (
-                  <li key={`result-${idx}`} className="text-sm text-gray-800 flex justify-between items-start">
-                    <span>
-                      <Link
-                        to={`/dashboard/horse/${encodeURIComponent(item.horseName)}`}
-                        className="text-blue-700 font-medium hover:underline"
-                      >
-                        {titleCase(item.horseName)}
-                      </Link>{" "}
-                      finished <strong>{item.position}</strong> in{" "}
-                      <Link
-                        to={`/dashboard/racedetails?url=${encodeURIComponent(`https://horseracesbackend-production.up.railway.app/api/${item.source}`)}&RaceTitle=${encodeURIComponent(item.raceTitle)}&meetingDate=${encodeURIComponent(item.raceDate?.split("T")[0])}`}
-                        className="text-indigo-700 hover:underline"
-                      >
-                        {item.raceTitle}
-                      </Link>{" "}
-                      on <strong>{item.date}</strong>
+                      at {item.raceTrack} on <strong>{item.date}</strong> at <strong>{item.raceTime}</strong>
                     </span>
                   </li>
                 ))}
@@ -238,7 +186,7 @@ export function DailyWatchList() {
                   >
                     <span>
                       <Link
-                        to={`/dashboard/racedetails?RaceTitle=${encodeURIComponent(item.raceTitle)}&meetingDate=${encodeURIComponent(item.raceDate?.split("T")[0])}&url=https://horseracesbackend-production.up.railway.app/api/${item.source}`}
+                        to={`/dashboard/racedetails?RaceTitle=${encodeURIComponent(item.raceTitle)}&meetingDate=${encodeURIComponent(item.raceDate)}&url=https://horseracesbackend-production.up.railway.app/api/${item.source}`}
                         className="text-indigo-700 hover:underline"
                       >
                         {titleCase(item.raceTitle)}
@@ -264,7 +212,6 @@ export function DailyWatchList() {
       )}
     </div>
   );
-
 }
 
 export default DailyWatchList;
