@@ -194,14 +194,24 @@ export function Home() {
               const formattedDate = `${yyyy}-${mm}-${dd}`;
               const reviewKey = `${record.horseName?.trim().toLowerCase()}-${record.raceTitle?.trim().toLowerCase()}`;
 
+              const timeOnly = record.scheduledTimeOfRaceLocal
+                ? new Date(record.scheduledTimeOfRaceLocal).toLocaleTimeString('en-GB', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'Europe/London'
+                  })
+                : null;
+
               filteredResults.push({
                 horseName: record.horseName,
                 position: record.positionOfficial,
                 raceTitle: record.raceTitle,
                 country: record.countryCode,
                 date: formattedDate,
+                time: timeOnly,
                 track: record.courseName || "-",
-                reviewKey, // ✅ use this key for comparing reviewed results
+                reviewKey,
               });
             }
           }
@@ -332,9 +342,13 @@ export function Home() {
                     <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">Results (Last 3 Days)</h2>
                     <div>
                       <ul className="space-y-1 mt-1 text-sm leading-snug">
-                        {resultsData
-                          .sort((a, b) => a.position - b.position)
-                          .map((res) => {
+                        {[...resultsData]
+                            .sort((a, b) => {
+                              const aDate = new Date(`${a.date} ${a.time || '00:00'}`);
+                              const bDate = new Date(`${b.date} ${b.time || '00:00'}`);
+                              return aDate - bDate;
+                            })
+                            .map((res) => {
                             const normalizedRaceTitle = res.raceTitle?.toLowerCase().replace(/\s+/g, " ").trim();
                             const encodedRaceTitle = encodeURIComponent(normalizedRaceTitle);
                             const encodedDate = encodeURIComponent(res.date);
@@ -372,6 +386,11 @@ export function Home() {
                                     {titleCase(res.raceTitle)}
                                   </Link>{" "}
                                   at {res.track} ({res.country}) on <strong>{res.date}</strong>
+                                  {res.time && (
+                                    <span className="ml-1 text-black">
+                                      at <strong>{res.time}</strong>
+                                    </span>
+                                  )}
                                 </div>
 
                                 {!reviewed_results.has(res.reviewKey) && (
