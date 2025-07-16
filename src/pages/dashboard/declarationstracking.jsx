@@ -63,6 +63,7 @@ export function DeclarationsTracking() {
       user_id: userId,
       race_title: race.RaceTitle?.trim(),
       race_date: formatToMySQLDate(race.Date),
+      race_time: race.RaceTime,
       source_table: "DeclarationsTracking"
     };
 

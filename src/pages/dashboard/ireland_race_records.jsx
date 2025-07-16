@@ -80,6 +80,7 @@ export function IrelandRaceRecords() {
         user_id: userId,
         race_title: raceTitle,
         race_date: formattedDate,
+        race_time: race["Race Time"],
         source_table: "IrelandRaceRecords"
       };
 

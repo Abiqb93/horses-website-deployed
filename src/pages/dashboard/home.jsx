@@ -123,8 +123,24 @@ export function Home() {
             const horseName = rawHorseName?.toLowerCase().trim();
             if (!trackedNames.includes(horseName)) continue;
 
-            const raceTrack = entry.FixtureTrack || entry.Track || entry.Course || entry.Racecourse || entry.track || "-";
-            const raceTime = entry.RaceTime || entry.Time || entry.time || "-";
+            const raceTrack = label === "FranceRaceRecords"
+              ? entry.Racecourse || "-"
+              : entry.FixtureTrack || entry.Track || entry.Course || entry.Racecourse || entry.track || "-";
+            let raceTime = entry.RaceTime || entry.Time || entry.time || "-";
+
+            if (label === "FranceRaceRecords" && typeof raceTime === "string" && raceTime.includes("h")) {
+              const [hh, mm] = raceTime.split("h");
+              const localTime = new Date();
+              localTime.setHours(parseInt(hh), parseInt(mm), 0, 0);
+
+              raceTime = localTime.toLocaleTimeString("en-GB", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+                timeZone: "Europe/London"
+              }); // e.g., "12:26 PM"
+            }
+
             const raceTitle = entry.RaceTitle || entry.title || entry.Race || "-";
 
             let dateStr = entry.FixtureDate || entry.Date || entry.date;
@@ -247,7 +263,9 @@ export function Home() {
                     to={`/dashboard/horse/${item.encodedHorseName}`}
                     className="text-blue-600 font-medium hover:underline"
                   >
-                    {item.rawHorseName}
+                    {item.rawHorseName
+                      ?.toLowerCase()
+                      .replace(/\b\w/g, (char) => char.toUpperCase())}
                   </Link>{" "}
                   at <span className="italic text-gray-600">{item.raceTrack}</span>{" "}
                   <strong>{item.raceTime}</strong>

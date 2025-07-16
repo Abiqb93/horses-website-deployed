@@ -101,6 +101,7 @@ export function ClosingEntries() {
       user_id: userId,
       race_title: race.title,
       race_date: formatToMySQLDate(race.date),
+      race_time: race.time,
       source_table: "ClosingEntries"
     };
 

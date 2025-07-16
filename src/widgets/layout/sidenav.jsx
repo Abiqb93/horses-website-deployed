@@ -1,7 +1,11 @@
 import PropTypes from "prop-types";
 import { Link, NavLink } from "react-router-dom";
-import { useState } from "react";
-import { ChevronDownIcon, ChevronRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { useEffect, useRef, useState } from "react";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import {
   Button,
   IconButton,
@@ -18,15 +22,32 @@ export function Sidenav({ brandImg, brandName, routes }) {
     transparent: "bg-transparent",
   };
 
-  // State to track which submenus are open
   const [openSubMenu, setOpenSubMenu] = useState({});
+  const sidenavRef = useRef(null); // 🔑 Ref for outside-click detection
 
   const toggleSubMenu = (name) => {
     setOpenSubMenu((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
+  // ✅ Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        openSidenav &&
+        sidenavRef.current &&
+        !sidenavRef.current.contains(event.target)
+      ) {
+        setOpenSidenav(dispatch, false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openSidenav, dispatch]);
+
   return (
     <aside
+      ref={sidenavRef} // 👈 Attach the ref
       className={`${sidenavTypes[sidenavType]} ${
         openSidenav ? "translate-x-0" : "-translate-x-80"
       } fixed inset-0 z-50 my-4 ml-4 h-[calc(100vh-32px)] w-72 rounded-xl transition-transform duration-300 xl:translate-x-0 border border-blue-gray-100`}
@@ -69,19 +90,17 @@ export function Sidenav({ brandImg, brandName, routes }) {
               <li key={name}>
                 {children ? (
                   <>
-                    {/* Main Category with Arrow */}
                     <Button
                       variant="text"
                       color="blue-gray"
                       onClick={() => toggleSubMenu(name)}
-                      className="flex items-center gap-4 px-4 capitalize text-sm" // Reduced font size for main category
+                      className="flex items-center gap-4 px-4 capitalize text-sm"
                       fullWidth
                     >
                       {icon}
                       <Typography color="inherit" className="font-medium text-sm">
                         {name}
                       </Typography>
-                      {/* Toggle Arrow */}
                       {openSubMenu[name] ? (
                         <ChevronDownIcon className="w-4 h-4 ml-auto" />
                       ) : (
@@ -96,10 +115,9 @@ export function Sidenav({ brandImg, brandName, routes }) {
                               <Button
                                 variant="text"
                                 color="blue-gray"
-                                className="flex items-center gap-4 px-4 capitalize text-xs" // Reduced font size for sub-category
+                                className="flex items-center gap-4 px-4 capitalize text-xs"
                                 fullWidth
                               >
-                                {/* Reduced Text Size */}
                                 <Typography color="inherit" className="font-medium text-xs">
                                   {child.name}
                                 </Typography>
@@ -115,7 +133,7 @@ export function Sidenav({ brandImg, brandName, routes }) {
                     <Button
                       variant="text"
                       color="blue-gray"
-                      className="flex items-center gap-4 px-4 capitalize text-sm" // Reduced font size for main category
+                      className="flex items-center gap-4 px-4 capitalize text-sm"
                       fullWidth
                     >
                       {icon}

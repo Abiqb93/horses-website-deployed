@@ -49,6 +49,7 @@ export function EntriesTracking() {
       user_id: userId,
       race_title: race.RaceTitle,
       race_date: formatToMySQLDate(race.Date),
+      race_time: race.RaceTime,
       source_table: "EntriesTracking"
     };
 
