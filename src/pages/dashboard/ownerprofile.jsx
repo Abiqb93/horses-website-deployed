@@ -47,7 +47,11 @@ const HorseProfile = ({ setSearchQuery }) => {
 
 const ROWS_PER_PAGE = 10;
 
-const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages, sortBy, setSortBy, order, setOrder }) => {
+const ReportTable = ({
+    tableData, title, currentPage, setCurrentPage, totalPages,
+    sortBy, setSortBy, order, setOrder, onOwnerTrack // ✅ ADD THIS
+  }) => {
+
   const startPage = Math.max(1, currentPage - 5);
   const endPage = Math.min(startPage + 9, totalPages);
 
@@ -131,7 +135,18 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
             {tableData.map((item, index) => (
               <tr key={index}>
                 {[
-                  item["Sire"],
+                  <div className="flex items-center gap-2">
+                    {onOwnerTrack && (
+                      <button
+                        className="text-green-600 text-sm hover:text-green-800"
+                        onClick={() => onOwnerTrack(item["Sire"])}  // still labeled "Sire" in your data
+                        title="Track this owner"
+                      >
+                        +
+                      </button>
+                    )}
+                    <span>{item["Sire"]}</span> {/* Actually owner name */}
+                  </div>,
                   item["Country"] && (
                     <div className="flex items-center gap-2">
                       <img
@@ -274,6 +289,46 @@ export function OwnerProfiles() {
     fetchFilteredData();
     }, [currentPage, selectedTable, selectedRaceType, searchQuery, selectedCountry, sortBy, order]);
 
+
+  const handleOwnerTrack = async (ownerFullName) => {
+    const userId = (() => {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser).userId : "Guest";
+    })();
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/APIData_Table2/owner?ownerFullName=${encodeURIComponent(ownerFullName)}`);
+      const data = await res.json();
+
+      const horseList = [...new Set((data.data || []).map(entry => entry.horseName?.trim()).filter(Boolean))];
+
+      if (horseList.length === 0) {
+        alert(`No horses found for owner "${ownerFullName}".`);
+        return;
+      }
+
+      const postRes = await fetch("http://localhost:8080/api/owner_tracking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerFullName,                      // ✅ Correct key and variable
+          correspondingHorses: horseList,
+          user_id: userId
+        })
+      });
+
+      const postData = await postRes.json();
+      if (postRes.ok) {
+        alert(`✅ Tracked ${horseList.length} horses for "${ownerFullName}".`);
+      } else {
+        alert(`❌ Failed to track "${ownerFullName}": ${postData.error || "Unknown error"}`);
+      }
+
+    } catch (err) {
+      console.error("Error tracking owner:", err);
+      alert("❌ Something went wrong while tracking.");
+    }
+  };
   return (
     <div className="mt-12 mb-8 flex flex-col gap-3">
       <div className="flex items-center mb-0">
@@ -432,6 +487,7 @@ export function OwnerProfiles() {
         setSortBy={setSortBy}  // ✅ Added
         order={order}          // ✅ Added
         setOrder={setOrder}    // ✅ Added
+        onOwnerTrack={handleOwnerTrack}
       />
     </div>
 

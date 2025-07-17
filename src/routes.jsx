@@ -44,6 +44,9 @@ import {
   RaceDetailPage,
   ProfilePage,
   DailyWatchList,
+  MySires,
+  MyOwners,
+  MyDams,
 
 } from "@/pages/dashboard";
 
@@ -100,9 +103,11 @@ export const routes = [
         children: [
           { name: "Sire Table", path: "/profile", element: <Profile /> },
           { name: "Sire Profiles", path: "/sireprofiles", element: <SireProfiles /> },
+          { name: "Tracked Sires", path: "/mytrackedsires", element: <MySires /> },
           { name: "Sire Radar", path: "/sireradar", element: <SireRadar /> },
           { name: "Mare Upgrade Analysis", path: "/mareanalysis", element: <MareUpLift /> },
           { name: "Going Reports", path: "/siregoinganalysis", element: <SireGoing /> },
+
         ],
       },
       {
@@ -110,6 +115,7 @@ export const routes = [
         name: "Dam",
         children: [
           { name: "Dam Profile", path: "/damprofile", element: <DamProfiles /> },
+          { name: "Tracked Dams", path: "/trackeddam", element: <MyDams /> },
           { name: "Dam Radar", path: "/damradar", element: <DamRadar /> },
           { name: "Broodmare", path: "/broodmare", element: <Broodmare /> },
         ],
@@ -119,6 +125,7 @@ export const routes = [
         name: "Owner",
         children: [
           { name: "Owner Profile", path: "/ownerprofile", element: <OwnerProfiles /> },
+          { name: "Tracked Owners", path: "/trackedowners", element: <MyOwners /> },
           { name: "Owner Radar", path: "/ownerradar", element: <OwnerRadar /> },
         ],
       },

@@ -51,7 +51,8 @@ const HorseProfile = ({ setSearchQuery }) => {
 
 const ROWS_PER_PAGE = 10;
 
-const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages, sortBy, setSortBy, order, setOrder }) => {
+const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages, sortBy, setSortBy, order, setOrder, onSireTrack }) => {
+
   const startPage = Math.max(1, currentPage - 5);
   const endPage = Math.min(startPage + 9, totalPages);
 
@@ -124,7 +125,18 @@ const ReportTable = ({ tableData, title, currentPage, setCurrentPage, totalPages
             {tableData.map((item, index) => (
               <tr key={index}>
                 {[
-                  item["Sire"],
+                  <div className="flex items-center gap-2">
+                    {onSireTrack && (
+                      <button
+                        className="text-green-600 text-sm hover:text-green-800"
+                        onClick={() => onSireTrack(item["Sire"])}
+                        title="Track this sire"
+                      >
+                        +
+                      </button>
+                    )}
+                    <span>{item["Sire"]}</span>
+                  </div>,
                   item["Country"] && (
                     <div className="flex items-center gap-2">
                       <img
@@ -267,7 +279,48 @@ export function Profile() {
     fetchFilteredData();
     }, [currentPage, selectedTable, selectedRaceType, searchQuery, selectedCountry, sortBy, order]);
 
-  return (
+  const handleSireTrack = async (sireName) => {
+    const userId = (() => {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser).userId : "Guest";
+    })();
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/APIData_Table2/sire?sireName=${encodeURIComponent(sireName)}`);
+      const data = await res.json();
+
+      const horseList = [...new Set((data.data || []).map(entry => entry.horseName?.trim()).filter(Boolean))];
+
+      if (horseList.length === 0) {
+        alert(`No horses found for sire "${sireName}".`);
+        return;
+      }
+
+      const postRes = await fetch("http://localhost:8080/api/sire_tracking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sireName,
+          correspondingHorses: horseList,
+          user_id: userId
+        })
+      });
+
+      const postData = await postRes.json();
+      if (postRes.ok) {
+        alert(`✅ Tracked ${horseList.length} horses for "${sireName}".`);
+      } else {
+        alert(`❌ Failed to track "${sireName}": ${postData.error || "Unknown error"}`);
+      }
+
+    } catch (err) {
+      console.error("Error tracking sire:", err);
+      alert("❌ Something went wrong while tracking.");
+    }
+  };
+  
+  
+    return (
     <div className="mt-12 mb-8 flex flex-col gap-3">
       <div className="flex items-center mb-0">
         <label htmlFor="table-select" className="mr-2 text-[12px]">Time Period:</label>
@@ -425,6 +478,7 @@ export function Profile() {
         setSortBy={setSortBy}  // ✅ Added
         order={order}          // ✅ Added
         setOrder={setOrder}    // ✅ Added
+        onSireTrack={handleSireTrack} // ✅ Add this
       />
     </div>
 

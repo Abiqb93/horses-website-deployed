@@ -318,6 +318,9 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
+    <div className="bg-yellow-100 text-yellow-800 text-sm font-medium px-4 py-2 rounded-md border border-yellow-300 mb-6 shadow-sm">
+      This website is currently under development. Features may change or be temporarily unavailable.
+    </div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">Dashboard</h1>
 
       {sharedWithMeUsers.length > 0 && (

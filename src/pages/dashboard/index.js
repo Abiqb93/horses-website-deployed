@@ -30,3 +30,6 @@ export * from "@/pages/dashboard/HorsesPage";
 export * from "@/pages/dashboard/RaceDetailsPage";
 export * from "@/pages/dashboard/profile_page";
 export * from "@/pages/dashboard/DailyWatchList";
+export * from "@/pages/dashboard/mysires";
+export * from "@/pages/dashboard/mydams";
+export * from "@/pages/dashboard/myowners";

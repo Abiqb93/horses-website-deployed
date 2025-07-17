@@ -506,6 +506,9 @@ export function SireProfiles() {
       }
     };
   
+
+
+
     const fetchAgeReportData = async (sireName) => {
       try {
         const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/sire_age_reports?sire=${encodeURIComponent(sireName)}`);
