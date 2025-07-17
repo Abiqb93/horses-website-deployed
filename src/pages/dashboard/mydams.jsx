@@ -160,9 +160,9 @@ export function MyDams() {
                     )}
                   </div>
 
-                  {/* Ongoing Activities */}
+                  {/* Upcoming Runners */}
                   <div>
-                    <div className="font-semibold text-gray-700 mb-1">Ongoing Activities</div>
+                    <div className="font-semibold text-gray-700 mb-1">Upcoming Runners</div>
                     <div className="text-xs space-y-2">
                       {visibleHorses.map(horseName => {
                         const key = horseName.toLowerCase();
