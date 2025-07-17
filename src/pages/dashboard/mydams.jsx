@@ -16,7 +16,7 @@ export function MyDams() {
           return storedUser ? JSON.parse(storedUser).userId : "Guest";
         })();
 
-        const resDams = await fetch(`http://localhost:8080/api/dam_tracking?user=${userId}`);
+        const resDams = await fetch(`https://horseracesbackend-production.up.railway.app/api/dam_tracking?user=${userId}`);
         const jsonDams = await resDams.json();
         const dams = jsonDams.data || [];
 
@@ -24,7 +24,7 @@ export function MyDams() {
         const allHorseNames = new Set();
 
         for (const dam of dams) {
-          const response = await fetch(`http://localhost:8080/api/APIData_Table2/dam?damName=${encodeURIComponent(dam.damName)}`);
+          const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/dam?damName=${encodeURIComponent(dam.damName)}`);
           const json = await response.json();
           const horses = json.data || [];
 
@@ -101,7 +101,7 @@ export function MyDams() {
   const handleDelete = async id => {
     if (!window.confirm("Delete this dam tracking entry?")) return;
     try {
-      await fetch(`http://localhost:8080/api/dam_tracking/${id}`, { method: "DELETE" });
+      await fetch(`https://horseracesbackend-production.up.railway.app/api/dam_tracking/${id}`, { method: "DELETE" });
       setDamData(d => d.filter(r => r.id !== id));
     } catch (e) {
       alert("Delete failed");

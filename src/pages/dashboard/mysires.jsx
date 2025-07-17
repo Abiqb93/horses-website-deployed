@@ -38,7 +38,7 @@ export function MySires() {
           return storedUser ? JSON.parse(storedUser).userId : "Guest";
         })();
 
-        const resSires = await fetch(`http://localhost:8080/api/sire_tracking?user=${userId}`);
+        const resSires = await fetch(`https://horseracesbackend-production.up.railway.app/api/sire_tracking?user=${userId}`);
         const jsonSires = await resSires.json();
         const sires = jsonSires.data || [];
 
@@ -46,7 +46,7 @@ export function MySires() {
         const allHorseNames = new Set();
 
         for (const sire of sires) {
-          const response = await fetch(`http://localhost:8080/api/APIData_Table2/sire?sireName=${encodeURIComponent(sire.sireName)}`);
+          const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/sire?sireName=${encodeURIComponent(sire.sireName)}`);
           const json = await response.json();
           const horses = json.data || [];
 
@@ -123,7 +123,7 @@ export function MySires() {
   const handleDelete = async id => {
     if (!window.confirm("Delete this sire tracking entry?")) return;
     try {
-      await fetch(`http://localhost:8080/api/sire_tracking/${id}`, { method: "DELETE" });
+      await fetch(`https://horseracesbackend-production.up.railway.app/api/sire_tracking/${id}`, { method: "DELETE" });
       setSireData(d => d.filter(r => r.id !== id));
     } catch (e) {
       alert("Delete failed");

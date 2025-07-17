@@ -16,7 +16,7 @@ export function MyOwners() {
           return storedUser ? JSON.parse(storedUser).userId : "Guest";
         })();
 
-        const resOwners = await fetch(`http://localhost:8080/api/owner_tracking?user=${userId}`);
+        const resOwners = await fetch(`https://horseracesbackend-production.up.railway.app/api/owner_tracking?user=${userId}`);
         const jsonOwners = await resOwners.json();
         const owners = jsonOwners.data || [];
 
@@ -24,7 +24,7 @@ export function MyOwners() {
         const allHorseNames = new Set();
 
         for (const owner of owners) {
-          const response = await fetch(`http://localhost:8080/api/APIData_Table2/owner?ownerFullName=${encodeURIComponent(owner.ownerFullName)}`);
+          const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/owner?ownerFullName=${encodeURIComponent(owner.ownerFullName)}`);
           const json = await response.json();
           const horses = json.data || [];
 
@@ -101,7 +101,7 @@ export function MyOwners() {
   const handleDelete = async id => {
     if (!window.confirm("Delete this owner tracking entry?")) return;
     try {
-      await fetch(`http://localhost:8080/api/owner_tracking/${id}`, { method: "DELETE" });
+      await fetch(`https://horseracesbackend-production.up.railway.app/api/owner_tracking/${id}`, { method: "DELETE" });
       setOwnerData(d => d.filter(r => r.id !== id));
     } catch (e) {
       alert("Delete failed");

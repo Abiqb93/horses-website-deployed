@@ -272,7 +272,7 @@ export function OwnerProfiles() {
     try {
       const queryParams = buildQueryParams();
       const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
-      // const response = await fetch(`http://localhost:8080/api/${selectedTable}?${queryParams}`);
+      // const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
       
       const data = await response.json();
       setTableData(data.data);
@@ -297,7 +297,7 @@ export function OwnerProfiles() {
     })();
 
     try {
-      const res = await fetch(`http://localhost:8080/api/APIData_Table2/owner?ownerFullName=${encodeURIComponent(ownerFullName)}`);
+      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/owner?ownerFullName=${encodeURIComponent(ownerFullName)}`);
       const data = await res.json();
 
       const horseList = [...new Set((data.data || []).map(entry => entry.horseName?.trim()).filter(Boolean))];
@@ -307,7 +307,7 @@ export function OwnerProfiles() {
         return;
       }
 
-      const postRes = await fetch("http://localhost:8080/api/owner_tracking", {
+      const postRes = await fetch("https://horseracesbackend-production.up.railway.app/api/owner_tracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

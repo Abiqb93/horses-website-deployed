@@ -262,7 +262,7 @@ export function Profile() {
     try {
       const queryParams = buildQueryParams();
       const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
-      // const response = await fetch(`http://localhost:8080/api/${selectedTable}?${queryParams}`);
+      // const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/${selectedTable}?${queryParams}`);
       
       const data = await response.json();
       setTableData(data.data);
@@ -286,7 +286,7 @@ export function Profile() {
     })();
 
     try {
-      const res = await fetch(`http://localhost:8080/api/APIData_Table2/sire?sireName=${encodeURIComponent(sireName)}`);
+      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/sire?sireName=${encodeURIComponent(sireName)}`);
       const data = await res.json();
 
       const horseList = [...new Set((data.data || []).map(entry => entry.horseName?.trim()).filter(Boolean))];
@@ -296,7 +296,7 @@ export function Profile() {
         return;
       }
 
-      const postRes = await fetch("http://localhost:8080/api/sire_tracking", {
+      const postRes = await fetch("https://horseracesbackend-production.up.railway.app/api/sire_tracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
