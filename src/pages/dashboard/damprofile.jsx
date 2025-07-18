@@ -306,7 +306,7 @@ export function DamProfiles() {
         return;
       }
 
-      const postRes = await fetch("http://localhost:8080/api/dam_tracking", {
+      const postRes = await fetch("https://horseracesbackend-production.up.railway.app/api/dam_tracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
