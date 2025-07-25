@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Card, Typography, Input, Select, Option, Button } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
+import {
+  MapPin,
+  Users,
+  Award,
+  Trophy,
+  BadgeCheck
+} from "lucide-react";
 
 // RaceTile Component
 const RaceTile = ({ race, isTracked, onTrackClick, onClick }) => {
@@ -31,15 +38,26 @@ const RaceTile = ({ race, isTracked, onTrackClick, onClick }) => {
         onClick={() => onClick(race)}
         className="cursor-pointer space-y-0.5 text-gray-600"
       >
-        <div>📍 <strong>{race.courseName}</strong> — {race.raceSurfaceName}</div>
-        <div>👥 Runners: {race.numberOfRunners}</div>
-        <div>💰 Prize Fund: £{Number(race.prizeFund).toLocaleString()}</div>
+        <div className="flex items-center gap-1">
+          <MapPin className="w-4 h-4 text-gray-400" />
+          <strong>{race.courseName}</strong> — {race.raceSurfaceName}
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Users className="w-4 h-4 text-gray-400" />
+          Runners: {race.numberOfRunners}
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Award className="w-4 h-4 text-gray-400" />
+          Prize Fund: £{Number(race.prizeFund).toLocaleString()}
+        </div>
       </div>
 
       {/* Top Horses */}
       {race.topHorses.length > 0 && (
         <div className="mt-2">
-          <p className="text-sm font-medium text-gray-700 mb-1">🏇 Top Horses:</p>
+          <p className="text-sm font-medium text-gray-700 mb-1">Top Horses:</p>
           <ul className="list-disc list-inside text-blue-700 text-sm space-y-0.5">
             {race.topHorses.map((horse, index) => (
               <li key={index}>

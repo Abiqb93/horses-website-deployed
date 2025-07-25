@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { CalendarDays } from "lucide-react";
 
 export function Home() {
   const [trackedHorses, setTrackedHorses] = useState([]);
@@ -469,7 +470,7 @@ export function Home() {
             <ul className="space-y-1 mt-1">
               {upcomingList.map((item) => (
                 <li key={item.raceKey} className="pl-2 border-l-4 border-blue-200 text-sm leading-snug">
-                  📅 In {item.dayDiff} day(s):{" "}
+                  <CalendarDays className="inline-block w-4 h-4 text-gray-400 mr-1" /> In {item.dayDiff} day(s):{" "}
                   <Link
                     to={`/dashboard/horse/${item.encodedHorseName}`}
                     className="text-blue-600 font-medium hover:underline"
@@ -610,7 +611,7 @@ export function Home() {
           { key: "declarations", label: "Declarations & Entries" },
           { key: "closings", label: "Early Closing Entries" },
           { key: "sire", label: "Sire Updates" },
-          { key: "dam", label: "Dam Updates" },
+          { key: "dam", label: "Mare Updates" },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -663,7 +664,7 @@ export function Home() {
                                 : "border-l-4 border-blue-300 text-gray-800"}`}
                           >
                             <div className="flex-1">
-                              📅{" "}
+                              <CalendarDays className="inline-block w-4 h-4 text-gray-400 mr-1" />{" "}
                               <Link to={`/dashboard/horse/${encodeURIComponent(res.horseName)}`}
                                     className={`font-medium hover:underline ${reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-blue-700"}`}>
                                 {titleCase(res.horseName)}

@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, BellRing } from "lucide-react";
+import {
+  Bell,
+  BellRing,
+  Flag,
+  MapPin,
+  Calendar,
+  Clock,
+  Tag,
+  Check
+} from "lucide-react";
 
 export function DailyWatchList() {
   const [watchListItems, setWatchListItems] = useState([]);
@@ -330,7 +339,7 @@ export function DailyWatchList() {
                 </h3>
 
                 <p className="text-sm text-gray-600 flex items-center gap-2">
-                  <span>🏁</span>
+                  <span><Flag className="w-4 h-4 text-gray-400" /></span>
                   <Link
                     to={`/dashboard/racedetails?url=${item.encodedUrl}&RaceTitle=${item.encodedRaceTitle}`}
                     className="text-blue-600 hover:underline"
@@ -340,9 +349,9 @@ export function DailyWatchList() {
                 </p>
 
                 <div className="flex text-sm text-gray-500 gap-4 mt-1">
-                  <span>📍 {item.raceTrack}</span>
-                  <span>📅 {item.date}</span>
-                  <span>🕑 {item.raceTime}</span>
+                  <span><Tag className="w-4 h-4 text-gray-400 mr-1 inline" /> {item.raceTrack}</span>
+                  <span><Calendar className="w-4 h-4 text-gray-400 mr-1 inline" /> {item.date}</span>
+                  <span><Clock className="w-4 h-4 text-gray-400 mr-1 inline" /> {item.raceTime}</span>
                 </div>
               </div>
             ))}
@@ -386,8 +395,8 @@ export function DailyWatchList() {
                 </h3>
 
                 <div className="flex text-sm text-gray-500 gap-4 mt-1">
-                  <span>📅 {item.raceDate}</span>
-                  <span>🕑 {item.raceTime}</span>
+                  <span><Calendar className="w-4 h-4 text-gray-400 mr-1 inline" /> {item.raceDate}</span>
+                  <span><Clock className="w-4 h-4 text-gray-400 mr-1 inline" /> {item.raceTime}</span>
                   <span>🔖 {item.source}</span>
                 </div>
 
