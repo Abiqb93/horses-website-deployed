@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import SectionalDataTable from "./SectionalDataTable"; 
+import RacingTVDataTable from "./RacingTVDataTable";
 
 const excludedColumns = new Set([
   "raceNumber", "courseId", "preRaceMasterRating", "preRaceAdjustedRating",
@@ -229,6 +231,14 @@ const filteredColumns = Object.keys(filteredHorseRecords[0] || {}).filter(
   const trainerList = [...new Set(data.map(d => d.trainerFullName).filter(Boolean))];
   const maxPrize = Math.max(...data.map(d => Number(d.prizeFund || 0)));
 
+    const formatDate = (date) => {
+    const d = new Date(date);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
 return (
   <Card className="bg-white text-black mt-4">
     <CardBody className="px-6 pt-6 pb-4">
@@ -245,6 +255,13 @@ return (
           className={`text-sm px-3 py-1 rounded-t-md border-b-2 ${activeTab === "sectional" ? "border-blue-600 text-blue-700 font-semibold" : "border-transparent text-gray-500"}`}
         >
           Sectional Data
+        </button>
+
+        <button
+          onClick={() => setActiveTab("stride")}
+          className={`text-sm px-3 py-1 rounded-t-md border-b-2 ${activeTab === "stride" ? "border-blue-600 text-blue-700 font-semibold" : "border-transparent text-gray-500"}`}
+        >
+          Stride Data
         </button>
       </div>
 
@@ -385,7 +402,20 @@ return (
                   <tr key={idx} className="hover:bg-gray-50">
                     {filteredColumns.map((key) => (
                       <td key={key} className="px-3 py-2 border-b text-[11px] whitespace-nowrap">
-                        {row[key] !== null && row[key] !== undefined ? row[key] : "-"}
+                        {key === "raceTitle" ? (
+                          <Link
+                            to={`/dashboard/racedetails?url=${encodeURIComponent(
+                              "https://horseracesbackend-production.up.railway.app/api/APIData_Table2"
+                            )}&RaceTitle=${encodeURIComponent(
+                              row.raceTitle?.trim().toLowerCase() || ""
+                            )}&meetingDate=${formatDate(row.meetingDate)}`}
+                            className="text-indigo-700 font-medium hover:underline"
+                          >
+                            {row[key]}
+                          </Link>
+                        ) : (
+                          row[key] !== null && row[key] !== undefined ? row[key] : "-"
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -410,6 +440,12 @@ return (
       {activeTab === "sectional" && (
         <SectionalDataTable horseName={horseName} />
       )}
+
+      {activeTab === "stride" && (
+        <RacingTVDataTable horseName={horseName} />
+      )}
+
+
     </CardBody>
   </Card>
 );

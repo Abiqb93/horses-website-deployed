@@ -8,6 +8,10 @@ export function Home() {
   const [loading, setLoading] = useState(true);
   const [sharedWithMeUsers, setSharedWithMeUsers] = useState([]);
   const [selectedSharedUser, setSelectedSharedUser] = useState(null);
+  const [sireUpdates, setSireUpdates] = useState([]);
+  const [damUpdates, setDamUpdates] = useState([]);
+  const [ownerUpdates, setOwnerUpdates] = useState([]);
+  const [activeSection, setActiveSection] = useState("declarations"); 
 
   const [reviewed_results, setreviewed_results] = useState(new Set());
 
@@ -53,6 +57,183 @@ export function Home() {
 
     fetchSharedUsers();
   }, []);
+
+  useEffect(() => {
+    const fetchSireUpdates = async () => {
+      try {
+        const userId = (() => {
+          const storedUser = localStorage.getItem("user");
+          return storedUser ? JSON.parse(storedUser).userId : "Guest";
+        })();
+
+        const resSires = await fetch(`https://horseracesbackend-production.up.railway.app/api/sire_tracking?user=${userId}`);
+        const jsonSires = await resSires.json();
+        const sires = jsonSires.data || [];
+
+        const allHorseNames = new Set();
+        for (const sire of sires) {
+          const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/sire?sireName=${encodeURIComponent(sire.sireName)}`);
+          const json = await res.json();
+          const horses = json.data || [];
+          horses.forEach(h => {
+            if (h.horseName) allHorseNames.add(h.horseName.toLowerCase().trim());
+          });
+        }
+
+        const sources = [
+          "RacesAndEntries",
+          "FranceRaceRecords",
+          "IrelandRaceRecords",
+          "ClosingEntries",
+          "DeclarationsTracking",
+          "EntriesTracking",
+        ];
+
+        const urls = sources.map(
+          s => `https://horseracesbackend-production.up.railway.app/api/${s}`
+        );
+
+        const results = await Promise.all(urls.map(url => fetch(url).then(r => r.json())));
+
+        const matched = [];
+        results.forEach((res, i) => {
+          const key = sources[i];
+          (res.data || []).forEach(ent => {
+            const horseName = ent.Horse || ent["Horse Name"];
+            if (!horseName || !allHorseNames.has(horseName.toLowerCase().trim())) return;
+
+            const title = ent.RaceTitle || ent.Race || ent.title || "";
+            const track = ent.FixtureTrack || ent.Track || ent.Course || ent.Racecourse || ent.track || "";
+            const time = ent.RaceTime || ent.Time || ent.time || "";
+            const dateRaw = ent.FixtureDate || ent.meetingDate || ent.MeetingDate || ent.Date || ent.date || ent.raceDate || "";
+
+            matched.push({
+              source: key,
+              title,
+              track,
+              time,
+              horseName,
+              dateRaw,
+              timeRaw: time,
+            });
+          });
+        });
+
+        // Sort by date
+        matched.sort((a, b) => {
+          const d1 = new Date(`${a.dateRaw} ${a.timeRaw}`);
+          const d2 = new Date(`${b.dateRaw} ${b.timeRaw}`);
+          return d1 - d2;
+        });
+
+        setSireUpdates(matched);
+      } catch (e) {
+        console.error("Error fetching sire updates:", e);
+      }
+    };
+    
+    fetchSireUpdates();
+  }, []);
+
+  useEffect(() => {
+    const fetchDamUpdates = async () => {
+      try {
+        const userId = JSON.parse(localStorage.getItem("user"))?.userId || "Guest";
+        const resDams = await fetch(`https://horseracesbackend-production.up.railway.app/api/dam_tracking?user=${userId}`);
+        const jsonDams = await resDams.json();
+        const dams = jsonDams.data || [];
+
+        const allHorseNames = new Set();
+        for (const dam of dams) {
+          const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/dam?damName=${encodeURIComponent(dam.damName)}`);
+          const json = await res.json();
+          (json.data || []).forEach(h => h.horseName && allHorseNames.add(h.horseName.toLowerCase().trim()));
+        }
+
+        const sources = [
+          "RacesAndEntries", "FranceRaceRecords", "IrelandRaceRecords",
+          "ClosingEntries", "DeclarationsTracking", "EntriesTracking"
+        ];
+
+        const urls = sources.map(s => `https://horseracesbackend-production.up.railway.app/api/${s}`);
+        const results = await Promise.all(urls.map(url => fetch(url).then(r => r.json())));
+
+        const matched = [];
+        results.forEach((res, i) => {
+          const key = sources[i];
+          (res.data || []).forEach(ent => {
+            const horseName = ent.Horse || ent["Horse Name"];
+            if (!horseName || !allHorseNames.has(horseName.toLowerCase().trim())) return;
+
+            const title = ent.RaceTitle || ent.Race || ent.title || "";
+            const track = ent.FixtureTrack || ent.Track || ent.Course || ent.Racecourse || ent.track || "";
+            const time = ent.RaceTime || ent.Time || ent.time || "";
+            const dateRaw = ent.FixtureDate || ent.meetingDate || ent.MeetingDate || ent.Date || ent.date || ent.raceDate || "";
+
+            matched.push({ source: key, title, track, time, horseName, dateRaw, timeRaw: time });
+          });
+        });
+
+        matched.sort((a, b) => new Date(`${a.dateRaw} ${a.timeRaw}`) - new Date(`${b.dateRaw} ${b.timeRaw}`));
+        setDamUpdates(matched);
+      } catch (err) {
+        console.error("Error fetching dam updates:", err);
+      }
+    };
+
+    fetchDamUpdates();
+  }, []);
+
+  useEffect(() => {
+    const fetchOwnerUpdates = async () => {
+      try {
+        const userId = JSON.parse(localStorage.getItem("user"))?.userId || "Guest";
+        const resOwners = await fetch(`https://horseracesbackend-production.up.railway.app/api/owner_tracking?user=${userId}`);
+        const jsonOwners = await resOwners.json();
+        const owners = jsonOwners.data || [];
+
+        const allHorseNames = new Set();
+        for (const owner of owners) {
+          const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/owner?ownerFullName=${encodeURIComponent(owner.ownerName)}`);
+          const json = await res.json();
+          (json.data || []).forEach(h => h.horseName && allHorseNames.add(h.horseName.toLowerCase().trim()));
+        }
+
+        const sources = [
+          "RacesAndEntries", "FranceRaceRecords", "IrelandRaceRecords",
+          "ClosingEntries", "DeclarationsTracking", "EntriesTracking"
+        ];
+
+        const urls = sources.map(s => `https://horseracesbackend-production.up.railway.app/api/${s}`);
+        const results = await Promise.all(urls.map(url => fetch(url).then(r => r.json())));
+
+        const matched = [];
+        results.forEach((res, i) => {
+          const key = sources[i];
+          (res.data || []).forEach(ent => {
+            const horseName = ent.Horse || ent["Horse Name"];
+            if (!horseName || !allHorseNames.has(horseName.toLowerCase().trim())) return;
+
+            const title = ent.RaceTitle || ent.Race || ent.title || "";
+            const track = ent.FixtureTrack || ent.Track || ent.Course || ent.Racecourse || ent.track || "";
+            const time = ent.RaceTime || ent.Time || ent.time || "";
+            const dateRaw = ent.FixtureDate || ent.meetingDate || ent.MeetingDate || ent.Date || ent.date || ent.raceDate || "";
+
+            matched.push({ source: key, title, track, time, horseName, dateRaw, timeRaw: time });
+          });
+        });
+
+        matched.sort((a, b) => new Date(`${a.dateRaw} ${a.timeRaw}`) - new Date(`${b.dateRaw} ${b.timeRaw}`));
+        setOwnerUpdates(matched);
+      } catch (err) {
+        console.error("Error fetching owner updates:", err);
+      }
+    };
+
+    fetchOwnerUpdates();
+  }, []);
+
+
 
   const markAsReviewed = async (horseName, raceTitle, date) => {
     const storedUser = localStorage.getItem("user");
@@ -313,11 +494,89 @@ export function Home() {
     );
   };
 
+
   const hasAny = Object.values(groupedNotifications).some(g => g.today.length || g.upcoming.length);
   const hasResults = resultsData.length > 0;
+  // Convert time like "4.45pm" → "16:45"
+  function convertTo24Hour(timeStr) {
+    if (!timeStr) return "12:00";
+    const [time, meridian] = timeStr.toLowerCase().split(/(am|pm)/).filter(Boolean);
+    let [hours, minutes] = time.replace(/\s/g, "").split(".").map(Number);
+    if (meridian === "pm" && hours !== 12) hours += 12;
+    if (meridian === "am" && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, "0")}:${String(minutes || 0).padStart(2, "0")}`;
+  }
+
+  // Clean date string like "Saturday 27th July" to "Saturday, 27 July"
+  function cleanDateString(dateStr, timeStr) {
+    if (!dateStr) return null;
+
+    let cleaned = dateStr
+      .replace(/(\d{1,2})(st|nd|rd|th)/g, "$1") // Remove suffixes
+      .replace(/^(\w+)\s+(\d{1,2})\s+/, "$1, $2 "); // Add comma after weekday
+
+    const time24 = convertTo24Hour(timeStr || "12:00pm");
+    const fullStr = `${cleaned} ${time24}`;
+    const parsed = new Date(fullStr);
+    return isNaN(parsed) ? null : parsed;
+  }
+
+  // 🔁 Reusable for sire, dam, owner
+  function groupHorseUpdatesByDate(updates) {
+    const grouped = { today: [], upcoming: [] };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    updates.forEach((entry) => {
+      const raceDate = cleanDateString(entry.dateRaw, entry.timeRaw);
+      if (!raceDate || isNaN(raceDate)) return;
+
+      const raceDateOnly = new Date(raceDate);
+      raceDateOnly.setHours(0, 0, 0, 0);
+      const dayDiff = Math.floor((raceDateOnly - today) / (1000 * 60 * 60 * 24));
+
+      const rawHorseName = entry.horseName;
+      const raceTitle = entry.title || "-";
+      const raceTrack = entry.track || "-";
+      const raceTime = entry.timeRaw || "-";
+
+      const encodedHorseName = encodeURIComponent(rawHorseName.trim());
+      const encodedRaceTitle = encodeURIComponent(raceTitle.trim());
+      const encodedUrl = encodeURIComponent(`https://horseracesbackend-production.up.railway.app/api/${entry.source}`);
+      const raceKey = `${rawHorseName}-${raceTitle}-${entry.dateRaw}`;
+
+      const formatted = {
+        rawHorseName,
+        encodedHorseName,
+        raceTrack,
+        raceTime,
+        raceTitle,
+        encodedUrl,
+        encodedRaceTitle,
+        dayDiff,
+        raceKey,
+      };
+
+      if (dayDiff === 0) {
+        grouped.today.push(formatted);
+      } else if (dayDiff > 0) {
+        grouped.upcoming.push(formatted);
+      }
+    });
+
+    return grouped;
+  }
+
+  // ✅ Apply to both sire and dam updates
+  const groupedSireUpdates = groupHorseUpdatesByDate(sireUpdates);
+  const groupedDamUpdates = groupHorseUpdatesByDate(damUpdates);
+
+  // Optional debug
+  console.log("✅ Final Grouped Sire Updates:", groupedSireUpdates);
+  console.log("✅ Final Grouped Dam Updates:", groupedDamUpdates);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
+    <div className="min-h-screen bg-white px-4 py-6 md:px-8">
     <div className="bg-yellow-100 text-yellow-800 text-sm font-medium px-4 py-2 rounded-md border border-yellow-300 mb-6 shadow-sm">
       This website is currently under development.
     </div>
@@ -344,6 +603,30 @@ export function Home() {
         </div>
       )}
 
+      {/* Modern Tab Bar */}
+      <div className="flex space-x-4 border-b mb-6">
+        {[
+          { key: "results", label: "Results" },
+          { key: "declarations", label: "Declarations & Entries" },
+          { key: "closings", label: "Early Closing Entries" },
+          { key: "sire", label: "Sire Updates" },
+          { key: "dam", label: "Dam Updates" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveSection(tab.key)}
+            className={`px-4 py-2 font-semibold text-sm tracking-tight border-b-2 transition-all duration-150 ${
+              activeSection === tab.key
+                ? "border-blue-600 text-blue-700"
+                : "border-transparent text-gray-500 hover:text-blue-600"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <svg className="animate-spin h-4 w-4 text-gray-600" viewBox="0 0 24 24">
@@ -356,106 +639,87 @@ export function Home() {
         <>
           {/* 🔥 Results First */}
           {(hasResults || hasAny) ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {hasResults && (
-                <div className="col-span-full">
-                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 w-full">
-                    <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">Results (Last 3 Days)</h2>
-                    <div>
-                      <ul className="space-y-1 mt-1 text-sm leading-snug">
-                        {[...resultsData]
-                            .sort((a, b) => {
-                              const aDate = new Date(`${a.date} ${a.time || '00:00'}`);
-                              const bDate = new Date(`${b.date} ${b.time || '00:00'}`);
-                              return aDate - bDate;
-                            })
-                            .map((res) => {
-                            const normalizedRaceTitle = res.raceTitle?.toLowerCase().replace(/\s+/g, " ").trim();
-                            const encodedRaceTitle = encodeURIComponent(normalizedRaceTitle);
-                            const encodedDate = encodeURIComponent(res.date);
-                            const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
+            <div className="space-y-6">
+              {/* 🔥 Results Tab */}
+              {activeSection === "results" && hasResults && (
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 w-full">
+                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">Results (Last 3 Days)</h2>
+                  <ul className="space-y-1 mt-1 text-sm leading-snug">
+                    {[...resultsData]
+                      .sort((a, b) => new Date(`${a.date} ${a.time || '00:00'}`) - new Date(`${b.date} ${b.time || '00:00'}`))
+                      .map((res) => {
+                        const normalizedRaceTitle = res.raceTitle?.toLowerCase().replace(/\s+/g, " ").trim();
+                        const encodedRaceTitle = encodeURIComponent(normalizedRaceTitle);
+                        const encodedDate = encodeURIComponent(res.date);
+                        const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
+                        const titleCase = (str) => str.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
 
-                            const titleCase = (str) =>
-                              str.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
+                        return (
+                          <li
+                            key={res.reviewKey}
+                            className={`pl-2 text-sm leading-snug flex justify-between items-start
+                              ${reviewed_results.has(res.reviewKey)
+                                ? "border-l-4 border-gray-300 text-gray-400 opacity-60"
+                                : "border-l-4 border-blue-300 text-gray-800"}`}
+                          >
+                            <div className="flex-1">
+                              📅{" "}
+                              <Link to={`/dashboard/horse/${encodeURIComponent(res.horseName)}`}
+                                    className={`font-medium hover:underline ${reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-blue-700"}`}>
+                                {titleCase(res.horseName)}
+                              </Link>{" "}
+                              finished <strong>{res.position}</strong> in{" "}
+                              <Link to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
+                                    className={`font-medium hover:underline ${reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-indigo-700"}`}>
+                                {titleCase(res.raceTitle)}
+                              </Link>{" "}
+                              at {res.track} ({res.country}) on <strong>{res.date}</strong>
+                              {res.time && (
+                                <span className="ml-1 text-black">
+                                  at <strong>{res.time}</strong>
+                                </span>
+                              )}
+                            </div>
 
-                            return (
-                              <li
-                                key={res.reviewKey}
-                                className={`pl-2 text-sm leading-snug flex justify-between items-start
-                                  ${reviewed_results.has(res.reviewKey)
-                                    ? "border-l-4 border-gray-300 text-gray-400 opacity-60"
-                                    : "border-l-4 border-blue-300 text-gray-800"}
-                                `}
+                            {!reviewed_results.has(res.reviewKey) && (
+                              <button
+                                onClick={() => markAsReviewed(res.horseName, res.raceTitle, res.date)}
+                                className="ml-2 text-xs text-gray-400 hover:text-gray-600"
+                                title="Mark as Reviewed"
                               >
-                                <div className="flex-1">
-                                  📅{" "}
-                                  <Link
-                                    to={`/dashboard/horse/${encodeURIComponent(res.horseName)}`}
-                                    className={`font-medium hover:underline ${
-                                      reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-blue-700"
-                                    }`}
-                                  >
-                                    {titleCase(res.horseName)}
-                                  </Link>{" "}
-                                  finished <strong>{res.position}</strong> in{" "}
-                                  <Link
-                                    to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
-                                    className={`font-medium hover:underline ${
-                                      reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-indigo-700"
-                                    }`}
-                                  >
-                                    {titleCase(res.raceTitle)}
-                                  </Link>{" "}
-                                  at {res.track} ({res.country}) on <strong>{res.date}</strong>
-                                  {res.time && (
-                                    <span className="ml-1 text-black">
-                                      at <strong>{res.time}</strong>
-                                    </span>
-                                  )}
-                                </div>
-
-                                {!reviewed_results.has(res.reviewKey) && (
-                                  <button
-                                    onClick={() => markAsReviewed(res.horseName, res.raceTitle, res.date)}
-                                    className="ml-2 text-xs text-gray-400 hover:text-gray-600"
-                                    title="Mark as Reviewed"
-                                  >
-                                    ✓
-                                  </button>
-                                )}
-                              </li>
-
-
-
-                            );
-                          })}
-                      </ul>
-                    </div>
-                  </div>
+                                ✓
+                              </button>
+                            )}
+                          </li>
+                        );
+                      })}
+                  </ul>
                 </div>
               )}
 
-              {/* Notification Boxes */}
-              {groupedNotifications["RaceUpdates"] &&
+              {/* Declarations & Entries */}
+              {activeSection === "declarations" && groupedNotifications["RaceUpdates"] && (
                 renderGroupCard(
-                  "Declarations & Entries",
+                  "",
                   groupedNotifications["RaceUpdates"].today,
                   groupedNotifications["RaceUpdates"].upcoming
-                )}
+                )
+              )}
 
-              {Object.entries(groupedNotifications)
-                .filter(([label]) => label !== "RaceUpdates")
-                .map(([label, data]) => {
-                  let formattedLabel = label;
-                  if (label === "ClosingEntries") formattedLabel = "Early Closing Entries";
-                  else {
-                    formattedLabel = label
-                      .replace(/([a-z])([A-Z])/g, "$1 $2")
-                      .replace(/^./, str => str.toUpperCase());
-                  }
+              {/* Early Closings */}
+              {activeSection === "closings" && groupedNotifications["ClosingEntries"] && (
+                renderGroupCard(
+                  "",
+                  groupedNotifications["ClosingEntries"].today,
+                  groupedNotifications["ClosingEntries"].upcoming
+                )
+              )}
 
-                  return renderGroupCard(formattedLabel, data.today, data.upcoming);
-                })}
+              {activeSection === "sire" &&
+                renderGroupCard("Sire Updates", groupedSireUpdates.today, groupedSireUpdates.upcoming)}
+
+              {activeSection === "dam" &&
+                renderGroupCard("Dam Updates", groupedDamUpdates.today, groupedDamUpdates.upcoming)}
             </div>
           ) : (
             <p className="text-gray-500 italic">No upcoming races for your tracked horses.</p>

@@ -77,7 +77,7 @@ export const routes = [
         icon: <img src={TablesIcon} alt="Horse" style={iconStyle} />,
         name: "Races",
         children: [
-          { name: "Races", path: "/races", element: <Races /> },
+          { name: "Race Results", path: "/races", element: <Races /> },
           { name: "My Races", path: "/myraces", element: <MyRace /> },
           { name: "Racecards & Entries", path: "/entiresandraces", element: <RacesAndEntries /> },
           { name: "Declarations Tracking", path: "/declarationstracking", element: <DeclarationsTracking /> },

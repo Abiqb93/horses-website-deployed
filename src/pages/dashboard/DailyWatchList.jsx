@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Bell, BellRing } from "lucide-react";
 
 export function DailyWatchList() {
   const [watchListItems, setWatchListItems] = useState([]);
@@ -189,6 +190,7 @@ export function DailyWatchList() {
               sortTime: item.race_time,
               source: item.source_table,
               done: item.done,
+              notify: item.notify
             });
           }
         });
@@ -276,62 +278,139 @@ export function DailyWatchList() {
 
   const titleCase = (str) => str?.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
 
+  const toggleNotification = async (id, notifyState) => {
+    try {
+      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_watchlist/${id}/notify`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ notify: !notifyState }),
+      });
+
+      if (res.ok) {
+        setWatchListItems((prev) =>
+          prev.map((item) =>
+            item.type === "manual" && item.id === id
+              ? { ...item, notify: !notifyState }
+              : item
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error toggling notification:", err);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6 md:px-8">
-      <h1 className="text-xl font-bold text-yellow-900 mb-4">Daily Watch List</h1>
+    <div className="bg-gray-50 min-h-screen px-2 py-4 sm:px-4 md:px-6 lg:px-8 font-sans text-gray-900">
+      <div className="max-w-4xl mx-auto space-y-4">
+        <h1 className="text-2xl font-bold">Daily Watch List</h1>
 
-      {loading ? (
-        <p className="text-gray-600 italic">Loading...</p>
-      ) : (
-        <div className="bg-white shadow-md rounded-lg p-4 space-y-6">
+        {/* ✅ Updates */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+            Updates
+          </h2>
 
-          {/* === UPDATES === */}
-          <div>
-            <h2 className="text-md font-semibold text-blue-900 mb-2">🔄 Updates</h2>
-            <ul className="list-disc list-inside space-y-2">
-              {watchListItems.filter(item => item.type === "race").map((item, idx) => (
-                <li key={`update-${idx}`} className="text-sm text-gray-800 flex justify-between items-start">
-                  <span>
-                    <Link to={`/dashboard/horse/${item.encodedHorseName}`} className="text-blue-700 font-medium hover:underline">
-                      {item.rawHorseName}
-                    </Link>{" "}
-                    is running in{" "}
-                    <Link to={`/dashboard/racedetails?url=${item.encodedUrl}&RaceTitle=${item.encodedRaceTitle}`} className="text-indigo-700 hover:underline">
-                      {item.raceTitle}
-                    </Link>{" "}
-                    at {item.raceTrack} on <strong>{item.date}</strong> at <strong>{item.raceTime}</strong>
-                  </span>
-                </li>
-              ))}
-            </ul>
+          <div className="divide-y divide-gray-100">
+            {watchListItems.filter(item => item.type === "race").map((item, idx) => (
+              <div
+                key={`update-${idx}`}
+                className="py-4 space-y-1 text-gray-800"
+              >
+                <h3 className="font-semibold flex items-center gap-2">
+                  {" "}
+                  <Link
+                    to={`/dashboard/horse/${item.encodedHorseName}`}
+                    className="text-blue-700 hover:underline"
+                  >
+                    {item.rawHorseName}
+                  </Link>
+                </h3>
+
+                <p className="text-sm text-gray-600 flex items-center gap-2">
+                  <span>🏁</span>
+                  <Link
+                    to={`/dashboard/racedetails?url=${item.encodedUrl}&RaceTitle=${item.encodedRaceTitle}`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {item.raceTitle}
+                  </Link>
+                </p>
+
+                <div className="flex text-sm text-gray-500 gap-4 mt-1">
+                  <span>📍 {item.raceTrack}</span>
+                  <span>📅 {item.date}</span>
+                  <span>🕑 {item.raceTime}</span>
+                </div>
+              </div>
+            ))}
           </div>
-
-          {/* === WATCHLIST === */}
-          <div>
-            <h2 className="text-md font-semibold text-gray-900 mb-2">📌 Watchlist</h2>
-            <ul className="list-disc list-inside space-y-2">
-              {watchListItems.filter(item => item.type === "manual").map((item, idx) => (
-                <li key={`manual-${idx}`} className={`text-sm flex justify-between items-start ${item.done ? "text-gray-400 line-through" : "text-gray-800"}`}>
-                  <span>
-                    <Link to={`/dashboard/racedetails?RaceTitle=${encodeURIComponent(item.raceTitle)}&meetingDate=${encodeURIComponent(item.raceDate)}&url=https://horseracesbackend-production.up.railway.app/api/${item.source}`} className="text-indigo-700 hover:underline">
-                      {titleCase(item.raceTitle)}
-                    </Link>{" "}
-                    on <strong>{item.raceDate}</strong> at <strong>{item.raceTime}</strong> ({item.source})
-                  </span>
-                  {!item.done && (
-                    <button onClick={() => markAsDone(item.id)} className="ml-4 text-black text-sm hover:underline" title="Mark as done">
-                      ✓
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-
         </div>
-      )}
+
+        {/* 📌 Watchlist Runners */}
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+            Watchlist Runners
+          </h2>
+
+          <div className="divide-y divide-gray-100 space-y-2">
+            {watchListItems.filter(item => item.type === "manual").map((item, idx) => (
+              <div
+                key={`manual-${idx}`}
+                className={`relative py-4 space-y-1 pr-10 ${item.done ? "text-gray-400 line-through" : "text-gray-800"}`}
+              >
+                {/* Bell icon in top-right */}
+                {!item.done && (
+                  <span
+                    className="absolute top-2 right-2 cursor-pointer"
+                    onClick={() => toggleNotification(item.id, item.notify)}
+                    title={item.notify ? "Notifications enabled" : "Enable notifications"}
+                  >
+                    {item.notify ? (
+                      <BellRing size={20} className="text-green-500 transition-colors duration-200" />
+                    ) : (
+                      <Bell size={20} className="text-gray-400 transition-colors duration-200" />
+                    )}
+                  </span>
+                )}
+                <h3 className="font-semibold flex items-center gap-2">
+                  {" "}
+                  <Link
+                    to={`/dashboard/racedetails?RaceTitle=${encodeURIComponent(item.raceTitle)}&meetingDate=${encodeURIComponent(item.raceDate)}&url=https://horseracesbackend-production.up.railway.app/api/${item.source}`}
+                    className="hover:underline text-blue-700"
+                  >
+                    {titleCase(item.raceTitle)}
+                  </Link>
+                </h3>
+
+                <div className="flex text-sm text-gray-500 gap-4 mt-1">
+                  <span>📅 {item.raceDate}</span>
+                  <span>🕑 {item.raceTime}</span>
+                  <span>🔖 {item.source}</span>
+                </div>
+
+                {!item.done && (
+                  <>
+                    <button
+                      onClick={() => markAsDone(item.id)}
+                      className="text-black text-sm hover:underline"
+                      title="Mark as done"
+                    >
+                      ✓ Mark as Done
+                    </button>
+
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
+
 }
 
 export default DailyWatchList;

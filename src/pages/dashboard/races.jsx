@@ -5,58 +5,58 @@ import { Link } from "react-router-dom";
 // RaceTile Component
 const RaceTile = ({ race, isTracked, onTrackClick, onClick }) => {
   return (
-    <Card className="p-4 m-2 shadow-md hover:shadow-lg">
-      <div className="flex justify-between items-center mb-2">
-        <Typography
-          variant="h6"
-          className="text-blue-gray-700 font-bold cursor-pointer"
+    <Card className="relative p-3 m-2 shadow-sm hover:shadow-md bg-white rounded-lg max-w-sm text-sm">
+      {/* Title + Track Button */}
+      <div className="flex justify-between items-start mb-1">
+        <h3
+          className="font-semibold text-gray-800 cursor-pointer hover:underline leading-snug"
           onClick={() => onClick(race)}
         >
-          {race.raceTitle}
-        </Typography>
-        <span
+          {race.raceTitle} (Class {race.raceNumber})
+        </h3>
+
+        <button
           onClick={(e) => {
-            e.stopPropagation(); // prevent triggering onClick
+            e.stopPropagation();
             onTrackClick(race);
           }}
-          className="text-green-700 text-sm font-semibold cursor-pointer"
+          className="text-xs font-medium text-green-700 hover:text-green-800"
         >
-          {isTracked ? "Tracking" : "+Track"}
-        </span>
+          {isTracked ? "Tracking" : "+ Track"}
+        </button>
       </div>
 
-      <div onClick={() => onClick(race)} className="cursor-pointer">
-        <Typography variant="small" className="text-blue-gray-600">
-          <strong>Country:</strong> {race.countryCode}
-        </Typography>
-        <Typography variant="small" className="text-blue-gray-600">
-          <strong>Surface:</strong> {race.raceSurfaceName}
-        </Typography>
-        <Typography variant="small" className="text-blue-gray-600">
-          <strong>Runners:</strong> {race.numberOfRunners}
-        </Typography>
-        <Typography variant="small" className="text-blue-gray-600">
-          <strong>Prize Fund:</strong> {race.prizeFund}
-        </Typography>
-        <Typography variant="small" className="text-blue-gray-600 mt-2">
-          <strong>Top Horses:</strong>
-        </Typography>
-        <ul className="list-disc list-inside">
-          {race.topHorses.map((horse, index) => (
-            <li key={index} className="text-blue-gray-600">
-              <Link
-                to={`/dashboard/horse/${encodeURIComponent(horse.horseName)}`}
-                className="text-blue-600 hover:underline"
-              >
-                {horse.horseName}
-              </Link>{" "}
-              (Position: {horse.positionOfficial})
-            </li>
-          ))}
-        </ul>
+      {/* Metadata */}
+      <div
+        onClick={() => onClick(race)}
+        className="cursor-pointer space-y-0.5 text-gray-600"
+      >
+        <div>📍 <strong>{race.courseName}</strong> — {race.raceSurfaceName}</div>
+        <div>👥 Runners: {race.numberOfRunners}</div>
+        <div>💰 Prize Fund: £{Number(race.prizeFund).toLocaleString()}</div>
       </div>
+
+      {/* Top Horses */}
+      {race.topHorses.length > 0 && (
+        <div className="mt-2">
+          <p className="text-sm font-medium text-gray-700 mb-1">🏇 Top Horses:</p>
+          <ul className="list-disc list-inside text-blue-700 text-sm space-y-0.5">
+            {race.topHorses.map((horse, index) => (
+              <li key={index}>
+                <Link
+                  to={`/dashboard/horse/${encodeURIComponent(horse.horseName)}`}
+                  className="hover:underline"
+                >
+                  {horse.horseName}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </Card>
   );
+
 };
 
 
@@ -175,6 +175,16 @@ export function Races() {
   const [showTable, setShowTable] = useState(false);
   const [trackedRaces, setTrackedRaces] = useState([]);
 
+  useEffect(() => {
+    // Set default to yesterday
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const formattedDate = yesterday.toISOString().split("T")[0];
+
+    setMeetingDate(formattedDate);
+    setSelectedCountry("GBR");
+  }, []);
+
   const fetchRacesData = async () => {
     try {
       setLoading(true);
@@ -269,10 +279,12 @@ export function Races() {
       const courses = racesData
         .filter((race) => race.countryCode === selectedCountry)
         .map((race) => race.courseName);
-      setCourseOptions([...new Set(courses)]);
-      setSelectedCourse("");
+      const uniqueCourses = [...new Set(courses)];
+
+      setCourseOptions(uniqueCourses);
+      setSelectedCourse(uniqueCourses[0] || ""); // <-- Set default to first course
     }
-  }, [selectedCountry]);
+  }, [selectedCountry, racesData]);
 
   useEffect(() => {
     if (selectedCountry && selectedCourse) {
