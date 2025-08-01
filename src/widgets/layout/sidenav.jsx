@@ -22,14 +22,13 @@ export function Sidenav({ brandImg, brandName, routes }) {
     transparent: "bg-transparent",
   };
 
-  const [openSubMenu, setOpenSubMenu] = useState({});
-  const sidenavRef = useRef(null); // 🔑 Ref for outside-click detection
+  const [openSubMenu, setOpenSubMenu] = useState(null); // ❗ Changed to allow only one open submenu
+  const sidenavRef = useRef(null);
 
   const toggleSubMenu = (name) => {
-    setOpenSubMenu((prev) => ({ ...prev, [name]: !prev[name] }));
+    setOpenSubMenu((prev) => (prev === name ? null : name));
   };
 
-  // ✅ Close on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -47,7 +46,7 @@ export function Sidenav({ brandImg, brandName, routes }) {
 
   return (
     <aside
-      ref={sidenavRef} // 👈 Attach the ref
+      ref={sidenavRef}
       className={`${sidenavTypes[sidenavType]} ${
         openSidenav ? "translate-x-0" : "-translate-x-80"
       } fixed inset-0 z-50 my-4 ml-4 h-[calc(100vh-32px)] w-72 rounded-xl transition-transform duration-300 xl:translate-x-0 border border-blue-gray-100`}
@@ -101,13 +100,13 @@ export function Sidenav({ brandImg, brandName, routes }) {
                       <Typography color="inherit" className="font-medium text-sm">
                         {name}
                       </Typography>
-                      {openSubMenu[name] ? (
+                      {openSubMenu === name ? (
                         <ChevronDownIcon className="w-4 h-4 ml-auto" />
                       ) : (
                         <ChevronRightIcon className="w-4 h-4 ml-auto" />
                       )}
                     </Button>
-                    {openSubMenu[name] && (
+                    {openSubMenu === name && (
                       <ul className="ml-6">
                         {children.map((child) => (
                           <li key={child.name}>

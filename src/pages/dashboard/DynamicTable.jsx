@@ -359,7 +359,7 @@ return (
           <Typography variant="h5" className="font-bold text-blue-800">{horseName}</Typography>
 
           <Typography className="text-sm text-gray-700">
-            {sireName ? `${sireName} (S)` : "-"} | {horseName} | {horseColour ? `${horseColour} (C)` : "-"} | {horseGender ? `${horseGender} (G)` : "-"} | {damName ? `${damName} (D)` : "-"}
+            {sireName ? `${sireName} (S)` : "-"} | {damName ? `${damName} (D)` : "-"} | {horseColour ? `${horseColour} (C)` : "-"} | {horseGender ? `${horseGender} (G)` : "-"}
           </Typography>
 
           <Typography className="text-sm text-gray-700">
