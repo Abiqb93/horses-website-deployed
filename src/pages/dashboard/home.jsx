@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays } from "lucide-react";
+import { MapPin, Clock, Flag, CalendarDays, CheckCircle } from "lucide-react";
+
 
 export function Home() {
   const [trackedHorses, setTrackedHorses] = useState([]);
@@ -13,8 +14,54 @@ export function Home() {
   const [damUpdates, setDamUpdates] = useState([]);
   const [ownerUpdates, setOwnerUpdates] = useState([]);
   const [activeSection, setActiveSection] = useState("declarations"); 
+  const [selectedSire, setSelectedSire] = useState("");
+  const [selectedDam, setSelectedDam] = useState("");
+  const [selectedOwner, setSelectedOwner] = useState("");
 
   const [reviewed_results, setreviewed_results] = useState(new Set());
+
+
+
+  const [trackingCache, setTrackingCache] = useState({});
+  const fetchTrackingDetails = async (horseName) => {
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
+    const key = horseName.toLowerCase();
+
+    if (trackingCache[key]) return trackingCache[key]; // already cached
+
+    try {
+      const res = await fetch(
+        `https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${userId}&horseName=${encodeURIComponent(horseName)}`
+      );
+      const json = await res.json();
+      const notes = json.data?.filter(h => h.horseName?.toLowerCase() === key) || [];
+
+      const nonEmptyNotes = notes.filter(n => n.note);
+      const latestNote = nonEmptyNotes.sort((a, b) => new Date(b.noteDateTime) - new Date(a.noteDateTime))[0];
+
+      const entry = {
+        ...latestNote, // get sire, dam, trainer etc from latest valid note
+        notes: nonEmptyNotes.map(n => n.note),  // array of all non-empty notes
+      };
+      setTrackingCache(prev => ({ ...prev, [key]: entry }));
+      return entry;
+    } catch (err) {
+      console.error("Tracking info fetch failed:", err);
+      return null;
+    }
+  };
+
+  const FetchHorseDetails = ({ horseName, children }) => {
+    const [info, setInfo] = useState(null);
+
+    useEffect(() => {
+      if (!horseName) return;
+      fetchTrackingDetails(horseName).then(setInfo);
+    }, [horseName]);
+
+    return children(info);
+  };
 
   useEffect(() => {
     const fetchReviewed = async () => {
@@ -72,12 +119,19 @@ export function Home() {
         const sires = jsonSires.data || [];
 
         const allHorseNames = new Set();
+        const horseToSireMap = {};
+
         for (const sire of sires) {
           const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/sire?sireName=${encodeURIComponent(sire.sireName)}`);
           const json = await res.json();
           const horses = json.data || [];
+
           horses.forEach(h => {
-            if (h.horseName) allHorseNames.add(h.horseName.toLowerCase().trim());
+            if (h.horseName) {
+              const nameKey = h.horseName.toLowerCase().trim();
+              allHorseNames.add(nameKey);
+              horseToSireMap[nameKey] = sire.sireName; // 🟢 Set mapping
+            }
           });
         }
 
@@ -116,6 +170,7 @@ export function Home() {
               horseName,
               dateRaw,
               timeRaw: time,
+              sireName: horseToSireMap[horseName.toLowerCase().trim()] || "",
             });
           });
         });
@@ -145,11 +200,19 @@ export function Home() {
         const dams = jsonDams.data || [];
 
         const allHorseNames = new Set();
+        const horseToDamMap = {};
         for (const dam of dams) {
           const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/dam?damName=${encodeURIComponent(dam.damName)}`);
           const json = await res.json();
-          (json.data || []).forEach(h => h.horseName && allHorseNames.add(h.horseName.toLowerCase().trim()));
+          (json.data || []).forEach(h => {
+            if (h.horseName) {
+              const key = h.horseName.toLowerCase().trim();
+              allHorseNames.add(key);
+              horseToDamMap[key] = dam.damName;
+            }
+          });
         }
+
 
         const sources = [
           "RacesAndEntries", "FranceRaceRecords", "IrelandRaceRecords",
@@ -171,7 +234,16 @@ export function Home() {
             const time = ent.RaceTime || ent.Time || ent.time || "";
             const dateRaw = ent.FixtureDate || ent.meetingDate || ent.MeetingDate || ent.Date || ent.date || ent.raceDate || "";
 
-            matched.push({ source: key, title, track, time, horseName, dateRaw, timeRaw: time });
+            matched.push({
+              source: key,
+              title,
+              track,
+              time,
+              horseName,
+              dateRaw,
+              timeRaw: time,
+              damName: horseToDamMap[horseName.toLowerCase().trim()] || "",
+            });
           });
         });
 
@@ -194,10 +266,16 @@ export function Home() {
         const owners = jsonOwners.data || [];
 
         const allHorseNames = new Set();
+        const horseToOwnerMap = {};
         for (const owner of owners) {
-          const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/APIData_Table2/owner?ownerFullName=${encodeURIComponent(owner.ownerName)}`);
-          const json = await res.json();
-          (json.data || []).forEach(h => h.horseName && allHorseNames.add(h.horseName.toLowerCase().trim()));
+          const horses = JSON.parse(owner.correspondingHorses || "[]");
+          horses.forEach(name => {
+            const key = name?.toLowerCase().trim();
+            if (key) {
+              allHorseNames.add(key);
+              horseToOwnerMap[key] = owner.ownerFullName;
+            }
+          });
         }
 
         const sources = [
@@ -220,7 +298,17 @@ export function Home() {
             const time = ent.RaceTime || ent.Time || ent.time || "";
             const dateRaw = ent.FixtureDate || ent.meetingDate || ent.MeetingDate || ent.Date || ent.date || ent.raceDate || "";
 
-            matched.push({ source: key, title, track, time, horseName, dateRaw, timeRaw: time });
+            matched.push({
+              source: key,
+              title,
+              track,
+              time,
+              horseName,
+              dateRaw,
+              timeRaw: time,
+              ownerName: horseToOwnerMap[horseName.toLowerCase().trim()] || "",
+            });
+
           });
         });
 
@@ -265,13 +353,22 @@ export function Home() {
       try {
         const storedUser = localStorage.getItem("user");
         const loggedInUserId = storedUser ? JSON.parse(storedUser).userId : "Guest";
-
         const effectiveUserId = selectedSharedUser || loggedInUserId;
 
         const trackedRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${encodeURIComponent(effectiveUserId)}`);
         const trackedJson = await trackedRes.json();
-        const trackedNames = [...new Set(trackedJson.data.map(h => h.horseName?.toLowerCase().trim()))];
+        const trackedData = trackedJson.data || [];
+        const trackedNames = [...new Set(trackedData.map(h => h.horseName?.toLowerCase().trim()))];
+        
         setTrackedHorses(trackedNames);
+
+        // 🆕 Set cache upfront
+        const newCache = {};
+        for (const entry of trackedData) {
+          const key = entry.horseName?.toLowerCase();
+          if (key) newCache[key] = entry;
+        }
+        setTrackingCache(newCache);
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -427,6 +524,7 @@ export function Home() {
     fetchTrackedAndRaces();
   }, [selectedSharedUser]);
 
+
   const renderGroupCard = (label, todayList, upcomingList) => {
     const hasContent = todayList.length > 0 || upcomingList.length > 0;
     if (!hasContent) return null;
@@ -436,61 +534,248 @@ export function Home() {
         <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">{label}</h2>
 
         {todayList.length > 0 && (
-          <div>
-            <h3 className="text-green-700 text-sm font-semibold">Today</h3>
-            <ul className="space-y-1 mt-1">
-              {todayList.map((item) => (
-                <li key={item.raceKey} className="pl-2 border-l-4 border-green-300 text-sm leading-snug">
-                  <Link
-                    to={`/dashboard/horse/${item.encodedHorseName}`}
-                    className="text-blue-600 font-medium hover:underline"
-                  >
-                    {item.rawHorseName
-                      ?.toLowerCase()
-                      .replace(/\b\w/g, (char) => char.toUpperCase())}
-                  </Link>{" "}
-                  at <span className="italic text-gray-600">{item.raceTrack}</span>{" "}
-                  <strong>{item.raceTime}</strong>
-                  <br />
-                  <Link
-                    to={`/dashboard/racedetails?url=${item.encodedUrl}&RaceTitle=${item.encodedRaceTitle}`}
-                    className="text-indigo-700 font-medium hover:underline"
-                  >
-                    {item.raceTitle}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+  <div>
+    <h3 className="text-green-700 text-sm font-semibold">Today</h3>
+    <ul className="space-y-2 mt-1">
+      {todayList.map((item) => (
+        <li key={item.raceKey} className="pl-2 border-l-4 border-green-300 text-sm leading-snug">
+          <div className="flex items-start">
+            <CalendarDays className="inline-block w-4 h-4 text-gray-300 mr-1 mt-0.5" />
+            <div>
+              {/* HORSE NAME */}
+              <div className="font-bold text-black uppercase flex flex-wrap items-center gap-x-1">
+                <Link to={`/dashboard/horse/${item.encodedHorseName}`} className="hover:underline">
+                  {item.rawHorseName}
+                </Link>
+                {(item.sireName || item.damName || item.ownerName) && (
+                  <span className="text-xs text-gray-500 font-normal normal-case">
+                    ({item.sireName || item.damName || item.ownerName})
+                  </span>
+                )}
 
-        {upcomingList.length > 0 && (
-          <div>
-            <h3 className="text-blue-700 text-sm font-semibold">Upcoming</h3>
-            <ul className="space-y-1 mt-1">
-              {upcomingList.map((item) => (
-                <li key={item.raceKey} className="pl-2 border-l-4 border-blue-200 text-sm leading-snug">
-                  <CalendarDays className="inline-block w-4 h-4 text-gray-400 mr-1" /> In {item.dayDiff} day(s):{" "}
-                  <Link
-                    to={`/dashboard/horse/${item.encodedHorseName}`}
-                    className="text-blue-600 font-medium hover:underline"
-                  >
-                    {item.rawHorseName}
-                  </Link>{" "}
-                  at <span className="italic text-gray-600">{item.raceTrack}</span>{" "}
-                  <strong>{item.raceTime}</strong>
-                  <br />
+                {(() => {
+                  const info = trackingCache[item.rawHorseName?.toLowerCase().trim()];
+                  if (!info) return null;
+                  return (
+                    <sup className="ml-1 text-xs text-gray-500">
+                      {info.TrackingType && (
+                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1 py-px rounded mr-1 tracking-tight">
+                          {info.TrackingType}
+                        </span>
+                      )}
+                      {info.note && (
+                        <button
+                          onClick={() =>
+                            setTrackingCache((prev) => ({
+                              ...prev,
+                              [item.rawHorseName?.toLowerCase().trim()]: {
+                                ...info,
+                                _showNotes: !info._showNotes,
+                              },
+                            }))
+                          }
+                          className="text-blue-500 underline hover:text-blue-700 ml-1"
+                        >
+                          [notes]
+                        </button>
+                      )}
+                    </sup>
+                  );
+                })()}
+              </div>
+
+              {/* METADATA */}
+              {(() => {
+                const isFromTracked = ["RaceUpdates", "DeclarationsTracking", "EntriesTracking", "ClosingEntries"].some(section =>
+                  groupedNotifications[section]?.today?.some(e => e.raceKey === item.raceKey) ||
+                  groupedNotifications[section]?.upcoming?.some(e => e.raceKey === item.raceKey)
+                );
+
+                if (!isFromTracked) return null;
+
+                const info = trackingCache[item.rawHorseName?.toLowerCase()] || {};
+                const metadata = [
+                  item.sireName || info.sireName,
+                  item.damName || info.damName,
+                  item.ownerName || info.ownerFullName,
+                  info.trainerFullName,
+                ]
+                  .filter(Boolean)
+                  .join(" | ");
+
+                if (!metadata) return null;
+
+                return (
+                  <div className="ml-4 text-xs text-gray-600 mt-0.5">
+                    {metadata}
+                  </div>
+                );
+              })()}
+
+
+
+              {/* NOTES */}
+              {(() => {
+                const info = trackingCache[item.rawHorseName?.toLowerCase()];
+                if (!info || !info._showNotes || !info.note) return null;
+                return (
+                  <div className="ml-4 mt-1 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1">
+                    {info.note}
+                  </div>
+                );
+              })()}
+
+              {/* RACE INFO INLINE */}
+              <div className="ml-4 mt-1 text-[13px] text-black flex flex-wrap gap-x-4 gap-y-1 items-center font-medium">
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-4 h-4 text-gray-300" />
+                  {item.raceTrack}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-4 h-4 text-gray-300" />
+                  {item.raceTime}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Flag className="w-4 h-4 text-gray-300" />
                   <Link
                     to={`/dashboard/racedetails?url=${item.encodedUrl}&RaceTitle=${item.encodedRaceTitle}`}
-                    className="text-indigo-700 font-medium hover:underline"
+                    className="text-indigo-700 hover:underline"
                   >
                     {item.raceTitle}
                   </Link>
-                </li>
-              ))}
-            </ul>
+                </span>
+              </div>
+            </div>
           </div>
-        )}
+        </li>
+      ))}
+    </ul>
+  </div>
+      )}
+
+
+        {upcomingList.length > 0 && (() => {
+          const groupedByDay = {};
+          for (const item of upcomingList) {
+            const label = `In ${item.dayDiff} Day${item.dayDiff === 1 ? "" : "s"}`;
+            if (!groupedByDay[label]) groupedByDay[label] = [];
+            groupedByDay[label].push(item);
+          }
+
+          return Object.entries(groupedByDay).map(([label, entries]) => (
+            <div key={label} className="mt-4">
+              <h3 className="text-blue-700 text-sm font-semibold">{label}</h3>
+              <ul className="space-y-2 mt-1">
+                {entries.map((item) => (
+                  <li key={item.raceKey} className="pl-2 border-l-4 border-blue-200 text-sm leading-snug">
+                    <div className="flex items-start">
+                      <CalendarDays className="inline-block w-4 h-4 text-gray-300 mr-1 mt-0.5" />
+                      <div>
+                        {/* HORSE NAME */}
+                        <div className="font-bold text-black uppercase flex flex-wrap items-center gap-x-1">
+                          <Link to={`/dashboard/horse/${item.encodedHorseName}`} className="hover:underline">
+                            {item.rawHorseName}
+                          </Link>
+                          {(item.sireName || item.damName || item.ownerName) && (
+                              <span className="text-xs text-gray-500 font-normal normal-case">
+                                ({item.sireName || item.damName || item.ownerName})
+                              </span>
+                            )}
+
+                          {(() => {
+                            const info = trackingCache[item.rawHorseName?.toLowerCase().trim()];
+                            if (!info) return null;
+                            return (
+                              <sup className="ml-1 text-xs text-gray-500">
+                                {info.TrackingType && (
+                                  <span className="text-[10px] bg-gray-100 text-gray-500 px-1 py-px rounded mr-1 tracking-tight">
+                                    {info.TrackingType}
+                                  </span>
+                                )}
+                                {info.note && (
+                                  <button
+                                    onClick={() =>
+                                      setTrackingCache((prev) => ({
+                                        ...prev,
+                                        [item.rawHorseName?.toLowerCase().trim()]: {
+                                          ...info,
+                                          _showNotes: !info._showNotes,
+                                        },
+                                      }))
+                                    }
+                                    className="text-blue-500 underline hover:text-blue-700 ml-1"
+                                  >
+                                    [notes]
+                                  </button>
+                                )}
+                              </sup>
+                            );
+                          })()}
+                        </div>
+
+                        {/* METADATA */}
+                        {(() => {
+                          // Skip rendering metadata in "Mare Updates" (i.e. dam tab)
+                          if (activeSection === "dam") return null;
+
+                          const info = trackingCache[item.rawHorseName?.toLowerCase()] || {};
+                          const sireName = item.sireName || info.sireName;
+                          const damName = item.damName || info.damName;
+                          const ownerName = item.ownerName || info.ownerFullName;
+                          const trainerName = info.trainerFullName;
+
+                          const showOwnerInline = !!item.ownerName;
+                          const metadata = [damName, showOwnerInline ? null : ownerName, trainerName].filter(Boolean).join(" | ");
+                          if (!metadata) return null;
+
+                          return (
+                            <div className="ml-4 text-xs text-gray-600 mt-0.5">
+                              {metadata}
+                            </div>
+                          );
+                        })()}
+
+
+                        {/* NOTES */}
+                        {(() => {
+                          const info = trackingCache[item.rawHorseName?.toLowerCase()];
+                          if (!info || !info._showNotes || !info.note) return null;
+                          return (
+                            <div className="ml-4 mt-1 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1">
+                              {info.note}
+                            </div>
+                          );
+                        })()}
+
+                        {/* RACE INFO INLINE */}
+                        <div className="ml-4 mt-1 text-[13px] text-black flex flex-wrap gap-x-4 gap-y-1 items-center font-medium">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4 text-gray-300" />
+                            {item.raceTrack}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4 text-gray-300" />
+                            {item.raceTime}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Flag className="w-4 h-4 text-gray-300" />
+                            <Link
+                              to={`/dashboard/racedetails?url=${item.encodedUrl}&RaceTitle=${item.encodedRaceTitle}`}
+                              className="text-indigo-700 hover:underline"
+                            >
+                              {item.raceTitle}
+                            </Link>
+                          </span>
+                        </div>
+
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ));
+        })()}
       </div>
     );
   };
@@ -498,6 +783,11 @@ export function Home() {
 
   const hasAny = Object.values(groupedNotifications).some(g => g.today.length || g.upcoming.length);
   const hasResults = resultsData.length > 0;
+  // Extract unique sire/dam/owner names from trackingCache
+  const sireNames = [...new Set(Object.values(trackingCache).map(info => info?.sireName).filter(Boolean))];
+  const damNames = [...new Set(Object.values(trackingCache).map(info => info?.damName).filter(Boolean))];
+  const ownerNames = [...new Set(Object.values(trackingCache).map(info => info?.ownerFullName).filter(Boolean))];
+
   // Convert time like "4.45pm" → "16:45"
   function convertTo24Hour(timeStr) {
     if (!timeStr) return "12:00";
@@ -556,6 +846,9 @@ export function Home() {
         encodedRaceTitle,
         dayDiff,
         raceKey,
+        sireName: entry.sireName || "", // ✅ Fix for Sire Updates
+        damName: entry.damName || "",   // (optional: for dam tracking)
+        ownerName: entry.ownerName || "", // (optional: for owner tracking)
       };
 
       if (dayDiff === 0) {
@@ -570,7 +863,10 @@ export function Home() {
 
   // ✅ Apply to both sire and dam updates
   const groupedSireUpdates = groupHorseUpdatesByDate(sireUpdates);
+  const availableSires = [...new Set(sireUpdates.map(e => e.sireName).filter(Boolean))].sort();
   const groupedDamUpdates = groupHorseUpdatesByDate(damUpdates);
+  const groupedOwnerUpdates = groupHorseUpdatesByDate(ownerUpdates);
+
 
   // Optional debug
   console.log("✅ Final Grouped Sire Updates:", groupedSireUpdates);
@@ -612,6 +908,7 @@ export function Home() {
           { key: "closings", label: "Early Closing Entries" },
           { key: "sire", label: "Sire Updates" },
           { key: "dam", label: "Mare Updates" },
+          { key: "owner", label: "Owner Updates" },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -627,6 +924,7 @@ export function Home() {
         ))}
       </div>
 
+      
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -643,43 +941,135 @@ export function Home() {
             <div className="space-y-6">
               {/* 🔥 Results Tab */}
               {activeSection === "results" && hasResults && (
-                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3 w-full">
-                  <h2 className="text-lg font-semibold text-gray-800 border-b pb-1">Results (Last 3 Days)</h2>
-                  <ul className="space-y-1 mt-1 text-sm leading-snug">
-                    {[...resultsData]
-                      .sort((a, b) => new Date(`${a.date} ${a.time || '00:00'}`) - new Date(`${b.date} ${b.time || '00:00'}`))
-                      .map((res) => {
-                        const normalizedRaceTitle = res.raceTitle?.toLowerCase().replace(/\s+/g, " ").trim();
-                        const encodedRaceTitle = encodeURIComponent(normalizedRaceTitle);
+              <ul className="space-y-4 mt-2 text-sm leading-snug">
+                {Object.entries(
+                  [...resultsData]
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .reduce((groups, item) => {
+                      const d = new Date(item.date);
+                      const key = `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+                      if (!groups[key]) groups[key] = [];
+                      groups[key].push(item);
+                      return groups;
+                    }, {})
+                ).map(([date, group]) => (
+                  <li key={date}>
+                    <div className="text-base font-semibold text-gray-800 mb-1 flex items-center gap-2">
+                      <CalendarDays className="w-5 h-5 text-gray-400" />
+                      {date}
+                    </div>
+                    <ul className="space-y-2">
+                      {group.map((res) => {
+                        const encodedRaceTitle = encodeURIComponent(res.raceTitle?.trim());
                         const encodedDate = encodeURIComponent(res.date);
                         const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
-                        const titleCase = (str) => str.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase());
 
                         return (
                           <li
                             key={res.reviewKey}
-                            className={`pl-2 text-sm leading-snug flex justify-between items-start
-                              ${reviewed_results.has(res.reviewKey)
+                            className={`pl-2 text-sm leading-snug flex justify-between items-start ${
+                              reviewed_results.has(res.reviewKey)
                                 ? "border-l-4 border-gray-300 text-gray-400 opacity-60"
-                                : "border-l-4 border-blue-300 text-gray-800"}`}
+                                : "border-l-4 border-blue-300 text-gray-800"
+                            }`}
                           >
                             <div className="flex-1">
-                              <CalendarDays className="inline-block w-4 h-4 text-gray-400 mr-1" />{" "}
-                              <Link to={`/dashboard/horse/${encodeURIComponent(res.horseName)}`}
-                                    className={`font-medium hover:underline ${reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-blue-700"}`}>
-                                {titleCase(res.horseName)}
-                              </Link>{" "}
-                              finished <strong>{res.position}</strong> in{" "}
-                              <Link to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
-                                    className={`font-medium hover:underline ${reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-indigo-700"}`}>
-                                {titleCase(res.raceTitle)}
-                              </Link>{" "}
-                              at {res.track} ({res.country}) on <strong>{res.date}</strong>
-                              {res.time && (
-                                <span className="ml-1 text-black">
-                                  at <strong>{res.time}</strong>
+                              {/* Horse Name */}
+                              <div className="font-bold text-black uppercase">
+                                <Link
+                                  to={`/dashboard/horse/${encodeURIComponent(res.horseName)}`}
+                                  className={`hover:underline ${reviewed_results.has(res.reviewKey) ? "text-gray-400" : "text-black"}`}
+                                >
+                                  {res.horseName}
+                                </Link>
+
+                                {/* Superscript */}
+                                {(() => {
+                                  const info = trackingCache[res.horseName?.toLowerCase()];
+                                  if (!info) return null;
+                                  return (
+                                    <sup className="ml-1 text-xs text-gray-500">
+                                      {info.TrackingType && (
+                                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1 py-px rounded mr-1 tracking-tight">
+                                          {info.TrackingType}
+                                        </span>
+                                      )}
+                                      {info.note && (
+                                        <button
+                                          onClick={() =>
+                                            setTrackingCache((prev) => ({
+                                              ...prev,
+                                              [res.horseName?.toLowerCase()]: {
+                                                ...info,
+                                                _showNotes: !info._showNotes,
+                                              },
+                                            }))
+                                          }
+                                          className="text-blue-500 underline hover:text-blue-700 ml-1"
+                                        >
+                                          [notes]
+                                        </button>
+                                      )}
+                                    </sup>
+                                  );
+                                })()}
+                              </div>
+
+                              {/* Metadata */}
+                              {(() => {
+                                const info = trackingCache[res.horseName?.toLowerCase()];
+                                if (!info) return null;
+                                return (
+                                  <div className="ml-4 text-xs text-gray-600 mt-0.5">
+                                    {[info.sireName, info.damName, info.ownerFullName, info.trainerFullName]
+                                      .filter(Boolean)
+                                      .join(" | ")}
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Notes display */}
+                              {(() => {
+                                const info = trackingCache[res.horseName?.toLowerCase()];
+                                if (!info || !info._showNotes || !info.note) return null;
+                                return (
+                                  <div className="ml-4 mt-1 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1">
+                                    {info.note}
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Race Info Inline */}
+                              <div className="ml-4 mt-1 text-[13px] text-black flex flex-wrap gap-x-4 gap-y-1 items-center font-medium">
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-4 h-4 text-gray-300" />
+                                  {res.track}
                                 </span>
-                              )}
+
+                                {res.time && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-4 h-4 text-gray-300" />
+                                    {res.time}
+                                  </span>
+                                )}
+
+                                <span className="flex items-center gap-1">
+                                  <Flag className="w-4 h-4 text-gray-300" />
+                                  <Link
+                                    to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
+                                    className="text-indigo-700 hover:underline max-w-[320px] truncate inline-block align-middle"
+                                    title={res.raceTitle}
+                                  >
+                                    {res.raceTitle}
+                                  </Link>
+
+                                </span>
+
+                                <span className="flex items-center gap-1 text-black font-bold">
+                                  <CheckCircle className="w-4 h-4 text-gray-300" />
+                                  Finished {res.position}
+                                </span>
+                              </div>
                             </div>
 
                             {!reviewed_results.has(res.reviewKey) && (
@@ -694,9 +1084,13 @@ export function Home() {
                           </li>
                         );
                       })}
-                  </ul>
-                </div>
-              )}
+                    </ul>
+                  </li>
+                ))}
+              </ul>)}
+
+
+
 
               {/* Declarations & Entries */}
               {activeSection === "declarations" && groupedNotifications["RaceUpdates"] && (
@@ -716,11 +1110,107 @@ export function Home() {
                 )
               )}
 
-              {activeSection === "sire" &&
-                renderGroupCard("Sire Updates", groupedSireUpdates.today, groupedSireUpdates.upcoming)}
+              {activeSection === "sire" && (() => {
+                const filteredSireEntries = selectedSire
+                  ? sireUpdates.filter(e => e.sireName === selectedSire)
+                  : sireUpdates;
 
-              {activeSection === "dam" &&
-                renderGroupCard("Dam Updates", groupedDamUpdates.today, groupedDamUpdates.upcoming)}
+                const groupedFiltered = groupHorseUpdatesByDate(filteredSireEntries);
+
+                return (
+                  <>
+                    <div className="mb-4">
+                      <label className="text-sm font-medium text-gray-700 mr-2">Filter by Sire:</label>
+                      <select
+                        value={selectedSire}
+                        onChange={(e) => setSelectedSire(e.target.value)}
+                        className="text-sm border rounded px-2 py-1 bg-white"
+                      >
+                        <option value="">All Sires</option>
+                        {availableSires.map((sire) => (
+                          <option key={sire} value={sire}>{sire}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {renderGroupCard(
+                      selectedSire ? `Sire Updates: ${selectedSire}` : "Sire Updates",
+                      groupedFiltered.today,
+                      groupedFiltered.upcoming
+                    )}
+                  </>
+                );
+              })()}
+
+              {activeSection === "dam" && (() => {
+                const filteredDamEntries = selectedDam
+                  ? damUpdates.filter(e => e.damName === selectedDam)
+                  : damUpdates;
+
+                const groupedFiltered = groupHorseUpdatesByDate(filteredDamEntries);
+
+                const availableDams = [...new Set(damUpdates.map(e => e.damName).filter(Boolean))].sort();
+
+                return (
+                  <>
+                    <div className="mb-4">
+                      <label className="text-sm font-medium text-gray-700 mr-2">Filter by Mare:</label>
+                      <select
+                        value={selectedDam}
+                        onChange={(e) => setSelectedDam(e.target.value)}
+                        className="text-sm border rounded px-2 py-1 bg-white"
+                      >
+                        <option value="">All Mares</option>
+                        {availableDams.map((dam) => (
+                          <option key={dam} value={dam}>{dam}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {renderGroupCard(
+                      selectedDam ? `Mare Updates: ${selectedDam}` : "Mare Updates",
+                      groupedFiltered.today,
+                      groupedFiltered.upcoming
+                    )}
+                  </>
+                );
+              })()}
+
+
+              {activeSection === "owner" && (() => {
+                  const filteredOwnerEntries = selectedOwner
+                    ? ownerUpdates.filter(e => e.ownerName === selectedOwner)
+                    : ownerUpdates;
+
+                  const groupedFiltered = groupHorseUpdatesByDate(filteredOwnerEntries);
+
+                  const availableOwners = [...new Set(ownerUpdates.map(e => e.ownerName).filter(Boolean))].sort();
+
+                  return (
+                    <>
+                      <div className="mb-4">
+                        <label className="text-sm font-medium text-gray-700 mr-2">Filter by Owner:</label>
+                        <select
+                          value={selectedOwner}
+                          onChange={(e) => setSelectedOwner(e.target.value)}
+                          className="text-sm border rounded px-2 py-1 bg-white"
+                        >
+                          <option value="">All Owners</option>
+                          {availableOwners.map((owner) => (
+                            <option key={owner} value={owner}>{owner}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {renderGroupCard(
+                        selectedOwner ? `Owner Updates: ${selectedOwner}` : "Owner Updates",
+                        groupedFiltered.today,
+                        groupedFiltered.upcoming
+                      )}
+                    </>
+                  );
+                })()}
+
             </div>
           ) : (
             <p className="text-gray-500 italic">No upcoming races for your tracked horses.</p>

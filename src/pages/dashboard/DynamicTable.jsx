@@ -124,12 +124,18 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   const handleTrackHorse = async () => {
     setIsSubmitting(true);
     try {
+      // 🧠 Use latest known values from race records
+      const mostRecent = latestRecord || {};
       const payload = {
         horseName,
         note: note.trim(),
         trackingDate: new Date().toISOString(),
         TrackingType: trackingType,
         User: user,
+        sireName: mostRecent?.sireName || "",
+        damName: mostRecent?.damName || "",
+        ownerFullName: mostRecent?.ownerFullName || "",
+        trainerFullName: mostRecent?.trainerFullName || "",
       };
 
       const res = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {
@@ -148,7 +154,7 @@ const DynamicTable = ({ data, refreshHorseData }) => {
           const newData = Array.isArray(json.data) ? json.data : [];
           setTrackingData(newData);
 
-          // ✅ Now update UI using the latest data
+          // ✅ Update UI with the latest data
           setIsTracked(true);
           setShowNotes(true);
           setTrackingDate(newData[0]?.trackingDate ?? new Date().toISOString());
@@ -170,7 +176,6 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   };
 
 
-
   const handleStopTracking = async () => {
     if (!window.confirm(`Are you sure you want to stop tracking ${horseName}?`)) return;
     try {
@@ -188,9 +193,21 @@ const DynamicTable = ({ data, refreshHorseData }) => {
     }
   };
 
-const filteredColumns = Object.keys(filteredHorseRecords[0] || {}).filter(
-  key => !excludedColumns.has(key)
-);
+const filteredColumns = [
+  "positionOfficial",
+  "horseName",
+  "countryCode",
+  "raceType",
+  "distance",
+  "raceTitle",
+  "going",
+  "numberOfRunners",
+  "prizeFundWinner",
+  "performanceRating",
+  "meetingDate",
+  "courseName"
+];
+
 
   const disciplineOptions = [...new Set(
     filteredHorseRecords.map(d => d.raceType).filter(Boolean)
@@ -238,6 +255,21 @@ const filteredColumns = Object.keys(filteredHorseRecords[0] || {}).filter(
     const dd = String(d.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
   };
+
+const columnHeaderMap = {
+  positionOfficial: "Position",
+  horseName: "Horse",
+  countryCode: "Country",
+  raceType: "Race Type",
+  distance: "Distance",
+  raceTitle: "Title",
+  going: "Going",
+  numberOfRunners: "Runners",
+  prizeFundWinner: "Prize",
+  performanceRating: "Performance Rating",
+  meetingDate: "Date",
+  courseName: "Course"
+};
 
 return (
   <Card className="bg-white text-black mt-4">
@@ -323,21 +355,30 @@ return (
           )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Typography variant="h5" className="font-bold text-blue-800">{horseName}</Typography>
-            <Typography className="text-sm text-gray-700">Age: {horseAge || "-"} (Foaled: {foalingDate || "-"})</Typography>
-            <Typography className="text-sm text-gray-700">Sex: {horseGender || "-"} | Colour: {horseColour || "-"}</Typography>
-            <Typography className="text-sm text-gray-700">Sire: <span className="font-medium">{sireName || "-"}</span> | Dam: <span className="font-medium">{damName || "-"}</span></Typography>
-            <Typography className="text-sm text-gray-700">Country: {countryCode || "-"}</Typography>
-          </div>
-          <div className="space-y-1">
-            <Typography className="text-sm text-gray-700">Trainer(s): {trainerList.join(", ")}</Typography>
-            <Typography className="text-sm text-gray-700">Owner(s): {ownerList.join(", ")}</Typography>
-            <Typography className="text-sm text-gray-700">Latest Rating: <span className="font-semibold">{performanceRating || "-"}</span></Typography>
-            <Typography className="text-sm text-gray-700">Top Prize: <span className="font-semibold">{maxPrize || "-"}</span></Typography>
-          </div>
+        <div className="space-y-1">
+          <Typography variant="h5" className="font-bold text-blue-800">{horseName}</Typography>
+
+          <Typography className="text-sm text-gray-700">
+            {sireName ? `${sireName} (S)` : "-"} | {horseName} | {horseColour ? `${horseColour} (C)` : "-"} | {horseGender ? `${horseGender} (G)` : "-"} | {damName ? `${damName} (D)` : "-"}
+          </Typography>
+
+          <Typography className="text-sm text-gray-700">
+            Foaled: {foalingDate ? new Date(foalingDate).toLocaleDateString("en-GB").replaceAll("/", "-") : "-"}
+          </Typography>
+
+          <Typography className="text-sm text-gray-700">
+            Trainer(s): {trainerList.length > 0 ? trainerList.join(", ") : "-"}
+          </Typography>
+
+          <Typography className="text-sm text-gray-700">
+            Owner(s): {ownerList.length > 0 ? ownerList.join(", ") : "-"}
+          </Typography>
+
+          <Typography className="text-sm text-gray-700">
+            Latest Rating: <span className="font-semibold">{performanceRating || "-"}</span> | Top Prize: <span className="font-semibold">{maxPrize || "-"}</span>
+          </Typography>
         </div>
+
 
         {isTracked && showNotes && (
           <div className="mt-4 bg-white border border-gray-200 rounded-md p-2 max-h-48 overflow-y-auto">
@@ -383,18 +424,25 @@ return (
               <thead className="bg-blue-gray-50 text-blue-gray-700 text-[11px] uppercase">
                 <tr>
                   {filteredColumns.map((key) => (
-                    <th key={key} className={`px-3 py-2 border-b ${key === "raceTitle" ? "w-[300px] min-w-[300px]" : ""} cursor-pointer hover:text-blue-500`} onClick={() => {
-                      if (sortBy === key) {
-                        setOrder(order === "asc" ? "desc" : "asc");
-                      } else {
-                        setSortBy(key);
-                        setOrder("asc");
-                      }
-                    }}>
-                      {key}
-                      <span className="ml-1">{sortBy === key ? (order === "asc" ? "🔼" : "🔽") : "↕"}</span>
+                    <th
+                      key={key}
+                      className={`px-3 py-2 border-b ${key === "raceTitle" ? "w-[300px] min-w-[300px]" : ""} cursor-pointer hover:text-blue-500`}
+                      onClick={() => {
+                        if (sortBy === key) {
+                          setOrder(order === "asc" ? "desc" : "asc");
+                        } else {
+                          setSortBy(key);
+                          setOrder("asc");
+                        }
+                      }}
+                    >
+                      {columnHeaderMap[key] || key}
+                      <span className="ml-1">
+                        {sortBy === key ? (order === "asc" ? "🔼" : "🔽") : "↕"}
+                      </span>
                     </th>
                   ))}
+
                 </tr>
               </thead>
               <tbody>
@@ -413,6 +461,8 @@ return (
                           >
                             {row[key]}
                           </Link>
+                        ) : key === "meetingDate" ? (
+                          row[key] ? new Date(row[key]).toLocaleDateString("en-GB").replaceAll("/", "-") : "-"
                         ) : (
                           row[key] !== null && row[key] !== undefined ? row[key] : "-"
                         )}
@@ -420,6 +470,7 @@ return (
                     ))}
                   </tr>
                 ))}
+
               </tbody>
             </table>
           </div>

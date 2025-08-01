@@ -93,7 +93,6 @@ const HorseProfile = ({ setSearchQuery }) => {
         />
       </div>
     </div>
-
   );
 };
 
@@ -119,6 +118,14 @@ const ReportTable = ({
     "Stakes_Wins", "Group_Wins", "Group_1_Wins", "WTR", "SWTR",
     "GWTR", "G1WTR", "WIV", "WOE", "WAX", "Percent_RB2"
   ];
+
+  const displayNameMap = {
+    WinPercent_: "Win%",
+    Stakes_Wins: "Stakes Wins",
+    Group_Wins: "Group Wins",
+    Group_1_Wins: "Group1 Wins",
+    Percent_RB2: "RB2%",
+  };
 
   const startPage = Math.max(1, currentPage - 5);
   const endPage = Math.min(startPage + 9, totalPages);
@@ -180,7 +187,7 @@ const ReportTable = ({
                     }}
                   >
                     <Typography variant="small" className="text-[11px] font-bold uppercase flex items-center gap-1 text-blue-gray-400">
-                      {el}
+                      {displayNameMap[el] || el}
                       <span className="text-gray-400">
                         {sortBy === (
                           el === "Horse" ? "Sire" :
@@ -214,7 +221,7 @@ const ReportTable = ({
                   } else if (key === "Horse") {
                     value = (
                       <span
-                        className="text-blue-600 underline cursor-pointer"
+                        className="text-black font-bold underline cursor-pointer"
                         onClick={() => {
                           setSelectedHorse(item["Sire"]);
                           setSelectedHorsePage(1);
@@ -236,6 +243,9 @@ const ReportTable = ({
                     );
                   } else {
                     value = item[key];
+                      if (typeof value === "number") {
+                        value = value.toFixed(2);
+                      }
                   }
 
                   return (
@@ -357,8 +367,8 @@ export function HorseProfiles() {
     setSelectedHorses(updatedHorses);
   };
 
-  const [sortBy, setSortBy] = useState(""); // Column to sort
-  const [order, setOrder] = useState("asc"); // Sorting order (asc/desc)
+  const [sortBy, setSortBy] = useState("Stakes_Wins");
+  const [order, setOrder] = useState("desc"); 
   
   
   
