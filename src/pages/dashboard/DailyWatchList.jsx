@@ -13,7 +13,9 @@ import {
 
 export function DailyWatchList() {
   const [watchListItems, setWatchListItems] = useState([]);
+  const [horseHistoryMap, setHorseHistoryMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [highRatingHorses, setHighRatingHorses] = useState([]);
   const [notesMap, setNotesMap] = useState({});
   const [expandedNotes, setExpandedNotes] = useState({});
   const [trackingInfoCache, setTrackingInfoCache] = useState({});
@@ -113,28 +115,102 @@ export function DailyWatchList() {
       const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const yyyyToday = today.getFullYear();
-      const mmToday = String(today.getMonth() + 1).padStart(2, "0");
-      const ddToday = String(today.getDate()).padStart(2, "0");
-      const todayStr = `${yyyyToday}-${mmToday}-${ddToday}`;
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
+      const todayStr = `${yyyy}-${mm}-${dd}`;
 
       const results = [];
 
       try {
+        // 🔹 Fetch horse tracking info
         const trackedRes = await fetch(
           `https://horseracesbackend-production.up.railway.app/api/horseTracking?user=${encodeURIComponent(userId)}`
         );
         const trackedJson = await trackedRes.json();
-        const trackedNames = [...new Set(trackedJson.data.map(h => h.horseName?.toLowerCase().trim()))];
-        // Create cache keyed by lowercase horse name
+        const trackedData = trackedJson.data || [];
+
+        const trackedNames = [...new Set(trackedData.map(h => h.horseName?.toLowerCase().trim()))];
         const trackingCache = {};
-        trackedJson.data.forEach(entry => {
+        trackedData.forEach(entry => {
           const key = entry.horseName?.toLowerCase()?.trim();
           if (key) trackingCache[key] = entry;
         });
-        setTrackingInfoCache(trackingCache); // You'll define this as a new state
+        setTrackingInfoCache(trackingCache);
+
+        // 🔹 Find High-Performance Horses based on multiple logic criteria
+        const qualifying = [];
+        const historyMap = {};
+        const qualifyingReasons = {};
+
+        await Promise.all(
+          trackedNames.map(async (horse) => {
+            try {
+              const res = await fetch(
+                `https://horseracesbackend-production.up.railway.app/api/APIData_Table2/horse?horseName=${encodeURIComponent(horse)}`
+              );
+              const json = await res.json();
+              const records = (json.data || []).filter(r => r.meetingDate).sort(
+                (a, b) => new Date(a.meetingDate) - new Date(b.meetingDate)
+              );
+
+              if (records.length === 0) return;
+
+              const last = records[records.length - 1];
+              const penultimate = records.length >= 2 ? records[records.length - 2] : null;
+
+              const ranOver80InFirst3 = records.slice(0, 3).some(
+                r => Number(r.performanceRating) > 80
+              );
+
+              const improvedMoreThan5 =
+                penultimate &&
+                Number(last.performanceRating) - Number(penultimate.performanceRating) > 5;
+
+              const hasPSymbol = records.some(
+                r => r.preRaceMasterSymbol &&
+                r.preRaceMasterSymbol.toLowerCase().includes("p")
+              );
+
+              const qualifies = ranOver80InFirst3 || improvedMoreThan5 || hasPSymbol;
+
+              if (qualifies && Number(last.performanceRating) > 90) {
+                console.log(`🌟 ${horse} qualifies for High Performance section`);
+                qualifying.push(horse);
+                historyMap[horse] = last;
+
+                let reason = [];
+                if (ranOver80InFirst3) reason.push("Early rating > 80");
+                if (improvedMoreThan5) reason.push("Improved > 5");
+                if (hasPSymbol) reason.push("'p' in symbol");
+                qualifyingReasons[horse] = reason.join("; ");
+              }
+            } catch (err) {
+              console.error(`❌ Error fetching race data for ${horse}:`, err);
+            }
+          })
+        );
+
+        const enriched = qualifying.map(horse => {
+          const info = trackingCache[horse] || {};
+          const race = historyMap[horse] || {};
+          return {
+            horseName: horse,
+            damName: titleCase(info.damName) || "-",
+            sireName: titleCase(info.sireName) || "-",
+            ownerFullName: titleCase(info.ownerFullName) || "-",
+            trainerFullName: titleCase(info.trainerFullName) || "-",
+            performanceRating: race.performanceRating || "-",
+            meetingDate: race.meetingDate || "-",
+            raceTitle: titleCase(race.raceTitle) || "-",
+            qualifyingReason: qualifyingReasons[horse] || "-"
+          };
+        });
+
+        setHorseHistoryMap(enriched);
 
 
+        // 🔹 Other Races and Watchlist
         const sources = [
           { label: "RacesAndEntries", url: "https://horseracesbackend-production.up.railway.app/api/RacesAndEntries" },
           { label: "FranceRaceRecords", url: "https://horseracesbackend-production.up.railway.app/api/FranceRaceRecords" },
@@ -157,7 +233,6 @@ export function DailyWatchList() {
             const raceTrack = entry.FixtureTrack || entry.Track || entry.Course || entry.Racecourse || entry.track || "-";
             const rawTime = entry.RaceTime || entry.Time || entry.time || "-";
             const formattedTime = toUKTime(rawTime, label);
-
             const raceTitle = entry.RaceTitle || entry.title || entry.Race || "-";
 
             let dateStr = entry.FixtureDate || entry.Date || entry.date;
@@ -174,11 +249,10 @@ export function DailyWatchList() {
 
             if (isNaN(raceDate)) continue;
             raceDate.setHours(0, 0, 0, 0);
-            const yyyy = raceDate.getFullYear();
-            const mm = String(raceDate.getMonth() + 1).padStart(2, "0");
-            const dd = String(raceDate.getDate()).padStart(2, "0");
-            const formattedDate = `${yyyy}-${mm}-${dd}`;
-
+            const ryyyy = raceDate.getFullYear();
+            const rmm = String(raceDate.getMonth() + 1).padStart(2, "0");
+            const rdd = String(raceDate.getDate()).padStart(2, "0");
+            const formattedDate = `${ryyyy}-${rmm}-${rdd}`;
             if (formattedDate !== todayStr) continue;
 
             results.push({
@@ -198,52 +272,38 @@ export function DailyWatchList() {
               ownerFullName: entry.ownerFullName || entry.Owner || "-",
               trainerFullName: entry.trainerFullName || entry.Trainer || "-"
             });
-
           }
         }
 
-        // Watchlist
+        // 🔹 Watchlist
         const watchListRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_watchlist/${userId}`);
         const userWatchList = await watchListRes.json();
-
         userWatchList.forEach((item) => {
           if (item.race_date?.split("T")[0] === todayStr) {
             results.push({
               type: "manual",
               id: item.id,
-              raceTitle: item.race_title,
+              raceTitle: titleCase(item.race_title),
               raceDate: item.race_date?.split("T")[0],
               raceTime: toUKTime(item.race_time),
               sortTime: item.race_time,
               source: item.source_table,
               done: item.done,
               notify: item.notify,
-              bookmark: item.bookmark,       // ✅ Add this
-              notes: item.notes || ""        // ✅ Add this
+              bookmark: item.bookmark,
+              notes: item.notes || ""
             });
           }
         });
 
-        // Sorting based on time in minutes since midnight
+        // 🔹 Sort
         const timeToMinutes = (raw, source = "") => {
           try {
             const cleaned = (raw || "").toLowerCase().trim();
-
             if (source === "FranceRaceRecords" && cleaned.includes("h")) {
               const [hh, mm] = cleaned.split("h").map(Number);
               return hh * 60 + mm;
             }
-
-            const dotMatch = cleaned.match(/^(\d{1,2})\.(\d{2})(am|pm)?$/);
-            if (dotMatch) {
-              let hh = parseInt(dotMatch[1]);
-              const mm = parseInt(dotMatch[2]);
-              const meridian = dotMatch[3];
-              if (meridian === "pm" && hh < 12) hh += 12;
-              if (meridian === "am" && hh === 12) hh = 0;
-              return hh * 60 + mm;
-            }
-
             const colonMatch = cleaned.match(/^(\d{1,2}):(\d{2})(am|pm)?$/);
             if (colonMatch) {
               let hh = parseInt(colonMatch[1]);
@@ -253,18 +313,7 @@ export function DailyWatchList() {
               if (meridian === "am" && hh === 12) hh = 0;
               return hh * 60 + mm;
             }
-
-            const meridianOnly = cleaned.match(/^(\d{1,2})(am|pm)$/);
-            if (meridianOnly) {
-              let hh = parseInt(meridianOnly[1]);
-              const mm = 0;
-              const meridian = meridianOnly[2];
-              if (meridian === "pm" && hh < 12) hh += 12;
-              if (meridian === "am" && hh === 12) hh = 0;
-              return hh * 60;
-            }
-
-            return 1440; // fallback = end of day
+            return 1440;
           } catch {
             return 1440;
           }
@@ -277,9 +326,7 @@ export function DailyWatchList() {
         });
 
         setWatchListItems(results);
-        setNotesMap(Object.fromEntries(
-          results.filter(i => i.type === "manual").map(i => [i.id, i.notes || ""])
-        ));
+        setNotesMap(Object.fromEntries(results.filter(i => i.type === "manual").map(i => [i.id, i.notes || ""])));
       } catch (err) {
         console.error("Daily Watch List Error:", err);
       } finally {
@@ -289,6 +336,7 @@ export function DailyWatchList() {
 
     fetchData();
   }, []);
+
 
   const markAsDone = async (id) => {
     try {
@@ -399,7 +447,7 @@ export function DailyWatchList() {
       };
   return (
     <div className="bg-gray-50 min-h-screen px-2 py-4 sm:px-4 md:px-6 lg:px-8 font-sans text-gray-900">
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="w-full space-y-4 px-2 sm:px-4 md:px-6 lg:px-8">
         <h1 className="text-2xl font-bold">Daily Watch List</h1>
 
         {/* ✅ Updates */}
@@ -408,92 +456,58 @@ export function DailyWatchList() {
             Updates
           </h2>
 
-          <div className="divide-y divide-gray-100">
-            {watchListItems.filter(item => item.type === "race").map((item, idx) => {
-                const info = trackingInfoCache[item.rawHorseName?.toLowerCase()?.trim()] || {};
+          <table className="w-full text-sm text-left text-black border border-gray-200">
+              <thead className="bg-gray-100 text-xs uppercase">
+                <tr>
+                  <th className="px-2 py-2">Horse</th>
+                  <th className="px-2 py-2">Type</th>
+                  <th className="px-2 py-2">Sire</th>
+                  <th className="px-2 py-2">Dam</th>
+                  <th className="px-2 py-2">Owner</th>
+                  <th className="px-2 py-2">Trainer</th>
+                  <th className="px-2 py-2">Race Title</th>
+                  <th className="px-2 py-2">Track</th>
+                  <th className="px-2 py-2">Date</th>
+                  <th className="px-2 py-2">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {watchListItems.filter(item => item.type === "race").map((item, idx) => {
+                  const info = trackingInfoCache[item.rawHorseName?.toLowerCase()?.trim()] || {};
+                  return (
+                    <tr key={`update-${idx}`} className="border-t">
+                      <td className="px-2 py-1 text-xs font-semibold uppercase max-w-[100px] truncate">
+                        <Link
+                          to={`/dashboard/horse/${item.encodedHorseName}`}
+                          className="hover:underline block"
+                          title={item.rawHorseName}
+                        >
+                          {item.rawHorseName}
+                        </Link>
+                      </td>
 
-                return (
-                  <div key={`update-${idx}`} className="py-4 space-y-1 text-gray-800">
-                    <h3 className="font-bold text-black uppercase text-base flex items-center gap-1 flex-wrap">
-                      <Link
-                        to={`/dashboard/horse/${item.encodedHorseName}`}
-                        className="hover:underline"
-                      >
-                        {item.rawHorseName}
-                      </Link>
-
-                      <sup className="flex items-center gap-1">
-                        {info.TrackingType && (
-                          <span className="bg-gray-200 text-gray-800 text-[10px] px-1.5 py-[1px] rounded-full leading-tight">
-                            {info.TrackingType}
-                          </span>
-                        )}
-                        {info.note && (
-                          <button
-                            onClick={() =>
-                              setExpandedNotes(prev => ({
-                                ...prev,
-                                [item.encodedHorseName]: !prev[item.encodedHorseName]
-                              }))
-                            }
-                            className="text-blue-600 text-[10px] hover:underline"
-                          >
-                            [notes]
-                          </button>
-                        )}
-                      </sup>
-                    </h3>
-
-                    {expandedNotes[item.encodedHorseName] && info.note && (
-                      <div className="text-xs text-black pl-4 mt-1">{info.note}</div>
-                    )}
-
-                    <div className="pl-4 text-sm text-black space-y-1 mt-1">
-                      {/* Optional metadata */}
-                      {(() => {
-                        const metadataItems = [];
-                        if (info.sireName) metadataItems.push(`${info.sireName} (S)`);
-                        if (info.damName) metadataItems.push(`${info.damName} (D)`);
-                        if (info.ownerFullName) metadataItems.push(`${info.ownerFullName} (O)`);
-                        if (info.trainerFullName) metadataItems.push(`${info.trainerFullName} (T)`);
-
-                        return (
-                          <>
-                            {metadataItems.length > 0 && (
-                              <div className="text-xs text-black">{metadataItems.join(" | ")}</div>
-                            )}
-                          </>
-                        );
-
-                      })()}
-
-                      {/* Race title and metadata */}
-                      <div className="flex items-center gap-2 mt-1">
-                        <Flag className="w-4 h-4 text-gray-400" />
+                      <td className="px-2 py-1 text-xs">{titleCase(info.TrackingType) || "-"}</td>
+                      <td className="px-2 py-1 text-xs">{titleCase(info.sireName) || "-"}</td>
+                      <td className="px-2 py-1 text-xs">{titleCase(info.damName) || "-"}</td>
+                      <td className="px-2 py-1 text-xs">{titleCase(info.ownerFullName) || "-"}</td>
+                      <td className="px-2 py-1 text-xs">{titleCase(info.trainerFullName) || "-"}</td>
+                      <td className="px-2 py-1 text-xs">
                         <Link
                           to={`/dashboard/racedetails?url=${item.encodedUrl}&RaceTitle=${item.encodedRaceTitle}`}
-                          className="hover:underline text-black"
+                          className="hover:underline text-blue-600"
                         >
-                          {item.raceTitle}
+                          {titleCase(item.raceTitle)}
                         </Link>
-                      </div>
-                      <div className="flex gap-4">
-                        <span>
-                          <Tag className="w-4 h-4 text-gray-400 mr-1 inline" /> {item.raceTrack}
-                        </span>
-                        <span>
-                          <Calendar className="w-4 h-4 text-gray-400 mr-1 inline" /> {formatDate(item.date)}
-                        </span>
-                        <span>
-                          <Clock className="w-4 h-4 text-gray-400 mr-1 inline" /> {item.raceTime}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                      </td>
+                      <td className="px-2 py-1 text-xs">{titleCase(item.raceTrack) || "-"}</td>
+                      <td className="px-2 py-1 text-xs">{formatDate(item.date)}</td>
+                      <td className="px-2 py-1 text-xs">{item.raceTime}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
 
-          </div>
         </div>
 
         {/* 📌 Watchlist Runners */}
@@ -502,82 +516,215 @@ export function DailyWatchList() {
             Watchlist Runners
           </h2>
 
-          <div className="divide-y divide-gray-100 space-y-2">
-            {watchListItems.filter(item => item.type === "manual").map((item, idx) => (
-              <div
-                key={`manual-${idx}`}
-                className={`relative py-4 space-y-2 pr-10 ${item.done ? "text-gray-400 line-through" : "text-black"}`}
+          <div className="overflow-x-auto">
+  <table className="w-full text-sm text-left text-black border border-gray-200">
+    <thead className="bg-gray-100 text-xs uppercase">
+      <tr>
+        <th className="px-2 py-2">Race</th>
+        <th className="px-2 py-2">Date</th>
+        <th className="px-2 py-2">Time</th>
+        <th className="px-2 py-2">Source</th>
+        <th className="px-2 py-2">Notes</th>
+        <th className="px-2 py-2">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {watchListItems.filter(item => item.type === "manual").map((item, idx) => (
+        <tr key={`manual-${idx}`} className={`${item.done ? "text-gray-400 line-through" : "text-black"} border-t`}>
+          <td className="px-2 py-1 text-xs max-w-[160px] truncate">
+            <Link
+              to={`/dashboard/racedetails?RaceTitle=${encodeURIComponent(item.raceTitle)}&meetingDate=${encodeURIComponent(item.raceDate)}&url=https://horseracesbackend-production.up.railway.app/api/${item.source}`}
+              className="hover:underline block"
+              title={titleCase(item.raceTitle)}
+            >
+              {titleCase(item.raceTitle)}
+            </Link>
+          </td>
+          <td className="px-2 py-1 text-xs">{formatDate(item.raceDate)}</td>
+          <td className="px-2 py-1 text-xs">{item.raceTime}</td>
+          <td className="px-2 py-1 text-xs">{item.source}</td>
+          <td className="px-2 py-1">
+            <textarea
+              rows={1}
+              className="w-full px-2 py-1 border rounded text-xs text-gray-700 resize-none"
+              placeholder="Add notes..."
+              value={notesMap[item.id] ?? item.notes}
+              disabled={item.done}
+              onChange={(e) => handleNotesChange(item.id, e.target.value)}
+            />
+          </td>
+          <td className="px-2 py-1 text-xs flex gap-2 items-center">
+            {!item.bookmark && !item.done && (
+              <button
+                onClick={() => markAsDone(item.id)}
+                className="text-black text-xs hover:underline"
+                title="Mark as done"
               >
-                {/* Top-right icons: Bookmark + Notification */}
-                <div className="absolute top-2 right-2 flex items-center gap-2">
-                  <span
-                    className="cursor-pointer"
-                    onClick={() => toggleBookmark(item.id, item.bookmark)}
-                    title={item.bookmark ? "Bookmarked" : "Add Bookmark"}
-                  >
-                    {item.bookmark ? (
-                      <BookmarkCheck className="w-5 h-5 text-blue-600" />
-                    ) : (
-                      <Bookmark className="w-5 h-5 text-gray-400 hover:text-blue-600" />
-                    )}
+                ✓ Done
+              </button>
+            )}
+            <span
+              className="cursor-pointer"
+              onClick={() => toggleBookmark(item.id, item.bookmark)}
+              title={item.bookmark ? "Bookmarked" : "Add Bookmark"}
+            >
+              {item.bookmark ? (
+                <BookmarkCheck className="w-4 h-4 text-blue-600" />
+              ) : (
+                <Bookmark className="w-4 h-4 text-gray-400 hover:text-blue-600" />
+              )}
+            </span>
+            <span
+              className="cursor-pointer"
+              onClick={() => toggleNotification(item.id, item.notify)}
+              title={item.notify ? "Notifications enabled" : "Enable notifications"}
+            >
+              {item.notify ? (
+                <BellRing className="w-4 h-4 text-green-500" />
+              ) : (
+                <Bell className="w-4 h-4 text-gray-400 hover:text-green-500" />
+              )}
+            </span>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+        </div>
+
+        {/* 📊 Yesterday's APIData_Table2 Records */}
+<div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+  <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+    Review List
+  </h2>
+
+  <div className="divide-y divide-gray-100">
+    {Array.isArray(horseHistoryMap) && horseHistoryMap.length > 0 ? (
+      horseHistoryMap.map((entry, idx) => {
+        const key = entry.horseName?.toLowerCase()?.trim();
+        const tracking = trackingInfoCache[key] || {};
+        const encodedHorseName = encodeURIComponent(entry.horseName?.trim());
+        const formattedDateOnly = entry.meetingDate?.slice(0, 10);
+        const encodedDate = encodeURIComponent(formattedDateOnly);
+        const encodedRaceTitle = encodeURIComponent(entry.raceTitle?.trim());
+        const encodedUrl = encodeURIComponent("https://horseracesbackend-production.up.railway.app/api/APIData_Table2");
+
+        return (
+          <div key={`highperf-${idx}`} className="py-4 space-y-1 text-gray-800">
+            {/* HORSE NAME */}
+            <h3 className="font-bold text-black uppercase text-base flex items-center gap-1 flex-wrap">
+              <Link to={`/dashboard/horse/${encodedHorseName}`} className="hover:underline">
+                {entry.horseName}
+              </Link>
+
+              <sup className="flex items-center gap-1">
+                {tracking.TrackingType && (
+                  <span className="bg-gray-200 text-gray-800 text-[10px] px-1.5 py-[1px] rounded-full leading-tight">
+                    {tracking.TrackingType}
                   </span>
-
-                  <span
-                    className="cursor-pointer"
-                    onClick={() => toggleNotification(item.id, item.notify)}
-                    title={item.notify ? "Notifications enabled" : "Enable notifications"}
-                  >
-                    {item.notify ? (
-                      <BellRing className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <Bell className="w-5 h-5 text-gray-400 hover:text-green-500" />
-                    )}
-                  </span>
-                </div>
-
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Link
-                    to={`/dashboard/racedetails?RaceTitle=${encodeURIComponent(item.raceTitle)}&meetingDate=${encodeURIComponent(item.raceDate)}&url=https://horseracesbackend-production.up.railway.app/api/${item.source}`}
-                    className="hover:underline text-black"
-                  >
-                    {titleCase(item.raceTitle)}
-                  </Link>
-                </h3>
-
-                <div className="flex text-sm text-black gap-4">
-                  <span><Calendar className="w-4 h-4 text-gray-400 mr-1 inline" /> {formatDate(item.raceDate)}</span>
-                  <span><Clock className="w-4 h-4 text-gray-400 mr-1 inline" /> {item.raceTime}</span>
-                  <span>🔖 {item.source}</span>
-                </div>
-
-                {/* Notes input field */}
-                <div>
-                  <textarea
-                  rows={1}
-                  className="w-full mt-1 px-2 py-1 border rounded text-sm text-gray-700"
-                  placeholder="Add notes..."
-                  value={notesMap[item.id] ?? item.notes}
-                  disabled={item.done}
-                  onChange={(e) => handleNotesChange(item.id, e.target.value)}
-                />
-
-                </div>
-
-                {/* Mark as Done */}
-                {!item.bookmark && !item.done && (
+                )}
+                {tracking.note && (
                   <button
-                    onClick={() => markAsDone(item.id)}
-                    className="text-black text-sm hover:underline mt-1"
-                    title="Mark as done"
+                    onClick={() =>
+                      setExpandedNotes(prev => ({
+                        ...prev,
+                        [encodedHorseName]: !prev[encodedHorseName],
+                      }))
+                    }
+                    className="text-blue-600 text-[10px] hover:underline"
                   >
-                    ✓ Mark as Done
+                    [notes]
                   </button>
                 )}
-              </div>
-            ))}
+              </sup>
+            </h3>
 
+            {/* Notes section */}
+            {expandedNotes[encodedHorseName] && tracking.note && (
+              <div className="text-xs text-black pl-4 mt-1">{tracking.note}</div>
+            )}
+
+            {/* Metadata and Race Info */}
+            <div className="pl-4 text-sm text-black space-y-1 mt-1">
+              {(() => {
+                const meta = [];
+                if (entry.sireName) meta.push(`${entry.sireName} (S)`);
+                if (entry.damName) meta.push(`${entry.damName} (D)`);
+                if (entry.ownerFullName) meta.push(`${entry.ownerFullName} (O)`);
+                if (entry.trainerFullName) meta.push(`${entry.trainerFullName} (T)`);
+                return meta.length > 0 ? (
+                  <div className="text-xs text-black">{meta.join(" | ")}</div>
+                ) : null;
+              })()}
+
+              {/* Race Title */}
+              <div className="flex items-center gap-2 mt-1">
+                <Flag className="w-4 h-4 text-gray-400" />
+                <Link
+                  to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
+                  className="hover:underline text-indigo-700"
+                >
+                  {entry.raceTitle}
+                </Link>
+              </div>
+
+              {/* Date, Time, Rating */}
+              <div className="flex gap-4 items-center flex-wrap">
+                <span>
+                  <Calendar className="w-4 h-4 text-gray-400 mr-1 inline" />
+                  {formatDate(entry.meetingDate)}
+                </span>
+
+                {entry.scheduledTimeOfRaceLocal && (
+                  <span>
+                    <Clock className="w-4 h-4 text-gray-400 mr-1 inline" />
+                    {new Date(entry.scheduledTimeOfRaceLocal).toLocaleTimeString("en-GB", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                      timeZone: "Europe/London",
+                    })}
+                  </span>
+                )}
+
+                {entry.performanceRating && (
+                  <span className="text-green-700 font-semibold text-sm">
+                    Rating: {entry.performanceRating}
+                  </span>
+                )}
+              </div>
+
+              {/* Qualifying Reason */}
+              {entry.qualifyingReason && (
+                <div className="text-xs italic text-gray-600 mt-1">
+                  Reason: {entry.qualifyingReason}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        );
+      })
+    ) : (
+      <p className="text-gray-500 text-sm">No high performance records found.</p>
+    )}
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       </div>
     </div>
   );

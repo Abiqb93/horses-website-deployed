@@ -21,6 +21,13 @@ export function Home() {
   const [reviewed_results, setreviewed_results] = useState(new Set());
 
 
+  function toTitleCase(str) {
+    return str
+      ?.toLowerCase()
+      .split(" ")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
 
   const [trackingCache, setTrackingCache] = useState({});
   const fetchTrackingDetails = async (horseName) => {
@@ -402,10 +409,21 @@ export function Home() {
             const horseName = rawHorseName?.toLowerCase().trim();
             if (!trackedNames.includes(horseName)) continue;
 
-            const raceTrack = label === "FranceRaceRecords"
-              ? entry.Racecourse || "-"
-              : entry.FixtureTrack || entry.Track || entry.Course || entry.Racecourse || entry.track || "-";
-            let raceTime = entry.RaceTime || entry.Time || entry.time || "-";
+            const raceTrack =
+              entry.FixtureTrack ||
+              entry.Track ||
+              entry.Course ||
+              entry.Racecourse ||
+              entry.track ||
+              entry["Course"] || // for Ireland
+              "-";
+            let raceTime =
+                entry.RaceTime ||
+                entry.Time ||
+                entry.time ||
+                entry["Race Time"] || // Ireland
+                entry.OffTime ||      // Ireland fallback
+                "-";
 
             if (label === "FranceRaceRecords" && typeof raceTime === "string" && raceTime.includes("h")) {
               const [hh, mm] = raceTime.split("h");
@@ -420,7 +438,14 @@ export function Home() {
               }); // e.g., "12:26 PM"
             }
 
-            const raceTitle = entry.RaceTitle || entry.title || entry.Race || "-";
+            let raceTitle =
+                entry.RaceTitle ||
+                entry.title ||
+                entry.Race ||
+                entry["Race Title"] ||  // Ireland
+                entry.EventName ||      // Ireland fallback
+                "-";
+
 
             let dateStr = entry.FixtureDate || entry.Date || entry.date;
             let raceDate;
@@ -507,6 +532,7 @@ export function Home() {
                 time: timeOnly,
                 track: record.courseName || "-",
                 reviewKey,
+                numberOfRunners: record.numberOfRunners, // ✅ Add this line
               });
             }
           }
@@ -547,9 +573,9 @@ export function Home() {
                 <Link to={`/dashboard/horse/${item.encodedHorseName}`} className="hover:underline">
                   {item.rawHorseName}
                 </Link>
-                {(item.sireName || item.damName || item.ownerName) && (
+                {(toTitleCase(item.sireName) || toTitleCase(item.damName) || toTitleCase(item.ownerName)) && (
                   <span className="text-xs text-gray-500 font-normal normal-case">
-                    ({item.sireName || item.damName || item.ownerName})
+                    ({toTitleCase(item.sireName) || toTitleCase(item.damName) || toTitleCase(item.ownerName)})
                   </span>
                 )}
 
@@ -595,10 +621,10 @@ export function Home() {
 
                 const info = trackingCache[item.rawHorseName?.toLowerCase()] || {};
                 const metadata = [
-                  item.sireName || info.sireName,
-                  item.damName || info.damName,
-                  item.ownerName || info.ownerFullName,
-                  info.trainerFullName,
+                  (item.sireName || info.sireName) && `${toTitleCase(item.sireName || info.sireName)} (S)`,
+                  (item.damName || info.damName) && `${toTitleCase(item.damName || info.damName)} (D)`,
+                  (item.ownerName || info.ownerFullName) && `${toTitleCase(item.ownerName || info.ownerFullName)} (O)`,
+                  info.trainerFullName && `${toTitleCase(info.trainerFullName)} (T)`
                 ]
                   .filter(Boolean)
                   .join(" | ");
@@ -629,7 +655,7 @@ export function Home() {
               <div className="ml-4 mt-1 text-[13px] text-black flex flex-wrap gap-x-4 gap-y-1 items-center font-medium">
                 <span className="flex items-center gap-1">
                   <MapPin className="w-4 h-4 text-gray-300" />
-                  {item.raceTrack}
+                  {toTitleCase(item.raceTrack)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4 text-gray-300" />
@@ -676,9 +702,9 @@ export function Home() {
                           <Link to={`/dashboard/horse/${item.encodedHorseName}`} className="hover:underline">
                             {item.rawHorseName}
                           </Link>
-                          {(item.sireName || item.damName || item.ownerName) && (
+                          {(toTitleCase(item.sireName) || toTitleCase(item.damName) || toTitleCase(item.ownerName)) && (
                               <span className="text-xs text-gray-500 font-normal normal-case">
-                                ({item.sireName || item.damName || item.ownerName})
+                                ({toTitleCase(item.sireName) || toTitleCase(item.damName) || toTitleCase(item.ownerName)})
                               </span>
                             )}
 
@@ -719,13 +745,18 @@ export function Home() {
                           if (activeSection === "dam") return null;
 
                           const info = trackingCache[item.rawHorseName?.toLowerCase()] || {};
-                          const sireName = item.sireName || info.sireName;
-                          const damName = item.damName || info.damName;
-                          const ownerName = item.ownerName || info.ownerFullName;
+                          const sireName = toTitleCase(item.sireName) || toTitleCase(info.sireName);
+                          const damName = toTitleCase(item.damName) || toTitleCase(info.damName);
+                          const ownerName = toTitleCase(item.ownerName) || toTitleCase(info.ownerFullName);
                           const trainerName = info.trainerFullName;
 
                           const showOwnerInline = !!item.ownerName;
-                          const metadata = [damName, showOwnerInline ? null : ownerName, trainerName].filter(Boolean).join(" | ");
+                          const metadata = [
+                            sireName && `${toTitleCase(sireName)} (S)`,
+                            damName && `${toTitleCase(damName)} (D)`,
+                            ownerName && `${ownerName} (O)`,
+                            trainerName && `${trainerName} (T)`
+                          ].filter(Boolean).join(" | ");
                           if (!metadata) return null;
 
                           return (
@@ -751,7 +782,7 @@ export function Home() {
                         <div className="ml-4 mt-1 text-[13px] text-black flex flex-wrap gap-x-4 gap-y-1 items-center font-medium">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-4 h-4 text-gray-300" />
-                            {item.raceTrack}
+                            {toTitleCase(item.raceTrack)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-4 h-4 text-gray-300" />
@@ -1021,7 +1052,12 @@ export function Home() {
                                 if (!info) return null;
                                 return (
                                   <div className="ml-4 text-xs text-gray-600 mt-0.5">
-                                    {[info.sireName, info.damName, info.ownerFullName, info.trainerFullName]
+                                    {[
+                                      info.sireName && `${toTitleCase(info.sireName)} (S)`,
+                                      info.damName && `${toTitleCase(info.damName)} (D)`,
+                                      info.ownerFullName && `${toTitleCase(info.ownerFullName)} (O)`,
+                                      info.trainerFullName && `${toTitleCase(info.trainerFullName)} (T)`
+                                    ]
                                       .filter(Boolean)
                                       .join(" | ")}
                                   </div>
@@ -1041,10 +1077,12 @@ export function Home() {
 
                               {/* Race Info Inline */}
                               <div className="ml-4 mt-1 text-[13px] text-black flex flex-wrap gap-x-4 gap-y-1 items-center font-medium">
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="w-4 h-4 text-gray-300" />
-                                  {res.track}
-                                </span>
+                                <span className="flex items-center gap-1 text-black font-bold">
+                                  <CheckCircle className="w-4 h-4 text-gray-300" />
+                                  FP: {res.position}
+                                  {res.numberOfRunners && (
+                                    <span className="font-normal text-gray-600"> / {res.numberOfRunners}</span>
+                                  )}
 
                                 {res.time && (
                                   <span className="flex items-center gap-1">
@@ -1052,6 +1090,12 @@ export function Home() {
                                     {res.time}
                                   </span>
                                 )}
+
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-4 h-4 text-gray-300" />
+                                  {toTitleCase(res.track)}
+                                </span>
+
 
                                 <span className="flex items-center gap-1">
                                   <Flag className="w-4 h-4 text-gray-300" />
@@ -1065,10 +1109,9 @@ export function Home() {
 
                                 </span>
 
-                                <span className="flex items-center gap-1 text-black font-bold">
-                                  <CheckCircle className="w-4 h-4 text-gray-300" />
-                                  Finished {res.position}
+
                                 </span>
+
                               </div>
                             </div>
 
