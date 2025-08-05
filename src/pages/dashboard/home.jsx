@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Clock, Flag, CalendarDays, CheckCircle } from "lucide-react";
+import { MapPin, Clock, Flag, CalendarDays, CheckCircle, TrendingUp  } from "lucide-react";
 
 
 export function Home() {
@@ -17,6 +17,7 @@ export function Home() {
   const [selectedSire, setSelectedSire] = useState("");
   const [selectedDam, setSelectedDam] = useState("");
   const [selectedOwner, setSelectedOwner] = useState("");
+  const [predictedRatings, setPredictedRatings] = useState([]);
 
   const [reviewed_results, setreviewed_results] = useState(new Set());
 
@@ -28,6 +29,17 @@ export function Home() {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
   }
+
+  // Fetch predicted Timeform ratings
+  useEffect(() => {
+  fetch('https://horseracesbackend-production.up.railway.app/api/predicted_timeform')
+    .then(res => res.json())
+    .then(data => {
+      setPredictedRatings(data);
+      console.log("[Fetched] predicted_timeform:", data.slice(0, 5));
+    })
+    .catch(err => console.error("Error fetching predicted_timeform:", err));
+}, []);
 
   const [trackingCache, setTrackingCache] = useState({});
   const fetchTrackingDetails = async (horseName) => {
@@ -989,6 +1001,7 @@ export function Home() {
                       <CalendarDays className="w-5 h-5 text-gray-400" />
                       {date}
                     </div>
+
                     <ul className="space-y-2">
                       {group.map((res) => {
                         const encodedRaceTitle = encodeURIComponent(res.raceTitle?.trim());
@@ -1060,6 +1073,39 @@ export function Home() {
                                     ]
                                       .filter(Boolean)
                                       .join(" | ")}
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Predicted Timeform Rating */}
+                              {(() => {
+                                const normalizeDate = (d) => {
+                                  const date = new Date(d);
+                                  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()).toISOString().split("T")[0];
+                                };
+
+                                const match = predictedRatings.find(
+                                  (p) =>
+                                    p.horseName?.toLowerCase().trim() === res.horseName?.toLowerCase().trim() &&
+                                    normalizeDate(p.meetingDate) === normalizeDate(res.date)
+                                );
+
+                                console.log("[🔍 Matching Prediction]", {
+                                  horseName: res.horseName,
+                                  date: res.date,
+                                  normalizedDate: normalizeDate(res.date),
+                                  predictedDate: normalizeDate(match?.meetingDate),
+                                  found: !!match,
+                                  matchedHorseName: match?.horseName,
+                                  matchedDate: match?.meetingDate,
+                                  predicted: match?.Predicted_timefigure
+                                });
+
+                                if (!match) return null;
+
+                                return (
+                                  <div className="ml-4 text-xs text-blue-700 font-medium mt-0.5">
+                                    Predicted Timeform Rating: {match.Predicted_timefigure.toFixed(2)}
                                   </div>
                                 );
                               })()}
