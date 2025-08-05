@@ -17,7 +17,7 @@ export function Home() {
   const [selectedSire, setSelectedSire] = useState("");
   const [selectedDam, setSelectedDam] = useState("");
   const [selectedOwner, setSelectedOwner] = useState("");
-  const [predictedRatings, setPredictedRatings] = useState([]);
+  // const [predictedRatings, setPredictedRatings] = useState([]);
 
   const [reviewed_results, setreviewed_results] = useState(new Set());
 
@@ -30,16 +30,16 @@ export function Home() {
       .join(" ");
   }
 
-  // Fetch predicted Timeform ratings
-  useEffect(() => {
-  fetch('https://horseracesbackend-production.up.railway.app/api/predicted_timeform')
-    .then(res => res.json())
-    .then(data => {
-      setPredictedRatings(data);
-      console.log("[Fetched] predicted_timeform:", data.slice(0, 5));
-    })
-    .catch(err => console.error("Error fetching predicted_timeform:", err));
-}, []);
+//   // Fetch predicted Timeform ratings
+//   useEffect(() => {
+//   fetch('https://horseracesbackend-production.up.railway.app/api/predicted_timeform')
+//     .then(res => res.json())
+//     .then(data => {
+//       setPredictedRatings(data);
+//       console.log("[Fetched] predicted_timeform:", data.slice(0, 5));
+//     })
+//     .catch(err => console.error("Error fetching predicted_timeform:", err));
+// }, []);
 
   const [trackingCache, setTrackingCache] = useState({});
   const fetchTrackingDetails = async (horseName) => {
@@ -1077,39 +1077,7 @@ export function Home() {
                                 );
                               })()}
 
-                              {/* Predicted Timeform Rating */}
-                              {(() => {
-                                const normalizeDate = (d) => {
-                                  const date = new Date(d);
-                                  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()).toISOString().split("T")[0];
-                                };
-
-                                const match = predictedRatings.find(
-                                  (p) =>
-                                    p.horseName?.toLowerCase().trim() === res.horseName?.toLowerCase().trim() &&
-                                    normalizeDate(p.meetingDate) === normalizeDate(res.date)
-                                );
-
-                                console.log("[🔍 Matching Prediction]", {
-                                  horseName: res.horseName,
-                                  date: res.date,
-                                  normalizedDate: normalizeDate(res.date),
-                                  predictedDate: normalizeDate(match?.meetingDate),
-                                  found: !!match,
-                                  matchedHorseName: match?.horseName,
-                                  matchedDate: match?.meetingDate,
-                                  predicted: match?.Predicted_timefigure
-                                });
-
-                                if (!match) return null;
-
-                                return (
-                                  <div className="ml-4 text-xs text-blue-700 font-medium mt-0.5">
-                                    Predicted Timeform Rating: {match.Predicted_timefigure.toFixed(2)}
-                                  </div>
-                                );
-                              })()}
-
+                              
                               {/* Notes display */}
                               {(() => {
                                 const info = trackingCache[res.horseName?.toLowerCase()];
