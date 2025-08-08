@@ -115,8 +115,7 @@ const ReportTable = ({
 
   const columnsToDisplay = [
     "Horse", "Country", "Runs", "Wins", "WinPercent_",
-    "Stakes_Wins", "Group_Wins", "Group_1_Wins", "WTR", "SWTR",
-    "GWTR", "G1WTR", "WIV", "WOE", "WAX", "Percent_RB2"
+    "Stakes_Wins", "Group_Wins", "Group_1_Wins", "WIV", "WOE", "WAX", "Percent_RB2"
   ];
 
   const displayNameMap = {

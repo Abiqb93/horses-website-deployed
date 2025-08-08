@@ -36,16 +36,23 @@ export function DailyWatchList() {
 
     // === 1. France format e.g., 13h30 ===
     if (sourceLabel.toLowerCase() === "franceracerecords" && cleaned.includes("h")) {
-      const [hh, mm] = cleaned.split("h").map(Number);
-      if (isNaN(hh) || isNaN(mm)) return "-";
-      const date = new Date();
-      date.setHours(hh, mm);
-      return date.toLocaleTimeString("en-GB", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      }).toLowerCase();
-    }
+        const [hh, mm] = cleaned.split("h").map(Number);
+        if (isNaN(hh) || isNaN(mm)) return "-";
+
+        // Construct time in France time zone (Europe/Paris)
+        const franceDate = new Date();
+        franceDate.setHours(hh, mm, 0);
+
+        // Convert and return in UK local time (Europe/London)
+        const ukTime = new Intl.DateTimeFormat("en-GB", {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: 'Europe/London'
+        }).format(franceDate);
+
+        return ukTime.toLowerCase();
+      }
 
     // === 2. 24-hour dot format e.g., 14.38 ===
     const dot24Match = cleaned.match(/^(\d{1,2})\.(\d{2})$/);
@@ -475,122 +482,137 @@ return (
           <span>Loading watch list data...</span>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">Today’s Watch List</h2>
+<div className="bg-white rounded-xl shadow-sm p-6">
+  <div className="w-full overflow-x-auto">
+    <table className="min-w-[1000px] w-full text-xs text-left text-black border border-gray-200 rounded overflow-hidden">
+      <thead className="bg-gray-100 uppercase text-gray-700">
+        <tr>
+          <th className="px-3 py-2">Date</th>
+          <th className="px-3 py-2">Time</th>
+          <th className="px-3 py-2">Reason</th>
+          <th className="px-3 py-2">Horse</th>
+          <th className="px-3 py-2">Type</th>
+          <th className="px-3 py-2">Race</th>
+          <th className="px-3 py-2">Track</th>
+          <th className="px-3 py-2 w-[200px]">Notes</th>
+          <th className="px-3 py-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {watchListItems.map((item, idx) => {
+          const isManual = item.type === "manual";
+          const info = isManual ? {} : trackingInfoCache[item.rawHorseName?.toLowerCase()?.trim()] || {};
+          const notesValue = notesMap[item.id] ?? item.notes;
+          const sourceKey = (item.source || item.label || "").toLowerCase();
+          const displaySource = sourceDisplayMap[sourceKey] || titleCase(item.source || item.label || "-");
 
-          {/* 🧠 Unified Table */}
-          <table className="w-full text-sm text-left text-black border border-gray-200">
-            <thead className="bg-gray-100 text-xs uppercase">
-              <tr>
-                <th className="px-2 py-2">Date</th>
-                <th className="px-2 py-2">Time</th>
-                <th className="px-2 py-2">Reason</th>
-                <th className="px-2 py-2">Horse</th>
-                <th className="px-2 py-2">Type</th>
-                <th className="px-2 py-2">Race Title</th>
-                <th className="px-2 py-2">Track</th>
-                <th className="px-2 py-2">Owner</th>
-                <th className="px-2 py-2">Trainer</th>
-                <th className="px-2 py-2">Notes</th>
-                <th className="px-2 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {watchListItems.map((item, idx) => {
-                const isManual = item.type === "manual";
-                const info = isManual ? {} : trackingInfoCache[item.rawHorseName?.toLowerCase()?.trim()] || {};
-                const notesValue = notesMap[item.id] ?? item.notes;
-                const sourceKey = (item.source || item.label || "").toLowerCase();
-                const displaySource = sourceDisplayMap[sourceKey] || titleCase(item.source || item.label || "-");
+          return (
+            <tr
+              key={`entry-${idx}`}
+              className={`border-t ${
+                isManual && item.done ? "text-gray-400 line-through bg-gray-50" : "text-black bg-white"
+              }`}
+            >
+              <td className="px-3 py-2 whitespace-nowrap">{formatDate(item.date || item.raceDate)}</td>
+              <td className="px-3 py-2 whitespace-nowrap">{item.raceTime}</td>
+              <td className="px-3 py-2 text-gray-600 italic">
+                {isManual ? `WatchList Record (${displaySource})` : "Tracked Horse Update"}
+              </td>
+              <td className="px-3 py-2 font-bold text-blue-800 whitespace-nowrap align-top">
+                {isManual ? (
+                  "-"
+                ) : (
+                  <>
+                    <Link
+                      to={`/dashboard/horse/${item.encodedHorseName}`}
+                      className="hover:underline"
+                      title={item.rawHorseName}
+                    >
+                      {item.rawHorseName}
+                    </Link>
+                    <div className="mt-1 text-[10px] text-gray-600 font-normal leading-tight">
+                      {info.sireName && <div>{titleCase(info.sireName)} (S)</div>}
+                      {info.damName && <div>{titleCase(info.damName)} (D)</div>}
+                      {info.ownerFullName && <div>{titleCase(info.ownerFullName)} (O)</div>}
+                      {info.trainerFullName && <div>{titleCase(info.trainerFullName)} (T)</div>}
+                    </div>
 
-                return (
-                  <tr
-                    key={`entry-${idx}`}
-                    className={`border-t ${isManual && item.done ? "text-gray-400 line-through" : "text-black"}`}
-                  >
-                    <td className="px-2 py-1 text-xs">{formatDate(item.date || item.raceDate)}</td>
-                    <td className="px-2 py-1 text-xs">{item.raceTime}</td>
-                    <td className="px-2 py-1 text-xs">
-                      {isManual
-                        ? `Added to watch list for today from ${displaySource}`
-                        : "Tracked horse update"}
-                    </td>
-                    <td className="px-2 py-1 text-xs font-normal capitalize tracking-wide font-sans max-w-[100px] truncate">
-                      {isManual ? (
-                        "-"
-                      ) : (
-                        <Link
-                          to={`/dashboard/horse/${item.encodedHorseName}`}
-                          className="text-black font-normal font-sans tracking-wide capitalize hover:underline no-underline"
-                          title={item.rawHorseName}
-                        >
-                          {item.rawHorseName}
-                        </Link>
-                      )}
-                    </td>
-                    <td className="px-2 py-1 text-xs">
-                      {isManual
-                        ? displaySource
-                        : titleCase(info.TrackingType || "-")}
-                    </td>
-                    <td className="px-2 py-1 text-xs max-w-[160px] truncate">
-                      <Link
-                        to={`/dashboard/racedetails?RaceTitle=${encodeURIComponent(item.raceTitle)}&meetingDate=${encodeURIComponent(item.date || item.raceDate)}&url=https://horseracesbackend-production.up.railway.app/api/${item.source || item.label}`}
-                        className="hover:underline text-blue-600"
+                  </>
+                )}
+              </td>
+              <td className="px-3 py-2">
+                {isManual ? displaySource : titleCase(info.TrackingType || "-")}
+              </td>
+              <td className="px-3 py-2 font-bold text-blue-800 max-w-[180px] truncate">
+                <Link
+                  to={`/dashboard/racedetails?RaceTitle=${encodeURIComponent(
+                    item.raceTitle
+                  )}&meetingDate=${encodeURIComponent(item.date || item.raceDate)}&url=https://horseracesbackend-production.up.railway.app/api/${item.source || item.label}`}
+                  className="hover:underline"
+                >
+                  {titleCase(item.raceTitle)}
+                </Link>
+              </td>
+              <td className="px-3 py-2">{titleCase(item.raceTrack || "-")}</td>
+              <td className="px-3 py-2 w-[200px] align-top">
+                {isManual ? (
+                  <textarea
+                    rows={2}
+                    className="w-full px-2 py-1 border rounded text-xs resize-y text-gray-800"
+                    placeholder="Add notes..."
+                    value={notesValue}
+                    disabled={item.done}
+                    onChange={(e) => handleNotesChange(item.id, e.target.value)}
+                  />
+                ) : (
+                  "-"
+                )}
+              </td>
+              <td className="px-3 py-2 align-top">
+                <div className="flex items-center gap-2">
+                  {isManual && !item.bookmark && !item.done && (
+                    <button
+                      onClick={() => markAsDone(item.id)}
+                      className="text-xs text-black hover:underline"
+                      title="Mark as done"
+                    >
+                      ✓ Done
+                    </button>
+                  )}
+                  {isManual && (
+                    <>
+                      <span
+                        className="cursor-pointer"
+                        onClick={() => toggleBookmark(item.id, item.bookmark)}
                       >
-                        {titleCase(item.raceTitle)}
-                      </Link>
-                    </td>
-                    <td className="px-2 py-1 text-xs">{titleCase(item.raceTrack || "-")}</td>
-                    <td className="px-2 py-1 text-xs">{titleCase(info.ownerFullName || item.ownerFullName || "-")}</td>
-                    <td className="px-2 py-1 text-xs">{titleCase(info.trainerFullName || item.trainerFullName || "-")}</td>
-                    <td className="px-2 py-1 text-xs">
-                      {isManual ? (
-                        <textarea
-                          rows={1}
-                          className="w-full px-2 py-1 border rounded text-xs text-gray-700 resize-none"
-                          placeholder="Add notes..."
-                          value={notesValue}
-                          disabled={item.done}
-                          onChange={(e) => handleNotesChange(item.id, e.target.value)}
-                        />
-                      ) : "-"}
-                    </td>
-                    <td className="px-2 py-1 text-xs flex gap-2 items-center">
-                      {isManual && !item.bookmark && !item.done && (
-                        <button
-                          onClick={() => markAsDone(item.id)}
-                          className="text-black text-xs hover:underline"
-                          title="Mark as done"
-                        >
-                          ✓ Done
-                        </button>
-                      )}
-                      {isManual && (
-                        <>
-                          <span className="cursor-pointer" onClick={() => toggleBookmark(item.id, item.bookmark)}>
-                            {item.bookmark ? (
-                              <BookmarkCheck className="w-4 h-4 text-blue-600" />
-                            ) : (
-                              <Bookmark className="w-4 h-4 text-gray-400 hover:text-blue-600" />
-                            )}
-                          </span>
-                          <span className="cursor-pointer" onClick={() => toggleNotification(item.id, item.notify)}>
-                            {item.notify ? (
-                              <BellRing className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <Bell className="w-4 h-4 text-gray-400 hover:text-green-500" />
-                            )}
-                          </span>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        {item.bookmark ? (
+                          <BookmarkCheck className="w-4 h-4 text-blue-600" />
+                        ) : (
+                          <Bookmark className="w-4 h-4 text-gray-400 hover:text-blue-600" />
+                        )}
+                      </span>
+                      <span
+                        className="cursor-pointer"
+                        onClick={() => toggleNotification(item.id, item.notify)}
+                      >
+                        {item.notify ? (
+                          <BellRing className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Bell className="w-4 h-4 text-gray-400 hover:text-green-500" />
+                        )}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+</div>
+
       )}
     </div>
   </div>

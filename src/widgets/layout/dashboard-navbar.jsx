@@ -31,15 +31,32 @@ import {
   setOpenSidenav,
 } from "@/context";
 
-import UserContext from "@/context/UserContext"; // ✅ import user context
+import UserContext from "@/context/UserContext";
 
 export function DashboardNavbar() {
   const [controller, dispatch] = useMaterialTailwindController();
   const { fixedNavbar, openSidenav } = controller;
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { user, setUser } = useContext(UserContext); // ✅ get user
-  const [layout, page] = pathname.split("/").filter((el) => el !== "");
+  const { user, setUser } = useContext(UserContext);
+
+  // Extract path segments
+  const pathSegments = pathname.split("/").filter((el) => el !== "");
+
+  // Format display names for breadcrumbs
+  const formatSegment = (segment) => {
+    const map = {
+      dashboard: "Dashboard",
+      myraces: "MyRaces",
+      myhorses: "MyHorses",
+      userprofile: "UserProfile",
+      reviewlist: "ReviewList",
+      // ➕ Add other mappings here as needed
+    };
+    return map[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+  };
+
+  const formattedSegments = pathSegments.map(formatSegment);
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -59,33 +76,36 @@ export function DashboardNavbar() {
       blurred={fixedNavbar}
     >
       <div className="flex flex-col-reverse justify-between gap-6 md:flex-row md:items-center">
-        {/* LEFT: Breadcrumbs + Page Title */}
+        {/* LEFT: Breadcrumbs only */}
         <div className="capitalize">
           <Breadcrumbs
             className={`bg-transparent p-0 transition-all ${
               fixedNavbar ? "mt-1" : ""
             }`}
           >
-            <Link to={`/${layout}`}>
-              <Typography
-                variant="small"
-                color="blue-gray"
-                className="font-normal opacity-50 transition-all hover:text-blue-500 hover:opacity-100"
-              >
-                {layout}
-              </Typography>
-            </Link>
-            <Typography
-              variant="small"
-              color="blue-gray"
-              className="font-normal"
-            >
-              {page}
-            </Typography>
+            {formattedSegments.map((segment, index) => (
+              index !== formattedSegments.length - 1 ? (
+                <Link key={index} to={`/${pathSegments.slice(0, index + 1).join("/")}`}>
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-normal opacity-50 transition-all hover:text-blue-500 hover:opacity-100"
+                  >
+                    {segment}
+                  </Typography>
+                </Link>
+              ) : (
+                <Typography
+                  key={index}
+                  variant="small"
+                  color="blue-gray"
+                  className="font-normal"
+                >
+                  {segment}
+                </Typography>
+              )
+            ))}
           </Breadcrumbs>
-          <Typography variant="h6" color="blue-gray">
-            {page}
-          </Typography>
         </div>
 
         {/* RIGHT: Icons + Auth Dropdown */}
@@ -103,7 +123,6 @@ export function DashboardNavbar() {
             <Bars3Icon strokeWidth={3} className="h-6 w-6 text-blue-gray-500" />
           </IconButton>
 
-          {/* ✅ Conditional Auth UI */}
           {user ? (
             <Menu>
               <MenuHandler>
@@ -148,7 +167,6 @@ export function DashboardNavbar() {
             </>
           )}
 
-          {/* 🔔 Notifications */}
           <Menu>
             <MenuHandler>
               <IconButton variant="text" color="blue-gray">
@@ -228,7 +246,6 @@ export function DashboardNavbar() {
             </MenuList>
           </Menu>
 
-          {/* ⚙️ Settings */}
           <IconButton
             variant="text"
             color="blue-gray"

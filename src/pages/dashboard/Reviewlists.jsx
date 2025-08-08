@@ -86,8 +86,8 @@ export function ReviewListPage() {
       if (review.condition3) reasons.push("'p' in symbol");
 
       return {
-        horseId: review.id,                     // ✅ Needed for PATCH
-        notes: review.notes || "",              // ✅ Initial note
+        horseId: review.id,
+        notes: review.notes || "",
         horseName: r.horseName,
         meetingDate: r.meetingDate,
         raceTitle: titleCase(r.raceTitle),
@@ -97,6 +97,9 @@ export function ReviewListPage() {
         sireName: titleCase(r.sireName) || "-",
         ownerFullName: titleCase(r.ownerFullName) || "-",
         trainerFullName: titleCase(r.trainerFullName) || "-",
+        horseColour: titleCase(r.horseColour) || "",   // ✅ NEW
+        horseAge: r.horseAge || "",                    // ✅ NEW
+        horseGender: titleCase(r.horseGender) || "",   // ✅ NEW
         qualifyingReason: reasons.join("; ")
       };
     });
@@ -289,15 +292,21 @@ const handleSaveNote = async (horseId) => {
                               <div className="pl-4 text-sm text-black space-y-1 mt-1">
                                 {/* Metadata */}
                                 {(() => {
-                                  const meta = [];
-                                  if (entry.sireName) meta.push(`${entry.sireName} (S)`);
-                                  if (entry.damName) meta.push(`${entry.damName} (D)`);
-                                  if (entry.ownerFullName) meta.push(`${entry.ownerFullName} (O)`);
-                                  if (entry.trainerFullName) meta.push(`${entry.trainerFullName} (T)`);
+                                  const meta = [
+                                    entry.sireName && `${entry.sireName} (S)`,
+                                    entry.damName && `${entry.damName} (D)`,
+                                    entry.ownerFullName && `${entry.ownerFullName} (O)`,
+                                    entry.trainerFullName && `${entry.trainerFullName} (T)`,
+                                    entry.horseColour && `${entry.horseColour} (C)`,
+                                    entry.horseAge && `Age: ${entry.horseAge}`,
+                                    entry.horseGender && `${entry.horseGender}`
+                                  ].filter(Boolean);
+
                                   return meta.length > 0 ? (
                                     <div className="text-xs text-black">{meta.join(" | ")}</div>
                                   ) : null;
                                 })()}
+
 
                                 {/* Race title */}
                                 <div className="flex items-center gap-2 mt-1">

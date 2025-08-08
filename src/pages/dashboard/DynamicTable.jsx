@@ -136,6 +136,9 @@ const DynamicTable = ({ data, refreshHorseData }) => {
         damName: mostRecent?.damName || "",
         ownerFullName: mostRecent?.ownerFullName || "",
         trainerFullName: mostRecent?.trainerFullName || "",
+        horseAge: mostRecent?.horseAge || "",
+        horseGender: mostRecent?.horseGender || "",
+        horseColour: mostRecent?.horseColour || "",
       };
 
       const res = await fetch("https://horseracesbackend-production.up.railway.app/api/horseTracking", {

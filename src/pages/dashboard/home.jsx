@@ -637,31 +637,33 @@ export function Home() {
 
               {/* METADATA */}
               {(() => {
-                const isFromTracked = ["RaceUpdates", "DeclarationsTracking", "EntriesTracking", "ClosingEntries"].some(section =>
-                  groupedNotifications[section]?.today?.some(e => e.raceKey === item.raceKey) ||
-                  groupedNotifications[section]?.upcoming?.some(e => e.raceKey === item.raceKey)
-                );
+                  const isFromTracked = ["RaceUpdates", "DeclarationsTracking", "EntriesTracking", "ClosingEntries"].some(section =>
+                    groupedNotifications[section]?.today?.some(e => e.raceKey === item.raceKey) ||
+                    groupedNotifications[section]?.upcoming?.some(e => e.raceKey === item.raceKey)
+                  );
+                  if (!isFromTracked) return null;
 
-                if (!isFromTracked) return null;
+                  const info = trackingCache[item.rawHorseName?.toLowerCase()] || {};
 
-                const info = trackingCache[item.rawHorseName?.toLowerCase()] || {};
-                const metadata = [
-                  (item.sireName || info.sireName) && `${toTitleCase(item.sireName || info.sireName)} (S)`,
-                  (item.damName || info.damName) && `${toTitleCase(item.damName || info.damName)} (D)`,
-                  (item.ownerName || info.ownerFullName) && `${toTitleCase(item.ownerName || info.ownerFullName)} (O)`,
-                  info.trainerFullName && `${toTitleCase(info.trainerFullName)} (T)`
-                ]
-                  .filter(Boolean)
-                  .join(" | ");
+                  const metadata = [
+                    (item.sireName || info.sireName) && `${toTitleCase(item.sireName || info.sireName)} (S)`,
+                    (item.damName || info.damName) && `${toTitleCase(item.damName || info.damName)} (D)`,
+                    (item.ownerName || info.ownerFullName) && `${toTitleCase(item.ownerName || info.ownerFullName)} (O)`,
+                    info.trainerFullName && `${toTitleCase(info.trainerFullName)} (T)`,
+                    info.horseColour && `${toTitleCase(info.horseColour)} (C)`,
+                    info.horseAge && `Age: ${info.horseAge}`,
+                    info.horseGender && `${toTitleCase(info.horseGender)}`
+                  ].filter(Boolean).join(" | ");
 
-                if (!metadata) return null;
+                  if (!metadata) return null;
 
-                return (
-                  <div className="ml-4 text-xs text-gray-600 mt-0.5">
-                    {metadata}
-                  </div>
-                );
-              })()}
+                  return (
+                    <div className="ml-4 text-xs text-gray-600 mt-0.5">
+                      {metadata}
+                    </div>
+                  );
+                })()}
+
 
 
 
@@ -766,30 +768,28 @@ export function Home() {
 
                         {/* METADATA */}
                         {(() => {
-                          // Skip rendering metadata in "Mare Updates" (i.e. dam tab)
-                          if (activeSection === "dam") return null;
+                            if (activeSection === "dam") return null;
 
-                          const info = trackingCache[item.rawHorseName?.toLowerCase()] || {};
-                          const sireName = toTitleCase(item.sireName) || toTitleCase(info.sireName);
-                          const damName = toTitleCase(item.damName) || toTitleCase(info.damName);
-                          const ownerName = toTitleCase(item.ownerName) || toTitleCase(info.ownerFullName);
-                          const trainerName = info.trainerFullName;
+                            const info = trackingCache[item.rawHorseName?.toLowerCase()] || {};
 
-                          const showOwnerInline = !!item.ownerName;
-                          const metadata = [
-                            sireName && `${toTitleCase(sireName)} (S)`,
-                            damName && `${toTitleCase(damName)} (D)`,
-                            ownerName && `${ownerName} (O)`,
-                            trainerName && `${trainerName} (T)`
-                          ].filter(Boolean).join(" | ");
-                          if (!metadata) return null;
+                            const metadata = [
+                              (item.sireName || info.sireName) && `${toTitleCase(item.sireName || info.sireName)} (S)`,
+                              (item.damName || info.damName) && `${toTitleCase(item.damName || info.damName)} (D)`,
+                              (item.ownerName || info.ownerFullName) && `${toTitleCase(item.ownerName || info.ownerFullName)} (O)`,
+                              info.trainerFullName && `${toTitleCase(info.trainerFullName)} (T)`,
+                              info.horseColour && `${toTitleCase(info.horseColour)} (C)`,
+                              info.horseAge && `Age: ${info.horseAge}`,
+                              info.horseGender && `${toTitleCase(info.horseGender)}`
+                            ].filter(Boolean).join(" | ");
 
-                          return (
-                            <div className="ml-4 text-xs text-gray-600 mt-0.5">
-                              {metadata}
-                            </div>
-                          );
-                        })()}
+                            if (!metadata) return null;
+
+                            return (
+                              <div className="ml-4 text-xs text-gray-600 mt-0.5">
+                                {metadata}
+                              </div>
+                            );
+                          })()}
 
 
                         {/* NOTES */}
@@ -1074,21 +1074,26 @@ export function Home() {
 
                               {/* Metadata */}
                               {(() => {
-                                const info = trackingCache[res.horseName?.toLowerCase()];
-                                if (!info) return null;
-                                return (
-                                  <div className="ml-4 text-xs text-gray-600 mt-0.5">
-                                    {[
-                                      info.sireName && `${toTitleCase(info.sireName)} (S)`,
-                                      info.damName && `${toTitleCase(info.damName)} (D)`,
-                                      info.ownerFullName && `${toTitleCase(info.ownerFullName)} (O)`,
-                                      info.trainerFullName && `${toTitleCase(info.trainerFullName)} (T)`
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" | ")}
-                                  </div>
-                                );
-                              })()}
+                                  const info = trackingCache[res.horseName?.toLowerCase()];
+                                  if (!info) return null;
+
+                                  const metadata = [
+                                    info.sireName && `${toTitleCase(info.sireName)} (S)`,
+                                    info.damName && `${toTitleCase(info.damName)} (D)`,
+                                    info.ownerFullName && `${toTitleCase(info.ownerFullName)} (O)`,
+                                    info.trainerFullName && `${toTitleCase(info.trainerFullName)} (T)`,
+                                    info.horseColour && `${toTitleCase(info.horseColour)} (C)`,
+                                    info.horseAge && `Age: ${info.horseAge}`,
+                                    info.horseGender && `${toTitleCase(info.horseGender)}`
+                                  ].filter(Boolean).join(" | ");
+
+                                  return (
+                                    <div className="ml-4 text-xs text-gray-600 mt-0.5">
+                                      {metadata}
+                                    </div>
+                                  );
+                                })()}
+
 
                               
                               {/* Notes display */}
