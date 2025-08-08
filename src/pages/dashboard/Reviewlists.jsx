@@ -83,7 +83,7 @@ export function ReviewListPage() {
       const reasons = [];
       if (review.condition1) reasons.push("Early rating > 80");
       if (review.condition2) reasons.push("Improved > 5");
-      if (review.condition3) reasons.push("New Rating");
+      if (review.condition3) reasons.push("New Timeform p or P Rating");
 
       return {
         horseId: review.id,
@@ -112,7 +112,7 @@ export function ReviewListPage() {
   const allCategories = [
     "Early rating > 80",
     "Improved > 5",
-    "New Rating"
+    "New Timeform p or P Rating"
   ];
 
   entries.forEach(entry => {
@@ -121,7 +121,7 @@ export function ReviewListPage() {
       grouped[date] = {
         "Early rating > 80": [],
         "Improved > 5": [],
-        "New Rating": []
+        "New Timeform p or P Rating": []
       };
     }
 
@@ -253,7 +253,7 @@ const handleSaveNote = async (horseId) => {
                       {/* Horse cards under each reason */}
                      {expandedReasons[`${date}__${reason}`] && (
                         horses.length === 0 ? (
-                          <div className="pl-6 text-sm text-gray-500 italic">(no horses found)</div>
+                          <div className="pl-6 text-sm text-gray-500 italic">(no qualifiers today)</div>
                         ) : (
                           horses.map((entry, idx) => {
                             const key = entry.horseName?.toLowerCase()?.trim();
