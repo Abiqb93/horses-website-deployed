@@ -83,7 +83,7 @@ export function ReviewListPage() {
       const reasons = [];
       if (review.condition1) reasons.push("Early rating > 80");
       if (review.condition2) reasons.push("Improved > 5");
-      if (review.condition3) reasons.push("'p' in symbol");
+      if (review.condition3) reasons.push("New Rating");
 
       return {
         horseId: review.id,
@@ -106,16 +106,44 @@ export function ReviewListPage() {
 
     // 5. Group by date and reason
     const groupByDateAndReason = (entries) => {
-      const grouped = {};
-      entries.forEach(entry => {
-        const date = entry.meetingDate?.slice(0, 10);
-        const reason = entry.qualifyingReason || "Other";
-        if (!grouped[date]) grouped[date] = {};
-        if (!grouped[date][reason]) grouped[date][reason] = [];
+  const grouped = {};
+
+  // Standardize category names
+  const allCategories = [
+    "Early rating > 80",
+    "Improved > 5",
+    "New Rating"
+  ];
+
+  entries.forEach(entry => {
+    const date = entry.meetingDate?.slice(0, 10);
+    if (!grouped[date]) {
+      grouped[date] = {
+        "Early rating > 80": [],
+        "Improved > 5": [],
+        "New Rating": []
+      };
+    }
+
+    // Add entry to relevant categories
+    const reasons = entry.qualifyingReason?.split("; ").filter(Boolean) || [];
+    reasons.forEach(reason => {
+      if (grouped[date][reason]) {
         grouped[date][reason].push(entry);
-      });
-      return grouped;
+      }
+    });
+  });
+
+  // Ensure every date includes all categories, even if empty
+  Object.keys(grouped).forEach(date => {
+    allCategories.forEach(cat => {
+      if (!grouped[date][cat]) grouped[date][cat] = [];
+    });
+  });
+
+  return grouped;
     };
+
 
     const grouped = groupByDateAndReason(formatted);
     setHorseHistoryMap(grouped);
@@ -223,131 +251,136 @@ const handleSaveNote = async (horseId) => {
                       </button>
 
                       {/* Horse cards under each reason */}
-                      {expandedReasons[`${date}__${reason}`] &&
-                        horses.map((entry, idx) => {
-                          const key = entry.horseName?.toLowerCase()?.trim();
-                          const encodedHorseName = encodeURIComponent(entry.horseName?.trim());
-                          const formattedDateOnly = entry.meetingDate?.slice(0, 10);
-                          const encodedDate = encodeURIComponent(formattedDateOnly);
-                          const encodedRaceTitle = encodeURIComponent(entry.raceTitle?.trim());
-                          const encodedUrl = encodeURIComponent(
-                            "https://horseracesbackend-production.up.railway.app/api/APIData_Table2"
-                          );
+                     {expandedReasons[`${date}__${reason}`] && (
+                        horses.length === 0 ? (
+                          <div className="pl-6 text-sm text-gray-500 italic">(no horses found)</div>
+                        ) : (
+                          horses.map((entry, idx) => {
+                            const key = entry.horseName?.toLowerCase()?.trim();
+                            const encodedHorseName = encodeURIComponent(entry.horseName?.trim());
+                            const formattedDateOnly = entry.meetingDate?.slice(0, 10);
+                            const encodedDate = encodeURIComponent(formattedDateOnly);
+                            const encodedRaceTitle = encodeURIComponent(entry.raceTitle?.trim());
+                            const encodedUrl = encodeURIComponent(
+                              "https://horseracesbackend-production.up.railway.app/api/APIData_Table2"
+                            );
 
-                          return (
-                            <div key={`horse-${date}-${reason}-${idx}`} className="pl-6 pb-4 border-l border-gray-200">
-                              <h3 className="font-bold text-black uppercase text-sm flex items-center gap-1 flex-wrap">
-                                <Link to={`/dashboard/horse/${encodedHorseName}`} className="hover:underline">
-                                  {entry.horseName}
-                                </Link>
+                            return (
+                              <div key={`horse-${date}-${reason}-${idx}`} className="pl-6 pb-4 border-l border-gray-200">
+                                <h3 className="font-bold text-black uppercase text-sm flex items-center gap-1 flex-wrap">
+                                  <Link to={`/dashboard/horse/${encodedHorseName}`} className="hover:underline">
+                                    {entry.horseName}
+                                  </Link>
 
-                                <sup className="flex items-center gap-1">
-                                  <button
-                                    onClick={() =>
-                                      setExpandedNotes(prev => ({
-                                        ...prev,
-                                        [entry.horseId]: !prev[entry.horseId],
-                                      }))
-                                    }
-                                    className="text-blue-600 text-[10px] hover:underline"
-                                  >
-                                    [notes]
-                                  </button>
-                                </sup>
-                              </h3>
-
-                              {/* Note textarea */}
-                              {expandedNotes[entry.horseId] && (
-                                <div className="text-xs text-black pl-4 mt-1">
-                                  <textarea
-                                    className="w-full text-sm border border-gray-300 rounded-md p-1"
-                                    rows={3}
-                                    value={editingNotes[entry.horseId] ?? entry.notes}
-                                    onChange={(e) =>
-                                      setEditingNotes(prev => ({
-                                        ...prev,
-                                        [entry.horseId]: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                  <div className="flex gap-2 mt-1">
+                                  <sup className="flex items-center gap-1">
                                     <button
-                                      className="bg-blue-600 text-white text-xs px-2 py-1 rounded"
-                                      onClick={() => handleSaveNote(entry.horseId)}
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      className="text-gray-600 text-xs underline"
                                       onClick={() =>
-                                        setExpandedNotes(prev => ({ ...prev, [entry.horseId]: false }))
+                                        setExpandedNotes(prev => ({
+                                          ...prev,
+                                          [entry.horseId]: !prev[entry.horseId],
+                                        }))
                                       }
+                                      className="text-blue-600 text-[10px] hover:underline"
                                     >
-                                      Cancel
+                                      [notes]
                                     </button>
+                                  </sup>
+                                </h3>
+
+                                {/* Note textarea */}
+                                {expandedNotes[entry.horseId] && (
+                                  <div className="text-xs text-black pl-4 mt-1">
+                                    <textarea
+                                      className="w-full text-sm border border-gray-300 rounded-md p-1"
+                                      rows={3}
+                                      value={editingNotes[entry.horseId] ?? entry.notes}
+                                      onChange={(e) =>
+                                        setEditingNotes(prev => ({
+                                          ...prev,
+                                          [entry.horseId]: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                    <div className="flex gap-2 mt-1">
+                                      <button
+                                        className="bg-blue-600 text-white text-xs px-2 py-1 rounded"
+                                        onClick={() => handleSaveNote(entry.horseId)}
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        className="text-gray-600 text-xs underline"
+                                        onClick={() =>
+                                          setExpandedNotes(prev => ({ ...prev, [entry.horseId]: false }))
+                                        }
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="pl-4 text-sm text-black space-y-1 mt-1">
+                                  {/* Metadata */}
+                                  {(() => {
+                                    const meta = [
+                                      entry.sireName && `${entry.sireName} (S)`,
+                                      entry.damName && `${entry.damName} (D)`,
+                                      entry.ownerFullName && `${entry.ownerFullName} (O)`,
+                                      entry.trainerFullName && `${entry.trainerFullName} (T)`,
+                                      entry.horseColour && `${entry.horseColour} (C)`,
+                                      entry.horseAge && `Age: ${entry.horseAge}`,
+                                      entry.horseGender && `${entry.horseGender}`
+                                    ].filter(Boolean);
+
+                                    return meta.length > 0 ? (
+                                      <div className="text-xs text-black">{meta.join(" | ")}</div>
+                                    ) : null;
+                                  })()}
+
+                                  {/* Race title */}
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Flag className="w-4 h-4 text-gray-400" />
+                                    <Link
+                                      to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
+                                      className="hover:underline text-indigo-700 text-sm"
+                                    >
+                                      {entry.raceTitle}
+                                    </Link>
+                                  </div>
+
+                                  {/* Date, time, rating */}
+                                  <div className="flex gap-4 items-center flex-wrap text-sm">
+                                    <span>
+                                      <Calendar className="w-4 h-4 text-gray-400 mr-1 inline" />
+                                      {formatDate(entry.meetingDate)}
+                                    </span>
+
+                                    {entry.scheduledTimeOfRaceLocal && (
+                                      <span>
+                                        <Clock className="w-4 h-4 text-gray-400 mr-1 inline" />
+                                        {new Date(entry.scheduledTimeOfRaceLocal).toLocaleTimeString("en-GB", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                          hour12: true,
+                                          timeZone: "Europe/London",
+                                        })}
+                                      </span>
+                                    )}
+
+                                    {entry.performanceRating && (
+                                      <span className="text-green-700 font-semibold">
+                                        Rating: {entry.performanceRating}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
-                              )}
-
-                              <div className="pl-4 text-sm text-black space-y-1 mt-1">
-                                {/* Metadata */}
-                                {(() => {
-                                  const meta = [
-                                    entry.sireName && `${entry.sireName} (S)`,
-                                    entry.damName && `${entry.damName} (D)`,
-                                    entry.ownerFullName && `${entry.ownerFullName} (O)`,
-                                    entry.trainerFullName && `${entry.trainerFullName} (T)`,
-                                    entry.horseColour && `${entry.horseColour} (C)`,
-                                    entry.horseAge && `Age: ${entry.horseAge}`,
-                                    entry.horseGender && `${entry.horseGender}`
-                                  ].filter(Boolean);
-
-                                  return meta.length > 0 ? (
-                                    <div className="text-xs text-black">{meta.join(" | ")}</div>
-                                  ) : null;
-                                })()}
-
-
-                                {/* Race title */}
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Flag className="w-4 h-4 text-gray-400" />
-                                  <Link
-                                    to={`/dashboard/racedetails?url=${encodedUrl}&RaceTitle=${encodedRaceTitle}&meetingDate=${encodedDate}`}
-                                    className="hover:underline text-indigo-700 text-sm"
-                                  >
-                                    {entry.raceTitle}
-                                  </Link>
-                                </div>
-
-                                {/* Date, time, rating */}
-                                <div className="flex gap-4 items-center flex-wrap text-sm">
-                                  <span>
-                                    <Calendar className="w-4 h-4 text-gray-400 mr-1 inline" />
-                                    {formatDate(entry.meetingDate)}
-                                  </span>
-
-                                  {entry.scheduledTimeOfRaceLocal && (
-                                    <span>
-                                      <Clock className="w-4 h-4 text-gray-400 mr-1 inline" />
-                                      {new Date(entry.scheduledTimeOfRaceLocal).toLocaleTimeString("en-GB", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        hour12: true,
-                                        timeZone: "Europe/London",
-                                      })}
-                                    </span>
-                                  )}
-
-                                  {entry.performanceRating && (
-                                    <span className="text-green-700 font-semibold">
-                                      Rating: {entry.performanceRating}
-                                    </span>
-                                  )}
-                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })
+                        )
+                      )}
+
                     </div>
                   ))}
               </div>
