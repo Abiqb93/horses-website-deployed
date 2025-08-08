@@ -65,7 +65,7 @@ export function FranceRaceRecords() {
       return;
     }
 
-    const raceTitle = race["Races"]?.trim();
+    const raceTitle = race["Race"]?.trim();
     const formattedDate = formatToMySQLDate(date); // ✅ use outer date
 
     console.log("Payload being sent:", { raceTitle, formattedDate });
@@ -79,6 +79,7 @@ export function FranceRaceRecords() {
       user_id: userId,
       race_title: raceTitle,
       race_date: formattedDate,
+      race_time: race["Start"] || null,
       source_table: "FranceRaceRecords"
     };
 
@@ -206,8 +207,8 @@ export function FranceRaceRecords() {
                                 {race["#"] || "?"}
                               </span>
                               <span className="font-medium">{race["Start"] || "-"}</span>
-                              <span className="font-normal text-gray-700">{race["Races"] || "-"}</span>
-                                {race["Races"] && !watchedRaceTitles.includes(race["Races"].trim().toLowerCase()) ? (
+                              <span className="font-normal text-gray-700">{race["Race"] || "-"}</span>
+                                {race["Race"] && !watchedRaceTitles.includes(race["Race"].trim().toLowerCase()) ? (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();

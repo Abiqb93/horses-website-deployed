@@ -419,6 +419,15 @@ export function Home() {
           for (const entry of data) {
             const rawHorseName = entry.Horse || entry["Horse Name"];
             const horseName = rawHorseName?.toLowerCase().trim();
+            if (horseName === "al alaali") {
+                console.log("🐎 Debug AL ALAALI:");
+                console.log(" - Tracked:", trackedNames.includes(horseName));
+                console.log(" - rawHorseName:", rawHorseName);
+                console.log(" - dateStr:", entry.Date || entry.date || entry.FixtureDate);
+                console.log(" - timeStr:", entry.Time || entry.RaceTime || entry.time);
+                console.log(" - raceTitle:", entry.Race || entry.RaceTitle || entry.title);
+                console.log(" - track:", entry.Racecourse || entry.Track || entry.Course || entry.track);
+              }
             if (!trackedNames.includes(horseName)) continue;
 
             const raceTrack =
@@ -458,6 +467,10 @@ export function Home() {
                 entry.EventName ||      // Ireland fallback
                 "-";
 
+              // if (label === "FranceRaceRecords") {
+              //   raceTitle = toTitleCase(raceTitle.toLowerCase());
+              // }
+
 
             let dateStr = entry.FixtureDate || entry.Date || entry.date;
             let raceDate;
@@ -470,8 +483,8 @@ export function Home() {
             } else {
               raceDate = new Date(Date.parse(dateStr));
             }
+
             if (isNaN(raceDate)) continue;
-            raceDate.setHours(0, 0, 0, 0);
 
             const dayDiff = Math.floor((raceDate - today) / (1000 * 60 * 60 * 24));
             const encodedHorseName = encodeURIComponent(rawHorseName?.trim() || "");

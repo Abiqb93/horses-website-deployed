@@ -47,6 +47,7 @@ import {
   MySires,
   MyOwners,
   MyDams,
+  ReviewListPage,
 
 } from "@/pages/dashboard";
 
@@ -69,9 +70,15 @@ export const routes = [
       },
       {
         icon: <img src={DashboardIcon} alt="Horse" style={iconStyle} />,
-        name: "Watch List",
+        name: "Daily Watch List",
         path: "/watchlist",
         element: <DailyWatchList />,
+      },
+      {
+        icon: <img src={DashboardIcon} alt="Horse" style={iconStyle} />,
+        name: "Review List",
+        path: "/reviewlist",
+        element: <ReviewListPage />,
       },
       {
         icon: <img src={TablesIcon} alt="Horse" style={iconStyle} />,
