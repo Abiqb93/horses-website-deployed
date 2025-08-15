@@ -1,9 +1,53 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import ServerSearchTable from "./ServerSearchTable";
 
 export function MyHorses() {
   const [lastRaces, setLastRaces] = useState([]);
+    // ===== Search table config =====
+  const navigate = useNavigate();
+  const [period, setPeriod] = useState("overall"); // if you later switch sources, this can drive tableResolver
+
+  // Decide which backend table to call
+  const tableResolver = ({ period }) => {
+    // Extend this when you add more sources
+    if (period === "overall") return "horse_names";
+    return "horse_names";
+  };
+
+  // Country dropdown options for the search UI
+  const countryOptions = [
+    "GBR","IRE","FRA","GER","USA","ZA","AU","JP","CA","IT","AE","HK","SE","SA","ZW","TR","QA","BR","CH","NO","SG","UY","BE","NZ","DK","JE","BH","CL","RU","CZ","KZ","ES","MY","MO","VE","PE","SI","PL","HU","MX","NL","OM","MA","KR","PA"
+  ];
+
+  // Columns for the results table
+  const searchColumns = [
+    {
+      key: "Sire",
+      label: "Horse",
+      render: (row) => (
+        <span
+          className="text-blue-700 underline cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/dashboard/horse/${encodeURIComponent(row.Sire)}`);
+          }}
+        >
+          {row.Sire}
+        </span>
+      ),
+    },
+    { key: "Country", label: "Country" },
+    { key: "Runs", label: "Runs" },
+    { key: "Wins", label: "Wins" },
+    { key: "WinPercent_", label: "Win%" },
+    { key: "Stakes_Wins", label: "Stakes Wins" },
+    { key: "Group_Wins", label: "Group Wins" },
+    { key: "Group_1_Wins", label: "Group1 Wins" },
+  ];
+
+
   const [todayRaces, setTodayRaces] = useState([]);
   const [upcomingRaces, setUpcomingRaces] = useState([]);
   const [error, setError] = useState(null);
@@ -507,6 +551,44 @@ export function MyHorses() {
   return (
     <div className="p-4">
       <Typography variant="h5" className="text-gray-800 font-bold mb-4">📋 Tracked Horses</Typography>
+
+        {/* ===== New: Search & list horses ===== */}
+  <Card className="bg-white text-black mb-6">
+    <CardBody className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Typography variant="h6" className="text-blue-700 font-semibold text-sm">
+          Find Horses
+        </Typography>
+        {/* Optional: period selector that can influence tableResolver later */}
+        <select
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
+          className="text-[11px] border px-2 py-1 rounded bg-gray-50"
+        >
+          <option value="overall">Overall</option>
+        </select>
+      </div>
+
+      <ServerSearchTable
+        baseUrl="https://horseracesbackend-production.up.railway.app/api"
+        tableResolver={tableResolver}
+        columns={searchColumns}
+        searchPlaceholder="Search horse..."
+        searchParamKey="sire"           // backend expects ?sire=
+        showCountryFilter={true}
+        countryOptions={countryOptions}
+        rowsPerPage={10}
+        defaultSortBy="Stakes_Wins"     // matches your other page
+        defaultOrder="desc"
+        period={period}
+        onRowClick={(row) =>
+          navigate(`/dashboard/horse/${encodeURIComponent(row.Sire)}`)
+        }
+      />
+    </CardBody>
+  </Card>
+  {/* ===== End new block ===== */}
+
       {renderTrackedHorsesTable()}
       {lastRaces.length > 0 && renderTable("Last Races", lastRaces, "red")}
       {todayRaces.length > 0 && renderTable("Today’s Races", todayRaces, "green")}

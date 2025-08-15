@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import SireSearchTable from "./SireSearchTable";
 
 export function MySires() {
   const [sireData, setSireData] = useState([]);
@@ -132,6 +133,9 @@ export function MySires() {
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
+      <div className="mb-6">
+        <SireSearchTable />
+      </div>  
       <h1 className="text-lg font-bold mb-4">My Sire Tracking</h1>
       {isLoading && <div className="italic">Loading data...</div>}
       {error && <div className="text-red-500">{error}</div>}

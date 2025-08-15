@@ -124,13 +124,23 @@ const DynamicTable = ({ data, refreshHorseData }) => {
   const handleTrackHorse = async () => {
     setIsSubmitting(true);
     try {
-      // 🧠 Use latest known values from race records
+      // If tracked already, require a non-empty note for "+ Add Note"
+      if (isTracked && !note.trim()) {
+        alert("Please write a note before adding.");
+        setIsSubmitting(false);
+        return;
+      }
+
       const mostRecent = latestRecord || {};
+      const trackingTypeToSend = isTracked
+        ? (trackingData?.[0]?.TrackingType ?? trackingType) // preserve original
+        : trackingType;
+
       const payload = {
         horseName,
-        note: note.trim(),
+        note: (isTracked ? note.trim() : (note || "").trim()), // first track allows empty
         trackingDate: new Date().toISOString(),
-        TrackingType: trackingType,
+        TrackingType: trackingTypeToSend,
         User: user,
         sireName: mostRecent?.sireName || "",
         damName: mostRecent?.damName || "",
@@ -146,30 +156,19 @@ const DynamicTable = ({ data, refreshHorseData }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       if (!res.ok) throw new Error("Failed to track horse");
 
-      // ✅ Re-fetch full tracking notes to update the list
-      const refreshTrackingData = async () => {
-        try {
-          const r = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}?user=${user}`);
-          const json = await r.json();
-          const newData = Array.isArray(json.data) ? json.data : [];
-          setTrackingData(newData);
+      // Refresh tracking list and UI
+      const r = await fetch(`https://horseracesbackend-production.up.railway.app/api/horseTracking/${horseName}?user=${user}`);
+      const json = await r.json();
+      const newData = Array.isArray(json.data) ? json.data : [];
+      setTrackingData(newData);
+      setIsTracked(true);
+      setShowNotes(true);
+      setTrackingDate(newData[0]?.trackingDate ?? new Date().toISOString());
 
-          // ✅ Update UI with the latest data
-          setIsTracked(true);
-          setShowNotes(true);
-          setTrackingDate(newData[0]?.trackingDate ?? new Date().toISOString());
-        } catch (err) {
-          console.error("Error re-fetching tracking list:", err);
-        }
-      };
-
-      await refreshTrackingData();
-
-      if (typeof refreshHorseData === 'function') refreshHorseData();
-      setNote(""); // Clear input
+      if (typeof refreshHorseData === "function") refreshHorseData();
+      setNote("");
     } catch (err) {
       console.error("Error tracking horse:", err);
       alert("Error tracking horse.");
@@ -177,6 +176,7 @@ const DynamicTable = ({ data, refreshHorseData }) => {
       setIsSubmitting(false);
     }
   };
+
 
 
   const handleStopTracking = async () => {
@@ -198,7 +198,6 @@ const DynamicTable = ({ data, refreshHorseData }) => {
 
 const filteredColumns = [
   "positionOfficial",
-  "horseName",
   "countryCode",
   "raceType",
   "distance",
@@ -302,6 +301,8 @@ return (
 
       {/* Horse Summary */}
       <div className="mb-6 p-4 rounded-xl shadow bg-gradient-to-r from-gray-100 to-gray-50 border border-gray-300 relative">
+        
+        {/* Top-right controls now only show Track button if not tracked */}
         <div className="absolute top-4 right-4 flex flex-col items-end space-y-2">
           <select
             className="text-xs border rounded px-2 py-1"
@@ -315,22 +316,16 @@ return (
             <option value="Mare">Mare</option>
             <option value="Relative">Relative</option>
           </select>
-          <div className="flex space-x-2 items-center">
-            <input
-              type="text"
-              placeholder="Add a note..."
-              className="text-xs px-2 py-1 border rounded"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
+
+          {!isTracked && (
             <button
               className="px-3 py-1 bg-blue-600 text-white text-xs rounded"
               onClick={handleTrackHorse}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Saving..." : isTracked ? "+ Add Note" : "+ Track"}
+              {isSubmitting ? "Saving..." : "+ Track"}
             </button>
-          </div>
+          )}
 
           {isTracked && (
             <>
@@ -348,41 +343,76 @@ return (
               >
                 Stop Tracking
               </button>
-              <button
-                onClick={() => setShowNotes(!showNotes)}
-                className="mt-2 text-xs px-2 py-1 border rounded bg-white hover:bg-gray-100"
-              >
-                {showNotes ? "Hide Notes" : "View Notes"}
-              </button>
+
             </>
           )}
         </div>
 
+        {/* Horse details */}
         <div className="space-y-1">
-          <Typography variant="h5" className="font-bold text-blue-800">{horseName}</Typography>
+{/* Horse name + Latest Rating inline and prominent */}
+<div className="flex items-center gap-4">
+  <Typography variant="h5" className="font-bold text-blue-800">
+    {horseName}
+  </Typography>
+  <Typography className="text-base font-bold text-gray-800">
+    Latest Rating: <span className="text-lg text-blue-700 font-extrabold">{performanceRating || "-"}</span>
+  </Typography>
+</div>
+  <Typography className="text-sm text-gray-700">
+    {sireName ? `${sireName} (S)` : "-"} | {damName ? `${damName} (D)` : "-"} | {horseColour ? `${horseColour} (C)` : "-"} | {horseGender ? `${horseGender} (G)` : "-"}
+  </Typography>
 
-          <Typography className="text-sm text-gray-700">
-            {sireName ? `${sireName} (S)` : "-"} | {damName ? `${damName} (D)` : "-"} | {horseColour ? `${horseColour} (C)` : "-"} | {horseGender ? `${horseGender} (G)` : "-"}
-          </Typography>
+  <Typography className="text-sm text-gray-700">
+    Foaled: {foalingDate ? new Date(foalingDate).toLocaleDateString("en-GB").replaceAll("/", "-") : "-"}
+  </Typography>
 
-          <Typography className="text-sm text-gray-700">
-            Foaled: {foalingDate ? new Date(foalingDate).toLocaleDateString("en-GB").replaceAll("/", "-") : "-"}
-          </Typography>
+  <Typography className="text-sm text-gray-700">
+    Trainer(s): {trainerList.length > 0 ? trainerList.join(", ") : "-"}
+  </Typography>
 
-          <Typography className="text-sm text-gray-700">
-            Trainer(s): {trainerList.length > 0 ? trainerList.join(", ") : "-"}
-          </Typography>
+  <Typography className="text-sm text-gray-700">
+    Owner(s): {ownerList.length > 0 ? ownerList.join(", ") : "-"}
+  </Typography>
 
-          <Typography className="text-sm text-gray-700">
-            Owner(s): {ownerList.length > 0 ? ownerList.join(", ") : "-"}
-          </Typography>
+  <Typography className="text-sm text-gray-700">
+    Top Prize: <span className="font-semibold">{maxPrize || "-"}</span>
+  </Typography>
 
-          <Typography className="text-sm text-gray-700">
-            Latest Rating: <span className="font-semibold">{performanceRating || "-"}</span> | Top Prize: <span className="font-semibold">{maxPrize || "-"}</span>
-          </Typography>
+  {/* Add Note + View Notes goes here if tracked */}
+  {isTracked && (
+    <>
+      <div className="mt-3 flex items-center gap-2">
+        <input
+          type="text"
+          placeholder="Add a note..."
+          className="text-xs px-3 py-2 border rounded-full flex-grow focus:outline-none focus:ring-2 focus:ring-blue-300"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+        <button
+          className="text-[11px] font-medium text-blue-700 hover:underline focus:outline-none"
+          onClick={handleTrackHorse}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Saving..." : "+ Add Note"}
+        </button>
+      </div>
+
+      <div className="mt-1">
+        <button
+          onClick={() => setShowNotes(!showNotes)}
+          className="text-[11px] text-gray-600 hover:underline focus:outline-none"
+        >
+          {showNotes ? "Hide Notes" : "View Notes"}
+        </button>
+      </div>
+    </>
+  )}
         </div>
 
 
+        {/* Notes list */}
         {isTracked && showNotes && (
           <div className="mt-4 bg-white border border-gray-200 rounded-md p-2 max-h-48 overflow-y-auto">
             <Typography className="text-sm font-medium mb-1 text-gray-700">Tracking Notes:</Typography>
@@ -399,6 +429,7 @@ return (
           </div>
         )}
       </div>
+
 
       {/* History Tab Content */}
       {activeTab === "history" && (

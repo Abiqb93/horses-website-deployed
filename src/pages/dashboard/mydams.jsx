@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import DamSimplifiedTable from "./DamSimplifiedTable";
 
 export function MyDams() {
   const [damData, setDamData] = useState([]);
@@ -111,6 +112,9 @@ export function MyDams() {
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
       <h1 className="text-lg font-bold mb-4">My Dam Tracking</h1>
+      <div className="mb-6">
+        <DamSimplifiedTable />
+      </div>  
       {isLoading && <div className="italic">Loading data...</div>}
       {error && <div className="text-red-500">{error}</div>}
       {!isLoading && !error && damData.length > 0 && (

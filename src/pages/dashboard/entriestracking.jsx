@@ -37,39 +37,50 @@ export function EntriesTracking() {
   };
 
   const handleAddToWatchlist = async (race) => {
-    const storedUser = localStorage.getItem("user");
-    const userId = storedUser ? JSON.parse(storedUser).userId : null;
+  const storedUser = localStorage.getItem("user");
+  const userId = storedUser ? JSON.parse(storedUser).userId : null;
 
-    if (!userId) {
-      alert("Please log in to use the watch list feature.");
-      return;
-    }
+  if (!userId) {
+    alert("Please log in to use the watch list feature.");
+    return;
+  }
 
-    const payload = {
-      user_id: userId,
-      race_title: race.RaceTitle,
-      race_date: formatToMySQLDate(race.Date),
-      race_time: race.RaceTime,
-      source_table: "EntriesTracking"
-    };
-
-    try {
-      const response = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        setWatchedRaceTitles(prev => [...prev, race.RaceTitle]);
-      } else {
-        const errorText = await response.text();
-        console.error("Failed to add to watch list:", errorText);
-      }
-    } catch (error) {
-      console.error("Error adding to watch list:", error);
-    }
+  const payload = {
+    user_id: userId,
+    race_title: race.RaceTitle,
+    race_date: formatToMySQLDate(race.Date),
+    race_time: race.RaceTime,
+    track: race.Track ?? null,           // <-- use Track directly
+    source_table: "EntriesTracking"
   };
+
+  // helpful debug
+  console.log("race keys:", Object.keys(race));
+  console.log("race.Track =", race?.Track);
+  console.log("📦 Payload being sent to watchlist:", JSON.stringify(payload, null, 2));
+
+  if (!payload.track) {
+    console.warn("⚠️ No Track found on race object:", race);
+  }
+
+  try {
+    const response = await fetch("http://localhost:8080/api/race_watchlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Failed to add to watch list:", errorText);
+    } else {
+      setWatchedRaceTitles(prev => [...prev, race.RaceTitle]);
+    }
+  } catch (error) {
+    console.error("Error adding to watch list:", error);
+  }
+};
+
 
   const fetchData = async () => {
     try {

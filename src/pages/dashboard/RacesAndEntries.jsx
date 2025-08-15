@@ -67,12 +67,13 @@ export function RacesAndEntries() {
       race_title: race.RaceTitle,
       race_date: formatToMySQLDate(race.FixtureDate),
       race_time: race.RaceTime,
+      track: race.FixtureTrack ?? null,
       source_table: "RacesAndEntries"
     };
 
     console.log("📦 Payload being sent to watchlist:", payload); // ✅ Add this
     try {
-      const res = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
+      const res = await fetch("http://localhost:8080/api/race_watchlist", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

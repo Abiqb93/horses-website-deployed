@@ -34,4 +34,5 @@ export * from "@/pages/dashboard/Reviewlists";
 export * from "@/pages/dashboard/MySires";
 export * from "@/pages/dashboard/MyDams";
 export * from "@/pages/dashboard/MyOwners";
+export * from "@/pages/dashboard/RacingPost";
 

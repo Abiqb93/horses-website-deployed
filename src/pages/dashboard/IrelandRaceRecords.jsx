@@ -81,13 +81,14 @@ export function IrelandRaceRecords() {
         race_title: raceTitle,
         race_date: formattedDate,
         race_time: race["Race Time"],
+        track: race["Course"],
         source_table: "IrelandRaceRecords"
       };
 
       console.log("Payload being sent:", payload); // ✅ Should now show correct date
 
       try {
-        const response = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
+        const response = await fetch("http://localhost:8080/api/race_watchlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

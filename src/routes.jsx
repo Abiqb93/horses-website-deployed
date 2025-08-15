@@ -8,6 +8,7 @@ import DashboardIcon from "@/assets/icons/Home.png";
 import SigninIcon from "@/assets/icons/Signin.png";
 import SignupIcon from "@/assets/icons/Signup.png";
 import TablesIcon from "@/assets/icons/Tables.png";
+import { Search, Tv } from "lucide-react";
 
 import ChangePassword from "@/pages/dashboard/ChangePassword";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
@@ -48,6 +49,7 @@ import {
   MyOwners,
   MyDams,
   ReviewListPage,
+  RacingPost,
 
 } from "@/pages/dashboard";
 
@@ -69,13 +71,13 @@ export const routes = [
         element: <Home />,
       },
       {
-        icon: <img src={DashboardIcon} alt="Horse" style={iconStyle} />,
+        icon: <Tv className="w-[20px] h-[16px] text-black" />,
         name: "Daily Watch List",
         path: "/WatchList",
         element: <DailyWatchList />,
       },
       {
-        icon: <img src={DashboardIcon} alt="Horse" style={iconStyle} />,
+        icon: <Search size={16} color="black" style={iconStyle} />,
         name: "Review List",
         path: "/ReviewList",
         element: <ReviewListPage />,
@@ -87,6 +89,7 @@ export const routes = [
           { name: "Race Results", path: "/races", element: <Races /> },
           { name: "My Races", path: "/myRaces", element: <MyRace /> },
           { name: "Racecards & Entries", path: "/RacesAndEntries", element: <RacesAndEntries /> },
+          { name: "RacingPost", path: "/RacingPost", element: <RacingPost /> },
           { name: "Declarations Tracking", path: "/DeclarationsTracking", element: <DeclarationsTracking /> },
           { name: "Entries Tracking", path: "/EntiresTracking", element: <EntriesTracking /> },
           { name: "Early Closing Entries", path: "/ClosingEntries", element: <ClosingEntries /> },

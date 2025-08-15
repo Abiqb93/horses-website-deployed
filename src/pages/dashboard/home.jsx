@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Clock, Flag, CalendarDays, CheckCircle, TrendingUp  } from "lucide-react";
+import { ReviewListPage } from "@/pages/dashboard";
 
 
 export function Home() {
@@ -965,6 +966,7 @@ export function Home() {
           { key: "sire", label: "Sire Updates" },
           { key: "dam", label: "Mare Updates" },
           { key: "owner", label: "Owner Updates" },
+          { key: "reviewlist", label: "Review List" },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -1285,6 +1287,13 @@ export function Home() {
                     </>
                   );
                 })()}
+
+              {activeSection === "reviewlist" && (
+               <div className="mt-2">
+                 {/* Reuse the same component, embedded mode for tighter layout */}
+                 <ReviewListPage embedded />
+               </div>
+               )} 
 
             </div>
           ) : (
