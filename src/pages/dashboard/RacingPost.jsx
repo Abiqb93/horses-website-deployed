@@ -40,7 +40,7 @@ export function RacingPost() {
     const storedUser = localStorage.getItem("user");
     const userId = storedUser ? JSON.parse(storedUser).userId : "Guest";
     try {
-      const res = await fetch(`http://localhost:8080/api/race_watchlist/${userId}`);
+      const res = await fetch(`https://horseracesbackend-production.up.railway.app/api/race_watchlist/${userId}`);
       const data = await res.json();
       const titles = Array.isArray(data) ? data.map((x) => x.race_title) : [];
       setWatchedRaceTitles(titles);
@@ -51,7 +51,7 @@ export function RacingPost() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/racingpost");
+      const res = await fetch("https://horseracesbackend-production.up.railway.app/api/racingpost");
       const data = await res.json();
       const raw = Array.isArray(data) ? data : data.data || [];
 
@@ -98,7 +98,7 @@ export function RacingPost() {
     };
 
     try {
-      const res = await fetch("http://localhost:8080/api/race_watchlist", {
+      const res = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

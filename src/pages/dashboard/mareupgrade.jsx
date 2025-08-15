@@ -197,7 +197,7 @@ export function MareUpLift() {
       }
 
       const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/mareupdates?${queryParams.toString()}`);
-      // const response = await fetch(`http://localhost:8080/api/mareupdates?${queryParams.toString()}`);
+      // const response = await fetch(`https://horseracesbackend-production.up.railway.app/api/mareupdates?${queryParams.toString()}`);
 
       
       const data = await response.json();
@@ -215,8 +215,8 @@ export function MareUpLift() {
         fetch(`https://horseracesbackend-production.up.railway.app/api/mareupdates?sireName=${sireName}`),
         fetch(`https://horseracesbackend-production.up.railway.app/api/sire_uplift?sire=${sireName}`)
 
-        // fetch(`http://localhost:8080/api/mareupdates?sireName=${sireName}`),
-        // fetch(`http://localhost:8080/api/sire_uplift?sire=${sireName}`)
+        // fetch(`https://horseracesbackend-production.up.railway.app/api/mareupdates?sireName=${sireName}`),
+        // fetch(`https://horseracesbackend-production.up.railway.app/api/sire_uplift?sire=${sireName}`)
       ]);
 
       const sireData = await sireRes.json();

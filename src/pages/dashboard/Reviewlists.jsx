@@ -88,7 +88,7 @@ export function ReviewListPage({ embedded = false }) {
 
     // 2. Fetch review_horses table (only NOT reviewed by me)
     const uid = getUserId();
-    const reviewRes = await fetch(`http://localhost:8080/api/review_horses?user=${encodeURIComponent(uid)}`);
+    const reviewRes = await fetch(`https://horseracesbackend-production.up.railway.app/api/review_horses?user=${encodeURIComponent(uid)}`);
     const reviewData = await reviewRes.json();
     const reviewMap = {};
     (reviewData || []).forEach(row => {
@@ -329,7 +329,7 @@ const handleMarkDone = async (entry) => {
 
   try {
     const res = await fetch(
-      `http://localhost:8080/api/review_horses/${entry.horseId}/reviewStatus`,
+      `https://horseracesbackend-production.up.railway.app/api/review_horses/${entry.horseId}/reviewStatus`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

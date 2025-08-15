@@ -73,7 +73,7 @@ export function RacesAndEntries() {
 
     console.log("📦 Payload being sent to watchlist:", payload); // ✅ Add this
     try {
-      const res = await fetch("http://localhost:8080/api/race_watchlist", {
+      const res = await fetch("https://horseracesbackend-production.up.railway.app/api/race_watchlist", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

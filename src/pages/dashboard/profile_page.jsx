@@ -99,7 +99,7 @@ export function ProfilePage() {
       setSaving(true);
 
       // Backend at localhost:8080 (POST /api/update-mobile)
-      const res = await fetch("http://localhost:8080/api/update-mobile", {
+      const res = await fetch("https://horseracesbackend-production.up.railway.app/api/update-mobile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // If you rely on cookies/session: credentials: "include",
