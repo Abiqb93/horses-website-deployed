@@ -2,6 +2,27 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Clock, Flag } from "lucide-react";
 
+
+// ---- Quick session cache helpers ----
+const CACHE_KEY = "reviewListCache";
+const MAX_AGE_MS = 30 * 60 * 1000; // 30 mins
+
+function loadCache() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp > MAX_AGE_MS) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function saveCache(data) {
+  sessionStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+}
+
 export function ReviewListPage({ embedded = false }) {
   const [horseHistoryMap, setHorseHistoryMap] = useState([]);
   const [trackingInfoCache, setTrackingInfoCache] = useState({});
@@ -52,6 +73,13 @@ export function ReviewListPage({ embedded = false }) {
       ...prev,
       [date]: !prev[date],
     }));
+    saveCache({
+      horseHistoryMap,
+      trackingInfoCache,
+      expandedDates: { ...expandedDates, [date]: !expandedDates[date] },
+      expandedReasons,
+      doneIds
+    });
   };
 
   const toggleReason = (date, reason) => {
@@ -60,8 +88,26 @@ export function ReviewListPage({ embedded = false }) {
       ...prev,
       [key]: !prev[key],
     }));
+    saveCache({
+      horseHistoryMap,
+      trackingInfoCache,
+      expandedDates,
+      expandedReasons: { ...expandedReasons, [key]: !expandedReasons[key] },
+      doneIds
+    });
   };
   useEffect(() => {
+
+  const cached = loadCache();
+    if (cached) {
+      setHorseHistoryMap(cached.horseHistoryMap || {});
+      setTrackingInfoCache(cached.trackingInfoCache || {});
+      setExpandedDates(cached.expandedDates || {});
+      setExpandedReasons(cached.expandedReasons || {});
+      setDoneIds(cached.doneIds || {});
+      setLoading(false);
+      return; // don't refetch
+    }
   const fetchReviewList = async () => {
     setLoading(true);
 
@@ -223,6 +269,15 @@ export function ReviewListPage({ embedded = false }) {
     const defaultExpanded = {};
     allDates.forEach(d => { defaultExpanded[d] = true; });
     setExpandedDates(defaultExpanded);
+    // Save everything into cache
+    saveCache({
+      horseHistoryMap: grouped,
+      trackingInfoCache,
+      expandedDates: defaultExpanded,
+      expandedReasons,
+      doneIds
+    });
+
     setLoading(false);
   };
 
@@ -349,8 +404,6 @@ const handleMarkDone = async (entry) => {
     });
   }
 };
-
-
 
 
   return (

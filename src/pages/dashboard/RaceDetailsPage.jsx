@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 
 export function RaceDetailPage() {
@@ -30,9 +30,6 @@ export function RaceDetailPage() {
 
   useEffect(() => {
     const fetchTableData = async () => {
-      console.log("[RaceDetailPage] 🚀 Fetching from:", tableUrl);
-      console.log("[RaceDetailPage] 🎯 Filtering by RaceTitle:", raceTitleParam);
-
       try {
         if (!tableUrl) {
           setError("No table URL provided.");
@@ -46,20 +43,19 @@ export function RaceDetailPage() {
             setError("Meeting date is required for APIData_Table2.");
             return;
           }
-
-          const filteredUrl = `${tableUrl}?meetingDate=${encodeURIComponent(meetingDate)}`;
-          const response = await fetch(filteredUrl);
-          if (!response.ok) throw new Error("Failed to fetch from APIData_Table2");
-          const json = await response.json();
+          const url = `${tableUrl}?meetingDate=${encodeURIComponent(meetingDate)}`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("Failed to fetch from APIData_Table2");
+          const json = await res.json();
           records = json.data || [];
         } else {
-          const response = await fetch(tableUrl);
-          if (!response.ok) throw new Error("Failed to fetch from source");
-          const json = await response.json();
+          const res = await fetch(tableUrl);
+          if (!res.ok) throw new Error("Failed to fetch");
+          const json = await res.json();
           records = json.data || [];
         }
 
-        if (records.length === 0) {
+        if (!records.length) {
           setError("No records found.");
           return;
         }
@@ -69,43 +65,33 @@ export function RaceDetailPage() {
 
         if (raceTitleParam && raceField) {
           const target = normalize(raceTitleParam);
-          filtered = records.filter((r) => {
-            const val = normalize(r[raceField]);
-            return val === target;
-          });
-
-          if (filtered.length > 0) {
+          filtered = records.filter((r) => normalize(r[raceField]) === target);
+          if (filtered.length) {
             setMatchedTitle(filtered[0][raceField]);
           } else {
             setMatchedTitle(raceTitleParam);
           }
-        } else {
-          setMatchedTitle(raceTitleParam);
-        }
+        } else setMatchedTitle(raceTitleParam);
 
-        if (filtered.length === 0) {
-          setError("No records matched the provided RaceTitle.");
-        } else {
-          setData(filtered);
-        }
+        if (!filtered.length) setError("No records matched the provided RaceTitle.");
+        else setData(filtered);
       } catch (err) {
-        console.error("[RaceDetailPage] ❗ Error:", err);
+        console.error(err);
         setError("Failed to load race data.");
       }
     };
-
     fetchTableData();
   }, [tableUrl, raceTitleParam, meetingDate]);
 
   if (error) {
     return (
       <div className="px-4 py-6">
-        <Typography variant="h6" color="red">{error}</Typography>
+        <Typography color="red">{error}</Typography>
       </div>
     );
   }
 
-  if (data.length === 0) {
+  if (!data.length) {
     return (
       <div className="px-4 py-6">
         <Typography>Loading race records...</Typography>
@@ -116,9 +102,9 @@ export function RaceDetailPage() {
   const raceField = getRaceTitleField(tableUrl);
   const columns = Object.keys(data[0]).filter((col) => {
     if (col === raceField) return false;
-    return !data.some(row => {
-      const val = String(row[col] || "");
-      return val.startsWith("http://") || val.startsWith("https://");
+    return !data.some((row) => {
+      const v = String(row[col] || "");
+      return v.startsWith("http://") || v.startsWith("https://");
     });
   });
 
@@ -130,53 +116,45 @@ export function RaceDetailPage() {
 
       <Card className="bg-white text-black">
         <CardBody className="overflow-x-auto px-0 pt-0 pb-2">
-          <table className="w-full min-w-[900px] table-auto">
+          <table className="min-w-[900px] w-full table-auto">
             <thead>
               <tr>
-                {columns.map((col, i) => (
-                  <th
-                    key={i}
-                    className="py-2 px-3 bg-gray-100 text-left text-[11px] font-bold uppercase border-b"
-                  >
-                    {col}
-                  </th>
+                {columns.map((col) => (
+                  <th key={col} className="py-2 px-3 text-[11px] font-bold uppercase bg-gray-100 border-b text-left">{col}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {data
                 .sort((a, b) => {
-                  const posA = parseInt(a.positionOfficial);
-                  const posB = parseInt(b.positionOfficial);
-                  return (isNaN(posA) ? Infinity : posA) - (isNaN(posB) ? Infinity : posB);
+                  const A = parseInt(a.positionOfficial);
+                  const B = parseInt(b.positionOfficial);
+                  return (isNaN(A) ? Infinity : A) - (isNaN(B) ? Infinity : B);
                 })
                 .map((entry, idx) => (
-                <tr key={idx}>
-                  {columns.map((col, j) => (
-                    <td key={j} className="py-2 px-3 border-b text-xs">
-                      {(() => {
-                        const rawHorseName = entry[col];
-                        const normalizedCol = col.toLowerCase().trim();
-                        const isHorseNameCol = ["horse", "horse name", "horsename"].includes(normalizedCol);
+                  <tr key={idx}>
+                    {columns.map((col) => {
+                      const val = entry[col];
+                      const normalizedCol = col.toLowerCase().trim();
+                      const isHorse = ["horse", "horse name", "horsename"].includes(normalizedCol);
 
-                        if (isHorseNameCol && rawHorseName) {
-                          return (
-                            <a
-                              href={`/dashboard/horse/${encodeURIComponent(rawHorseName.trim())}`}
+                      return (
+                        <td key={col} className="py-2 px-3 border-b text-xs">
+                          {isHorse && val ? (
+                            <Link
+                              to={`/dashboard/horse/${encodeURIComponent(val.trim())}`}
                               className="text-blue-600 hover:underline"
                             >
-                              {rawHorseName}
-                            </a>
-                          );
-                        }
-
-                        return rawHorseName ?? "-";
-                      })()}
-                    </td>
-
-                  ))}
-                </tr>
-              ))}
+                              {val}
+                            </Link>
+                          ) : (
+                            val ?? "-"
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
             </tbody>
           </table>
         </CardBody>
